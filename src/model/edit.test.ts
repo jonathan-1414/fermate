@@ -202,9 +202,41 @@ group('changePitch', () => {
 });
 
 group('changeDuration', () => {
-  it('makes a note shorter, the following notes move left', () => {
+  it('makes a note shorter by splitting it; the following notes stay in place', () => {
     const score = ok(changeDuration(place([[0, 96, 'E4'], [96, 96, 'G4']]), modul1, at(0), 48));
-    expect(m(score)).toEqual(['n48@0 E4', 'n96@48 G4', 'r48@144']);
+    expect(m(score)).toEqual(['n48@0 E4', 'n48@48 E4', 'n96@96 G4']);
+  });
+
+  it('splits a quarter on beat 2 into two eighths on 2 and 2-and', () => {
+    const before = place([[0, 48, 'C4'], [48, 48, 'G4'], [96, 48, 'E4']]);
+    const score = ok(changeDuration(before, modul1, at(48), 24));
+    expect(m(score)).toEqual(['n48@0 C4', 'n24@48 G4', 'n24@72 G4', 'n48@96 E4', 'r48@144']);
+  });
+
+  it('splits over several steps: a whole note into eight eighths, a half into two quarters', () => {
+    const eighths = ok(changeDuration(place([[0, 192, 'A4']]), modul1, at(0), 24));
+    expect(m(eighths)).toEqual([0, 24, 48, 72, 96, 120, 144, 168].map((t) => `n24@${t} A4`));
+    const quarters = ok(changeDuration(place([[0, 96, 'D5']]), modul1, at(0), 48));
+    expect(m(quarters)).toEqual(['n48@0 D5', 'n48@48 D5', 'r96@96']);
+  });
+
+  it('splitting works in a full measure', () => {
+    const full = place([[0, 48, 'C4'], [48, 48, 'D4'], [96, 48, 'E4'], [144, 48, 'F4']]);
+    const score = ok(changeDuration(full, modul1, at(144), 24));
+    expect(m(score)).toEqual(['n48@0 C4', 'n48@48 D4', 'n48@96 E4', 'n24@144 F4', 'n24@168 F4']);
+  });
+
+  it('the split notes are independent copies', () => {
+    const score = ok(changeDuration(place([[0, 48, 'E4']]), modul1, at(0), 24));
+    const [a, b] = score.staves[0].measures[0];
+    expect(a.kind === 'note' && b.kind === 'note' && a.pitch !== b.pitch).toBe(true);
+  });
+
+  it('rejects note values that Modul 1 does not have', () => {
+    expect(changeDuration(place([[0, 96, 'E4']]), modul1, at(0), 12)).toEqual({
+      ok: false,
+      error: 'duration-not-allowed',
+    });
   });
 
   it('makes a note longer, the following notes move right', () => {

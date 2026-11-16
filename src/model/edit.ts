@@ -130,13 +130,26 @@ export function changePitch(score: Score, module: ModuleConfig, at: Position, pi
 
 /**
  * Changes the note value of the note that starts at this position; the pitch stays.
- * The following notes move along (left if shorter, right if longer).
- * It fails if the notes would no longer fit into the measure.
+ * Shorter: the note is split into notes of the new value with the same pitch, so it
+ * keeps its place and the following notes stay where they are (a quarter becomes two
+ * eighths, a whole note eight eighths). Longer: the following notes move right; it
+ * fails if they would no longer fit into the measure.
  */
 export function changeDuration(score: Score, module: ModuleConfig, at: Position, ticks: number): EditResult {
   const measure = getMeasure(score, at);
   if (!measure) return fail('invalid-position');
   const note = placeEvents(measure).find((p) => p.start === at.tick && p.event.kind === 'note')?.event;
   if (!note || note.kind !== 'note') return fail('no-note');
-  return setNote(score, module, at, note.pitch, ticks);
+  if (!module.durations.includes(ticks)) return fail('duration-not-allowed');
+  if (ticks >= note.ticks || note.ticks % ticks !== 0) return setNote(score, module, at, note.pitch, ticks);
+
+  const events = occupantsOf(measure);
+  const slot = slotAt(events, at.tick)!; // the note starts here, so this is its slot
+  const parts: ScoreEvent[] = Array.from({ length: note.ticks / ticks }, () => ({
+    kind: 'note',
+    pitch: { ...note.pitch },
+    ticks,
+  }));
+  events.splice(slot.index, 1, ...parts);
+  return { ok: true, score: withMeasure(score, at, packed(events, measureLength(score.timeSignature))) };
 }

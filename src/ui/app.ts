@@ -106,6 +106,7 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       // Undo is for notes only: the details (names, class, title) stay as they are.
       score = { ...previous.score, meta: score.meta };
       cursor = previous.cursor;
+      duration = noteTicksAt(cursor) ?? duration; // on a note, the toolbar shows its value
       render();
     },
     deleteSelection() {

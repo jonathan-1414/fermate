@@ -207,9 +207,12 @@ const modul1: ModuleConfig = {
 - **Beim Eingeben erklingt kein Ton** (Setzen, Ziehen, Ändern des Notenwerts). Klang gibt es
   in Modul 1 nur über „Abspielen“. Schüler.innen sollen die Noten lesen, nicht nach Gehör
   probieren.
-- **Wert ändern:** Wird eine Note kürzer, rücken die folgenden Noten nach links, wird sie
-  länger, nach rechts. Passt danach nicht mehr alles in den Takt, ändert sich nichts (keine
-  Haltebögen in Modul 1, es fallen nie Noten weg). Ebenso erscheint keine Vorschau, wenn eine
+- **Wert ändern:** Wird eine Note kürzer, wird sie in Noten des neuen Werts mit derselben
+  Tonhöhe geteilt (Viertel → 2 Achtel, Halbe → 2 Viertel, Ganze → 8 Achtel). Sie behält
+  ihren Platz, die folgenden Noten bleiben stehen, der Cursor steht auf der ersten neuen
+  Note. Wird sie länger, rücken die folgenden Noten nach rechts (geteilte Noten verschmelzen
+  nicht wieder, dafür gibt es „Rückgängig“). Passt danach nicht mehr alles in den Takt,
+  ändert sich nichts (keine Haltebögen in Modul 1, es fallen nie Noten weg). Ebenso erscheint keine Vorschau, wenn eine
   neue Note nicht mehr in den Takt passt. Die Leiste graut nichts vorab aus.
 - Tonumfang c'–f''. Außerhalb wird keine Vorschau angezeigt. Hilfslinie nur beim c'.
 - Steht der Cursor auf einer Note, ist sie ausgewählt (sie erscheint in `--accent`). Ein Tipp
@@ -217,8 +220,8 @@ const modul1: ModuleConfig = {
   (ohne Ton). Eine ausgewählte Note kann gelöscht werden (die folgenden Noten rücken nach
   links).
 - Kommt der Cursor auf eine Note, springt die Notenwert-Leiste auf den Wert der Note. Ein
-  anderer Wert in der Leiste ändert die ausgewählte Note, die folgenden Noten rücken mit.
-  Passt danach nicht mehr alles in den Takt, ändert sich nichts.
+  anderer Wert in der Leiste ändert die ausgewählte Note (kürzer: teilen, länger: die
+  folgenden Noten rücken nach rechts, siehe „Wert ändern“). Das gilt auch nach „Rückgängig“.
 - Achtel werden automatisch nach Zählzeiten mit Balken verbunden.
 - **Takt-Prüfung** mit nur zwei Zuständen, damit Schüler.innen selbst überlegen, was noch
   passt: Unter einem vollen Takt steht ein Häkchen (ohne Text), unter einem nicht vollen Takt
