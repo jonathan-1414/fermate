@@ -74,9 +74,9 @@ Teil des Bildschirms ein, alles andere tritt zurück.
 - **Formen:** abgerundete Ecken, keine Schatten, keine Verläufe, keine Animationen außer der
   mitlaufenden Markierung und dem Zeitbalken im Button „Notennamen“. Symbole in Leisten
   immer mit kurzer Beschriftung („Halbe“, „Abspielen“), damit niemand raten muss.
-  Ausnahme: die Buttons „Neu“ (+), „Angaben“ (ⓘ) und „Abgeben“ (Teilen-Symbol, mit
-  kräftigerem Rand) zeigen nur ein gezeichnetes SVG-Symbol und stehen immer ganz oben
-  rechts (Name als Tooltip und für Screenreader).
+  Ausnahme: die Buttons „Neu“ (+) und „Abgeben“ (Teilen-Symbol, mit kräftigerem Rand)
+  zeigen nur ein gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
+  Tooltip und für Screenreader).
 - Kein dunkler Modus in Modul 1.
 
 ## 3. Architektur
@@ -185,8 +185,12 @@ const modul1: ModuleConfig = {
 **Partitur**
 - Beim Start ein Dialog mit Pflichtfeldern **Name(n)** (eine oder mehrere Personen) und
   **Klasse**, Titel optional (bis zu 6 Namensfelder, „+ Weitere Person“). Gespeichert in
-  `meta`, später über den Button „ⓘ“ (Angaben) oben rechts änderbar. Der Startdialog lässt sich nicht
-  wegklicken. „Rückgängig“ betrifft nur Noten, nicht die Angaben.
+  `meta`. Der Startdialog lässt sich nicht wegklicken. „Rückgängig“ betrifft nur Noten, nicht
+  die Angaben.
+- **Kopfzeile** über dem Notensystem wie auf gedruckten Noten: Titel in der Mitte, Name(n)
+  und Klasse rechts (wo sonst Komponist.innen stehen), dahinter ein kleines Stift-Symbol.
+  Ein Tipp auf die Kopfzeile öffnet den Dialog „Angaben“ zum Ändern. Einen eigenen Button
+  dafür gibt es nicht. So sieht man jederzeit, wessen Partitur das ist.
 - Eine Notenzeile, Violinschlüssel, C-Dur, 4/4-Takt, genau 4 Takte in einer Zeile,
   Schlussstrich automatisch, keine Taktnummern.
 - Button „Neu“ (mit Rückfrage) beginnt eine leere Partitur. Danach erscheint der Startdialog

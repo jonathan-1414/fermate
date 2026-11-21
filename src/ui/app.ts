@@ -19,6 +19,7 @@ import { buildHandIn } from '../export/handIn';
 import { canShareFile, shareOrDownload } from '../export/share';
 import { askForMeta, askHandIn, confirm, showInfo } from './dialogs';
 import { createTimedReveal } from './timedReveal';
+import { createScoreHeader } from './scoreHeader';
 import { createToolbar } from './toolbar';
 
 const NOTE_NAMES_SHOW_MS = 5000;
@@ -37,11 +38,13 @@ type Gesture =
 export function startApp(root: HTMLElement, module: ModuleConfig): void {
   root.innerHTML = `
     <header class="toolbar"></header>
-    <main class="score-area"><div id="score"></div></main>
+    <main class="score-area"><div class="sheet"><div id="score"></div></div></main>
     <footer class="app-footer"><button type="button" class="link-button">Info und Lizenzen</button></footer>
   `;
   root.querySelector('.app-footer button')!.addEventListener('click', showInfo);
   const scoreElement = root.querySelector<HTMLDivElement>('#score')!;
+  // Title, names and class above the music; tapping them changes the details.
+  const header = createScoreHeader(root.querySelector('.sheet')!, () => void askForDetails('edit'));
 
   // The last state is loaded from the browser; every change is saved right away.
   let score = loadScore(module) ?? createEmptyScore(module);
@@ -143,9 +146,6 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       render();
       await askForDetails('start');
     },
-    editDetails() {
-      void askForDetails('edit');
-    },
     handIn() {
       player.stop();
       const date = new Date(); // the day of handing in
@@ -200,6 +200,7 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       preview: preview?.at ?? null,
       playing,
     });
+    header.update(score.meta);
     toolbar.update({
       duration,
       canUndo: history.canUndo(),

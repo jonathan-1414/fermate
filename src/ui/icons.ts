@@ -12,8 +12,8 @@ export const ICONS = {
   ),
   /** Plus: new score. */
   plus: svg('<path d="M12 5v14"/><path d="M5 12h14"/>'),
-  /** Circle with i: details (names, class, title). */
-  info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/>'),
+  /** Pencil: the header with title, names and class can be changed (small). */
+  pencil: svg('<path d="M15.5 4.5l4 4L9 19H5v-4z"/><path d="M13 7l4 4"/>', 18),
   /** Arrow turning back: undo (small, in front of the label). */
   undo: svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', 18),
   /** Cross: delete (small, in front of the label). */

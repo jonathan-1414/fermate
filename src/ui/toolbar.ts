@@ -33,7 +33,6 @@ export interface ToolbarActions {
   deleteSelection(): void;
   showNoteNames(): void;
   newScore(): void;
-  editDetails(): void;
   handIn(): void;
 }
 
@@ -120,7 +119,7 @@ export function createToolbar(
   namesButton.prepend(namesBar);
   actionGroup.append(undoButton, deleteButton, namesButton);
 
-  // New, details and hand in: symbols only, always in the top right corner.
+  // New and hand in: symbols only, always in the top right corner.
   // Hand in is the important one at the end of a lesson: it gets a stronger border.
   const scoreGroup = document.createElement('div');
   scoreGroup.className = 'tool-group corner';
@@ -128,7 +127,6 @@ export function createToolbar(
   handInButton.classList.add('strong');
   scoreGroup.append(
     iconButton('Neue Partitur', ICONS.plus, actions.newScore),
-    iconButton('Angaben ändern', ICONS.info, actions.editDetails),
     handInButton,
   );
 

@@ -153,6 +153,67 @@ body {
   padding: 16px;
 }
 
+/* The sheet: header (title, names, class) and music on one white surface. */
+.sheet {
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+
+.score-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 16px 0;
+  border: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.score-header:active {
+  background: var(--accent-soft);
+}
+.score-title {
+  grid-column: 2;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+}
+.score-people {
+  grid-column: 3;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  text-align: right;
+}
+/* Pencil: shows that the header can be tapped. A symbol, so --muted is enough (3:1). */
+.score-edit {
+  flex: none;
+  color: var(--muted);
+}
+.score-edit svg {
+  display: block;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 #score {
   width: 100%;
   /* One finger enters notes; two fingers still zoom. */
@@ -160,8 +221,6 @@ body {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  background: var(--surface);
-  border-radius: var(--radius);
 }
 
 #score svg {
