@@ -370,7 +370,7 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
   per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
   PWA, Aufgaben der Lehrkraft, Hördiktat.
-- *Vor dem Bauen noch zu klären:* Form des Mischpults.
+- Alle Punkte vor dem Bauen sind geklärt (21.11.2026); nächster Schritt: Arbeitsschritte der Beta.
 
 **Ansicht (beschlossen 21.11.2026):**
 - Auf dem Bildschirm **endlos nach rechts**: jedes Instrument eine durchgehende Notenzeile,
@@ -412,6 +412,10 @@ Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für di
 - **„+ Takt“ und „Takt löschen“** am rechten Ende der Übersichtsleiste.
 - **Tempo:** Button „♩ = 90“ öffnet einen Regler (40 bis 200).
 - Im Hochformat dürfen die Leisten in zwei Zeilen umbrechen.
+- **Mischpult:** Button „Mischpult“ öffnet ein Fenster über den Noten (wie „Angaben“), eine
+  Zeile pro Instrument mit Lautstärkeregler, „Stumm“ und „Solo“, geschlossen mit „Fertig“. Auf
+  schmalen Bildschirmen füllt es fast den ganzen Bildschirm. Ein stummes Instrument erkennt man
+  am grauen Kurznamen im Rand links.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
 - **Immer Eingabemodus**, kein Umschalten in einen eigenen Auswahlmodus (wie in Modul 1).
