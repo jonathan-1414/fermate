@@ -332,6 +332,7 @@ Stelle, Tempo-Regler, Metronom, Einzähler, Schleife, Mitscrollen, Speichern und
 Datei, Teilen per Link, Abgabe zusätzlich als Audio, PWA.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
+- **Immer Eingabemodus**, kein Umschalten in einen eigenen Auswahlmodus (wie in Modul 1).
 - **Überall, wo keine Note steht, steht eine Pause**, und alle Pausen werden gezeichnet.
   Ein leerer Takt zeigt eine Ganztaktpause (Ganzepausen-Zeichen in der Taktmitte, in jeder
   Taktart).
