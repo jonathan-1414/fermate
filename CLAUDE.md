@@ -249,6 +249,8 @@ const modul1: ModuleConfig = {
 
 **Wiedergabe**
 - Play/Stop-Button, Tempo fest ♩ = 90, Klavierklang.
+- Auf dem iPhone klingt die Wiedergabe auch im Stummmodus (`navigator.audioSession.type =
+  'playback'`, Safari ab iOS 17), sonst schaltet Safari den Ton stumm.
 - Die klingende Note leuchtet auf (mitlaufende Markierung, `Tone.Draw`).
 - Lücken klingen als Pausen (Stille). Gesetzte Pausen sind ebenfalls still, die mitlaufende
   Markierung läuft aber über sie.

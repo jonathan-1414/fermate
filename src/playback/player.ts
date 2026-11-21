@@ -25,7 +25,23 @@ export interface PlayerEvents {
 /** Samples in public/samples/piano/ (c' to f'', see LICENSE.txt there). */
 const SAMPLE_NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5'];
 
+/**
+ * Safari on the iPhone treats web audio as background sound and mutes it in silent mode.
+ * Declaring it as music playback makes it sound like a music app (Safari 17+; other
+ * browsers have no audioSession and ignore this).
+ */
+function declareMusicPlayback(): void {
+  const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+  if (!session) return;
+  try {
+    session.type = 'playback';
+  } catch {
+    // not allowed in this browser: keep the default
+  }
+}
+
 export function createPlayer(events: PlayerEvents): Player {
+  declareMusicPlayback();
   let sampler: Tone.Sampler | null = null;
   let playing = false;
   let request = 0; // a newer play() or a stop() makes a waiting play() give up
