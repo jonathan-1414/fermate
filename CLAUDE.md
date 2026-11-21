@@ -528,3 +528,39 @@ Echtzeit-Einspielen, MIDI-Export, Konten, Server, Mailversand.
 8. **Feinschliff auf dem iPad:** Tippflächen, Zoom, Querformat und Hochformat, Info-Seite.
 
 Nach Schritt 8 wird Modul 1 im Unterricht getestet. Danach geht es mit der Vollversion weiter (Abschnitt 5).
+
+## 8. Arbeitsschritte für die Beta der Vollversion
+
+Gleiche Arbeitsweise wie in Abschnitt 7: nach jedem Schritt lauffähig, ein Commit pro Schritt,
+Tests für die Programmlogik. **Modul 1 muss nach jedem Schritt unverändert funktionieren**
+(ohne Angabe im Link startet weiter Modul 1). Die Beta läuft unter `…/?modul=voll`.
+
+1. **Datenmodell umstellen:** `Duration`, `pitches`, `Part`, `pickup` wie in 3.1. Modul 1 läuft
+   auf dem neuen Modell, alle bisherigen Tests bleiben grün. Neue Modul-Konfiguration `voll`
+   mit Einstellungen für die Unterschiede (Pausen sichtbar, Überschreiben statt Zusammenrücken).
+   `?modul=voll` zeigt eine leere Klavier-Partitur.
+2. **Eingaberegeln im Modell:** automatische Pausen nach Zählzeiten für alle Taktarten,
+   Überschreiben, kürzer/länger, Löschen → Pause, Punkt, Triolen (Gruppen), Haltebögen
+   (auch automatisch über den Taktstrich), Vorzeichen nach Tonart, Takte einfügen/löschen,
+   Auftakt. Nur reine Funktionen mit Tests, noch ohne Oberfläche.
+3. **Darstellung:** sichtbare Pausen und Ganztaktpause, alle Notenwerte, Punkte,
+   Triolenklammern, Haltebögen, Balken je Taktart, Tonart und Vorzeichen (gültig bis Taktende),
+   Taktnummern; endlos waagrecht mit festem Rand links. Zunächst ein Instrument.
+4. **Eingabe:** untere Leiste (Notenwerte, Punkt, Triole, Kreuz, Be, Auflösung, Haltebogen,
+   Löschen), obere Leiste (Rückgängig, Wiederholen, Notennamen), Auswählen von Noten und Pausen,
+   Tonhöhe setzen und ziehen. Erst mit Maus, dann auf dem iPad.
+5. **Übersichtsleiste:** waagrecht und senkrecht, Mitlaufen mit dem Cursor, „+ Takt“ und
+   „Takt löschen“.
+6. **Mehrere Instrumente:** Instrumenten-Tabelle (13 Instrumente), Partiturordnung, Klavier mit
+   zwei Zeilen, Akkorde (Button „Akkord“, einzelne Töne auswählen), Tonumfang farbig markiert.
+7. **Klänge und Wiedergabe:** Samples aller Instrumente (nur benötigte Dateien, nur verwendete
+   Instrumente laden, Viola aus Cello- und Violinen-Samples), Lizenzhinweise, Abspielen mit
+   mitlaufender Markierung und Mitscrollen, Tempo-Regler, Mischpult.
+8. **Startassistent, Einstellungen und Speichern:** drei Seiten Startassistent,
+   Einstellungsmenü (Instrumente, Tonart, Taktart bei leerer Partitur, Auftakt), automatisches
+   Speichern im Browser (eigener Speicherplatz), „Neu“.
+9. **Dateien und Abgabe:** als Datei speichern und öffnen, Abgabe mit Fermate-Datei und PDF
+   (Zeilen untereinander auf A4-Seiten, mehrere Instrumente, Taktnummern am Zeilenanfang).
+10. **Feinschliff auf dem iPad:** Tippflächen, Querformat und Hochformat, Ladezeiten der Klänge.
+
+Nach Schritt 10 beginnt der Beta-Test.
