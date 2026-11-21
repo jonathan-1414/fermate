@@ -434,6 +434,10 @@ Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für di
   (ausgewählte Ganztaktpause + Viertel → Viertelpause, Viertelpause, Halbe Pause). Ein Tipp
   auf das Notensystem macht aus der ausgewählten Pause eine Note in Fingerhöhe, danach steht
   der Cursor an der nächsten Stelle.
+- **Erst auswählen, dann ändern** (wie in Modul 1): Eine Note ändert sich erst beim zweiten
+  Tipp. Landet der Cursor von selbst auf einer Note (beim Öffnen, nach Rückgängig/Wiederholen,
+  nach dem Setzen vor einer vorhandenen Note), wählt der nächste Tipp sie nur aus. Auf einer
+  Pause, auf die der Cursor nach dem Setzen springt, schreibt ein Tipp gleich weiter.
 - **Kürzer:** Der Rest wird zur Pause. **Länger:** Die Note überschreibt, was folgt; folgende
   Noten können dabei verschwinden („Rückgängig“ holt sie zurück), eine nur teilweise überdeckte
   Note wird zur Pause mit der Restlänge. Reicht die Länge über den Taktstrich, setzt die App

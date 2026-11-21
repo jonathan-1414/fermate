@@ -69,6 +69,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   let score = loadScore(module) ?? createEmptyScore(module);
   let savedScore: Score | null = score;
   let cursor: Position = { staff: 0, measure: 0, tick: 0 };
+  /**
+   * Was the note at the cursor selected by a tap? Only then does the next tap change it
+   * (first tap: select, second tap: change). When the cursor lands on a note by itself
+   * (opening, undo, after setting a note in front of it), the next tap only selects it.
+   */
+  let selectedByTap = false;
   let duration: Duration = plain(48);
   let showNoteNames = false;
   let preview: { at: Position; pitch: Pitch } | null = null;
@@ -151,6 +157,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       player.stop();
       score = createEmptyScore(module);
       cursor = { staff: 0, measure: 0, tick: 0 };
+      selectedByTap = false;
       history.clear();
       render();
       await askForDetails('start');
@@ -193,6 +200,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     // Undo and redo are for the notes only: the details (names, class, title) stay.
     score = { ...snapshot.score, meta: score.meta };
     cursor = snapshot.cursor;
+    selectedByTap = false;
     duration = selectedNote()?.duration ?? duration;
     render();
   }
@@ -305,9 +313,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
         spot = positionAtTick(score, 0, hit.measure, spot.tick) ?? spot;
       }
 
-      // The first tap on another spot only selects it; on a note, the toolbar shows its value.
-      if (!samePosition(spot, cursor)) {
+      // The first tap on a spot only selects it; on a note, the toolbar shows its value.
+      // A note is changed only by a second tap on it.
+      if (!samePosition(spot, cursor) || (selectedNote() && !selectedByTap)) {
         cursor = spot;
+        selectedByTap = true;
         duration = selectedNote()?.duration ?? duration;
         render();
         return;
@@ -343,6 +353,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
           history.push(done.before);
           score = result.score;
           cursor = nextPosition(score, preview.at);
+          selectedByTap = false; // on a rest: the next tap writes; on a note: it only selects
           duration = selectedNote()?.duration ?? duration;
         }
       }
