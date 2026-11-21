@@ -17,7 +17,7 @@ import {
   writeNoteAt,
 } from '../model/overwrite';
 import { pitchAtStaffPosition, pitchToMidi } from '../model/pitch';
-import { entryRange, instrumentById, partNames } from '../model/instruments';
+import { completeStaves, entryRange, instrumentById, partNames } from '../model/instruments';
 import { createEmptyScore } from '../model/score';
 import { eventAtPosition, nextPosition, positionAtTick } from '../model/sequence';
 import { allStaves, partOfStaff, staffAt } from '../model/staves';
@@ -105,7 +105,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     },
   });
 
-  let score = loadScore(module) ?? createEmptyScore(module);
+  // A score saved in an earlier beta step may lack a staff (piano with one staff): add it.
+  const loaded = loadScore(module);
+  let score = loaded ? completeStaves(loaded, module) : createEmptyScore(module);
   let savedScore: Score | null = score;
   let cursor: Position = { staff: 0, measure: 0, tick: 0 };
   /**
@@ -370,7 +372,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     if (!body) return;
     body.style.maxHeight = 'none';
     const page = document.documentElement.scrollHeight;
-    const free = window.innerHeight - (page - body.offsetHeight) - 4;
+    // Empty room around the sheet (it sits in the middle of the area) is free as well.
+    const area = root.querySelector<HTMLElement>('.score-area');
+    const sheet = root.querySelector<HTMLElement>('.sheet');
+    const slack = area && sheet ? Math.max(0, area.clientHeight - 32 - sheet.offsetHeight) : 0;
+    const free = window.innerHeight - (page - body.offsetHeight) + slack - 4;
     body.style.maxHeight = `${Math.max(Math.round(130 * ZOOM), free)}px`;
   }
 
@@ -588,6 +594,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     },
   });
 
+  // A turned iPad (portrait / landscape) has another height for the music.
+  window.addEventListener('resize', () => render());
   render();
   if (!isMetaComplete(score.meta)) void askForDetails('start');
 }

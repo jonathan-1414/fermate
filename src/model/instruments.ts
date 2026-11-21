@@ -127,3 +127,28 @@ export function removePart(score: Score, index: number): EditResult {
   copy.parts.splice(index, 1);
   return { ok: true, score: copy };
 }
+
+/**
+ * Gives every instrument all its staves (full version): a piano saved with one staff
+ * (from an earlier beta step) gets its bass staff back, empty. The notes stay.
+ */
+export function completeStaves(score: Score, module: ModuleConfig): Score {
+  if (!module.overwrite) return score;
+  const missing = score.parts.some((part) => part.staves.length < (instrumentById(part.instrument)?.clefs.length ?? 1));
+  if (!missing) return score;
+  const copy = structuredClone(score);
+  const count = copy.parts[0].staves[0].measures.length;
+  const lengths = measureLengths(copy.timeSignature, copy.pickup, count);
+  for (const part of copy.parts) {
+    const clefs = instrumentById(part.instrument)?.clefs ?? [];
+    for (const clef of clefs.slice(part.staves.length)) {
+      if (copy.parts.reduce((n, p) => n + p.staves.length, 0) >= module.maxStaves) break;
+      part.staves.push({
+        id: `staff-${Math.random().toString(36).slice(2, 10)}`,
+        clef,
+        measures: lengths.map((length) => fromItems([], length, copy.timeSignature)),
+      });
+    }
+  }
+  return copy;
+}

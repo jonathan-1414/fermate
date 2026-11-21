@@ -192,7 +192,7 @@ function newDrawing(container: HTMLDivElement, width: number, height: number): R
 function drawMargin(container: HTMLDivElement, score: Score, tops: number[], height: number): number {
   const staves = allStaves(score);
   const key = KEY_NAMES[score.keySignature] ?? 'C';
-  const nameWidth = 48;
+  const nameWidth = 58;
   const probe = new Stave(nameWidth, 0, 200).addClef('treble').addKeySignature(key);
   const width = probe.getNoteStartX() + 6;
   const ctx = newDrawing(container, width, height);

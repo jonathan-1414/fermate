@@ -3,7 +3,7 @@ import { modul1 } from '../modules/modul1';
 import { voll } from '../modules/voll';
 import { describe as show, ok, p } from '../test/helpers';
 import { plain } from './duration';
-import { addPart, entryRange, isOutsideRange, partNames, removePart } from './instruments';
+import { addPart, completeStaves, entryRange, isOutsideRange, partNames, removePart } from './instruments';
 import { setPickup } from './measures';
 import { writeNoteAt } from './overwrite';
 import { pitchToMidi } from './pitch';
@@ -72,5 +72,21 @@ describe('range', () => {
 
   it('Modul 1 keeps its own range', () => {
     expect(entryRange(modul1, createEmptyScore(modul1).parts[0])).toEqual({ low: pitchToMidi(p('C4')), high: pitchToMidi(p('F5')) });
+  });
+});
+
+describe('opening an older score', () => {
+  it('a piano saved with one staff gets its bass staff back; the notes stay', () => {
+    const old = ok(writeNoteAt(createEmptyScore(voll), voll, { staff: 0, measure: 0, tick: 0 }, [p('E4')], plain(48)));
+    old.parts[0].staves.pop();
+    const score = completeStaves(old, voll);
+    expect(score.parts[0].staves.map((s) => s.clef)).toEqual(['treble', 'bass']);
+    expect(show(score.parts[0].staves[0].measures[0])[0]).toBe('n48@0 E4');
+    expect(score.parts[0].staves[1].measures).toHaveLength(8);
+  });
+
+  it('Modul 1 keeps its one staff', () => {
+    const score = createEmptyScore(modul1);
+    expect(completeStaves(score, modul1)).toBe(score);
   });
 });
