@@ -8,6 +8,8 @@ export interface EventLayout {
   headLeft: number;
   headRight: number;
   y: number; // vertical center of the note head
+  /** Centres of all note heads (chords), from low to high. Only in the full version. */
+  ys?: number[];
 }
 
 export interface MeasureLayout {

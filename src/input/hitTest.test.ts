@@ -58,4 +58,14 @@ describe('staffPositionAt', () => {
     expect(staffPositionAt(layout, 121)).toBe(10);
     expect(staffPositionAt(layout, 64)).toBe(-1);
   });
+
+  it('in a chord, every note head counts as the note', () => {
+    const chord: ScoreLayout = {
+      topLineY: 40,
+      lineSpacing: 10,
+      measures: [{ x: 0, width: 200, events: [{ tick: 0, kind: 'note', headLeft: 50, headRight: 60, y: 90, ys: [90, 80, 60] }] }],
+    };
+    expect(hitTest(chord, 55, 60)?.noteTick).toBe(0);
+    expect(hitTest(chord, 55, 120)?.noteTick).toBeNull();
+  });
 });

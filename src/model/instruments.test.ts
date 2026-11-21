@@ -1,0 +1,76 @@
+import { describe, expect, it } from 'vitest';
+import { modul1 } from '../modules/modul1';
+import { voll } from '../modules/voll';
+import { describe as show, ok, p } from '../test/helpers';
+import { plain } from './duration';
+import { addPart, entryRange, isOutsideRange, partNames, removePart } from './instruments';
+import { setPickup } from './measures';
+import { writeNoteAt } from './overwrite';
+import { pitchToMidi } from './pitch';
+import { createEmptyScore } from './score';
+import type { Score } from './types';
+
+const add = (score: Score, id: string) => {
+  const result = addPart(score, voll, id);
+  if (!result.ok) throw new Error(result.error);
+  return result.score;
+};
+const instruments = (score: Score) => score.parts.map((part) => part.instrument);
+
+describe('instruments', () => {
+  it('a new score of the full version is a piano with two staves; Modul 1 has one', () => {
+    expect(createEmptyScore(voll).parts[0].staves.map((s) => s.clef)).toEqual(['treble', 'bass']);
+    expect(createEmptyScore(modul1).parts[0].staves.map((s) => s.clef)).toEqual(['treble']);
+  });
+
+  it('new instruments go to their place in the score order', () => {
+    let score = add(createEmptyScore(voll), 'violin');
+    score = add(score, 'flute');
+    score = add(score, 'cello');
+    score = add(score, 'trumpet');
+    expect(instruments(score)).toEqual(['flute', 'trumpet', 'piano', 'violin', 'cello']);
+  });
+
+  it('at most 5 instruments, the piano only once', () => {
+    let score = createEmptyScore(voll);
+    expect(addPart(score, voll, 'piano')).toEqual({ ok: false, error: 'piano-only-once' });
+    for (const id of ['violin', 'violin', 'viola', 'cello']) score = add(score, id);
+    expect(addPart(score, voll, 'flute')).toEqual({ ok: false, error: 'too-many-instruments' });
+    expect(addPart(createEmptyScore(voll), voll, 'oboe')).toEqual({ ok: false, error: 'unknown-instrument' });
+  });
+
+  it('numbers instruments that are there more than once', () => {
+    const score = add(add(add(createEmptyScore(voll), 'violin'), 'violin'), 'flute');
+    expect(partNames(score)).toEqual(['Flöte', 'Klavier', 'Violine 1', 'Violine 2']);
+    expect(partNames(score, true)).toEqual(['Fl.', 'Klav.', 'Vl. 1', 'Vl. 2']);
+  });
+
+  it('a new instrument gets as many empty measures as the others, also with a pickup', () => {
+    const score = add(ok(setPickup(createEmptyScore(voll), voll, 48)), 'cello');
+    const cello = score.parts[1].staves[0];
+    expect(cello.clef).toBe('bass');
+    expect(cello.measures).toHaveLength(9);
+    expect(show(cello.measures[0])).toEqual(['r48@0']);
+  });
+
+  it('removes an instrument, but not the last one', () => {
+    const score = add(createEmptyScore(voll), 'violin');
+    expect(instruments(ok(removePart(score, 0)))).toEqual(['violin']);
+    expect(removePart(createEmptyScore(voll), 0)).toEqual({ ok: false, error: 'last-instrument' });
+  });
+});
+
+describe('range', () => {
+  it('notes can be entered an octave beyond the range; those are marked', () => {
+    const score = add(createEmptyScore(voll), 'flute');
+    const flute = score.parts[0];
+    expect(entryRange(voll, flute)).toEqual({ low: pitchToMidi(p('C3')), high: pitchToMidi(p('C8')) });
+    expect([isOutsideRange(flute, p('B3')), isOutsideRange(flute, p('C4')), isOutsideRange(flute, p('D7'))]).toEqual([true, false, true]);
+    expect(writeNoteAt(score, voll, { staff: 0, measure: 0, tick: 0 }, [p('B2')], plain(48))).toEqual({ ok: false, error: 'out-of-range' });
+    expect(writeNoteAt(score, voll, { staff: 0, measure: 0, tick: 0 }, [p('B3')], plain(48)).ok).toBe(true);
+  });
+
+  it('Modul 1 keeps its own range', () => {
+    expect(entryRange(modul1, createEmptyScore(modul1).parts[0])).toEqual({ low: pitchToMidi(p('C4')), high: pitchToMidi(p('F5')) });
+  });
+});

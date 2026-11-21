@@ -8,8 +8,8 @@ export function parseTimeSignature(text: string): TimeSignature {
 }
 
 /**
- * A new, empty score as the module prescribes it: one piano with one staff
- * (the start wizard of the full version comes in a later step).
+ * A new, empty score as the module prescribes it: a piano (one staff in Modul 1,
+ * two in the full version; the start wizard of the full version comes in a later step).
  */
 export function createEmptyScore(module: ModuleConfig): Score {
   const timeSignature = parseTimeSignature(module.timeSignatures[0]);
@@ -31,13 +31,12 @@ export function createEmptyScore(module: ModuleConfig): Score {
         volume: 1,
         mute: false,
         solo: false,
-        staves: [
-          {
-            id: 'staff-1',
-            clef: 'treble',
-            measures: Array.from({ length: module.measures }, () => emptyMeasure(length)),
-          },
-        ],
+        // The piano has two staves where the module allows it (full version), else one.
+        staves: (module.maxStaves >= 2 ? (['treble', 'bass'] as const) : (['treble'] as const)).map((clef, i) => ({
+          id: `staff-${i + 1}`,
+          clef,
+          measures: Array.from({ length: module.measures }, () => emptyMeasure(length)),
+        })),
       },
     ],
   };

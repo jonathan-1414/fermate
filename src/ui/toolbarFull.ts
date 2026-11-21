@@ -30,6 +30,9 @@ export interface FullToolbarState {
   alter: -1 | 0 | 1 | null;
   /** Tie of the selected note, or null when no note is selected. */
   tie: boolean | null;
+  /** The "Akkord" button is shown (only for an instrument with chords: the piano). */
+  chordShown: boolean;
+  chordMode: boolean;
   canDelete: boolean;
   canUndo: boolean;
   canRedo: boolean;
@@ -48,6 +51,7 @@ export interface FullToolbarActions {
   toggleTriplet(): void;
   setAccidental(alter: -1 | 0 | 1): void;
   toggleTie(): void;
+  toggleChord(): void;
   deleteSelection(): void;
 }
 
@@ -108,6 +112,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
     return { alter, b };
   });
   const tieButton = button('Haltebogen', actions.toggleTie, { svg: ICONS.tie });
+  // Akkord: while pressed, a tap adds a tone to the selected note instead of moving it.
+  const chordButton = button('Akkord', actions.toggleChord);
   const deleteButton = button('Löschen', actions.deleteSelection, { svg: ICONS.cross });
 
   const bottomMain = document.createElement('div');
@@ -115,7 +121,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   bottomMain.append(
     group('Notenwert', ...baseButtons.map(({ b }) => b), dotButton, tripletButton),
     group('Vorzeichen', ...accidentalButtons.map(({ b }) => b)),
-    group('Note', tieButton, deleteButton),
+    group('Note', tieButton, chordButton, deleteButton),
   );
   bottom.append(bottomMain);
 
@@ -135,6 +141,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
         b.setAttribute('aria-pressed', String(state.alter === alter));
       }
       tieButton.disabled = state.tie === null;
+      chordButton.hidden = !state.chordShown;
+      chordButton.setAttribute('aria-pressed', String(state.chordMode));
       tieButton.setAttribute('aria-pressed', String(state.tie === true));
       deleteButton.disabled = !state.canDelete;
       undoButton.disabled = !state.canUndo;

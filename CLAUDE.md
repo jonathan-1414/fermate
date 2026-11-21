@@ -479,7 +479,8 @@ Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für di
   Samples: tief aus Cello-, hoch aus Violinen-Samples. Nur die verwendeten Instrumente laden.
 - Schlüssel automatisch nach Instrument: Violin- oder Bassschlüssel. Die Viola wird im
   Violinschlüssel notiert, weitere Schlüssel gibt es nicht.
-- Tonumfang pro Instrument, Noten außerhalb farbig markiert.
+- Tonumfang pro Instrument, Noten außerhalb farbig markiert (in `--accent-text`, Variable
+  `--out-of-range`). Eingeben lassen sich Töne bis eine Oktave über den Umfang hinaus.
 - Eine Stimme pro Notenzeile, Akkorde nur beim Klavier.
 - **Akkorde eingeben** (beschlossen 21.11.2026): Button „Akkord“, nur beim Klavier sichtbar.
   Ist er gedrückt, fügt ein Tipp in Fingerhöhe dem ausgewählten Akkord einen Ton hinzu, statt

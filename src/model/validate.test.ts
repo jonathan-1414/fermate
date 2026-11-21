@@ -140,4 +140,19 @@ describe('parseScore', () => {
     ];
     expect(parseScore(score, voll)).toBeNull();
   });
+
+  it('chords only for the piano, instruments must be known', () => {
+    const score = createEmptyScore(voll);
+    score.parts[0].staves[0].measures[0] = [
+      { kind: 'note', pitches: [p('C4'), p('E4')], duration: plain(48) },
+      { kind: 'rest', duration: plain(48), auto: true },
+      { kind: 'rest', duration: plain(96), auto: true },
+    ];
+    expect(parseScore(JSON.parse(JSON.stringify(score)), voll)).toEqual(score);
+    expect(parseScore({ ...score, parts: [{ ...score.parts[0], instrument: 'oboe' }] }, voll)).toBeNull();
+    const violin = structuredClone(score);
+    violin.parts[0].instrument = 'violin';
+    violin.parts[0].staves.pop();
+    expect(parseScore(violin, voll)).toBeNull();
+  });
 });

@@ -17,6 +17,7 @@
   --text: #2b2520;
   --muted: #8c8178; /* only for borders and lines: too light for text (WCAG AA) */
   --measure-full: var(--accent); /* tick below a full measure */
+  --out-of-range: var(--accent-text); /* notes outside the instrument's range (full version) */
   --radius: 12px;
   --font: Nunito, system-ui, sans-serif;
 }
@@ -230,16 +231,72 @@ body {
    changing a pitch, as in Modul 1); only the overview bar below scrolls it. */
 #score.full-score {
   display: flex;
+  flex-direction: column;
+}
+/* Measure numbers on top: a row of their own, so they stay when scrolling down. */
+.score-numbers-row {
+  order: -1;
+  display: flex;
+}
+.score-numbers-spacer {
+  flex: none;
+}
+.score-numbers {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+/* Margin and music side by side; scrolled down by the vertical overview bar only. */
+.score-body {
+  display: flex;
   align-items: flex-start;
+  overflow: hidden;
 }
 .score-margin {
   flex: none;
+  order: -1;
 }
 .score-scroller {
   flex: 1;
   min-width: 0;
   overflow: hidden; /* scrolled only by the overview bar */
   touch-action: pinch-zoom;
+}
+
+/* Music and the vertical overview bar side by side */
+.score-frame {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding-right: 8px;
+}
+.score-frame #score {
+  flex: 1;
+  min-width: 0;
+}
+/* Vertical overview bar: one box per staff, shown only when not all staves fit. */
+.overview-v {
+  position: relative;
+  flex: none;
+  width: 44px;
+  margin: 18px 0 8px;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.overview-v[hidden] {
+  display: none;
+}
+.overview-v-boxes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
+}
+.overview-v .overview-box {
+  flex-basis: 0;
+  min-height: 0;
+  font-size: 11px;
 }
 
 /* Overview bar below the music: one box per measure, a frame for the visible part. */

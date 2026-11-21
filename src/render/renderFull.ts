@@ -7,6 +7,7 @@ import {
   Fraction,
   Renderer,
   Stave,
+  StaveConnector,
   StaveNote,
   StaveTie,
   Tuplet,
@@ -15,35 +16,58 @@ import {
 } from 'vexflow/bravura';
 import { accidentalsForStaff, type AccidentalSign } from '../model/accidentals';
 import { eventTicks } from '../model/duration';
+import { isOutsideRange, partNames } from '../model/instruments';
 import { toItems } from '../model/items';
 import { placeEvents } from '../model/measure';
 import { fullMeasureLength, isCompound } from '../model/meter';
 import { germanNoteName } from '../model/noteName';
 import { shareAPitch, staffEvents } from '../model/sequence';
 import { allStaves, partOfStaff } from '../model/staves';
-import type { Position, Score, ScoreEvent, Staff, TimeSignature } from '../model/types';
+import type { Part, Position, Score, ScoreEvent, Staff, TimeSignature } from '../model/types';
 import type { MeasureLayout, ScoreLayout } from './layout';
 import type { RenderOptions } from './renderScore';
 
 /**
- * Draws the score of the full version: one long staff to the right (endless view),
- * with a fixed margin on the left that shows the instrument, clef and key.
+ * Draws the score of the full version: every staff one long line to the right
+ * (endless view), all staves below each other with their measures aligned. A fixed
+ * margin on the left shows instrument, clef and key; the measure numbers are a row of
+ * their own on top, so both stay when the music is scrolled.
  * Contains no musical logic: everything (rests, ties, accidentals) comes from the model.
  */
 
-const HEIGHT = 180;
-const STAVE_Y = 50;
-const NAME_Y = 168;
 /** Drawing units → screen pixels. Matches the staff size of Modul 1 on an iPad. */
 export const ZOOM = 1.4;
+/** Height of one staff with room for ledger lines and note names. */
+const ROW = 108;
+/** Extra room between two instruments (the two piano staves stay closer). */
+const PART_GAP = 16;
+const STAVE_OFFSET = 30;
+const NUMBERS_HEIGHT = 18;
 const MIN_MEASURE_WIDTH = 90;
 const MEASURE_PADDING = 36;
 
 const DURATION_CODES: Record<number, string> = { 192: 'w', 96: 'h', 48: 'q', 24: '8', 12: '16' };
 const ACCIDENTAL_CODES: Record<AccidentalSign, string> = { sharp: '#', flat: 'b', natural: 'n' };
 const KEY_NAMES: Record<number, string> = { [-4]: 'Ab', [-3]: 'Eb', [-2]: 'Bb', [-1]: 'F', 0: 'C', 1: 'G', 2: 'D', 3: 'A', 4: 'E' };
-/** Short names in the margin; the table of all instruments comes in a later step. */
-const SHORT_NAMES: Record<string, string> = { piano: 'Klav.' };
+
+/** Where one staff was drawn, for the input: its band from top to bottom and its measures. */
+export interface StaffLayout extends ScoreLayout {
+  index: number;
+  top: number;
+  bottom: number;
+}
+
+export interface FullLayout {
+  staves: StaffLayout[];
+  /** Total width and height of the music in drawing units. */
+  width: number;
+  height: number;
+}
+
+export interface FullRenderOptions extends RenderOptions {
+  /** In a chord, the selected tone (only it is drawn in the accent colour). */
+  selectedTone: number;
+}
 
 /** Eighths are beamed per beat: per quarter, in 2/2 per half, in 6/8 three eighths together. */
 function beamGroup(ts: TimeSignature): Fraction {
@@ -52,14 +76,19 @@ function beamGroup(ts: TimeSignature): Fraction {
   return new Fraction(1, 4);
 }
 
-function toStaveNote(event: ScoreEvent, staff: Staff, wholeMeasureRest: boolean): StaveNote {
+/** A colour from the CSS variables (VexFlow needs real colours for single note heads). */
+function cssColor(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#000';
+}
+
+function toStaveNote(event: ScoreEvent, staff: Staff, part: Part | undefined, wholeMeasureRest: boolean): StaveNote {
   const { base, dotted } = event.duration;
   const dots = dotted ? 1 : 0;
   let note: StaveNote;
   if (event.kind === 'rest') {
     // A rest filling a whole measure is always the whole rest, centred in the measure.
     const code = wholeMeasureRest ? 'w' : DURATION_CODES[base];
-    note = new StaveNote({ keys: [code === 'w' ? 'd/5' : 'b/4'], duration: code + 'r', dots: wholeMeasureRest ? 0 : dots, clef: staff.clef });
+    note = new StaveNote({ keys: [code === 'w' ? 'd/5' : 'b/4'], duration: code + 'r', dots: wholeMeasureRest ? 0 : dots, clef: 'treble' });
     if (wholeMeasureRest) note.setCenterAlignment(true);
   } else {
     note = new StaveNote({
@@ -68,6 +97,12 @@ function toStaveNote(event: ScoreEvent, staff: Staff, wholeMeasureRest: boolean)
       dots,
       clef: staff.clef,
       autoStem: true,
+    });
+    // Notes outside the instrument's range are marked.
+    event.pitches.forEach((pitch, k) => {
+      if (isOutsideRange(part, pitch)) {
+        note.setKeyStyle(k, { fillStyle: cssColor('--out-of-range'), strokeStyle: cssColor('--out-of-range') });
+      }
     });
   }
   if (dots && !wholeMeasureRest) Dot.buildAndAttach([note], { all: true });
@@ -83,29 +118,39 @@ function markNote(note: StaveNote, className: string): void {
 const same = (a: Position | null, staff: number, measure: number, tick: number) =>
   a !== null && a.staff === staff && a.measure === measure && a.tick === tick;
 
-/** Everything prepared for one measure before it gets its place. */
-interface PreparedMeasure {
+/** One staff of one measure, prepared before it gets its place. */
+interface PreparedStaff {
   events: ScoreEvent[];
   notes: StaveNote[];
   voice: Voice;
   beams: Beam[];
   tuplets: Tuplet[];
-  formatter: Formatter;
-  minWidth: number;
 }
 
-function prepareMeasure(measure: ScoreEvent[], staff: Staff, ts: TimeSignature, signs: Array<Array<AccidentalSign | null>>): PreparedMeasure {
+function prepareStaff(
+  measure: ScoreEvent[],
+  staff: Staff,
+  part: Part | undefined,
+  ts: TimeSignature,
+  signs: Array<Array<AccidentalSign | null>>,
+  selection: { tick: number; tone: number } | null,
+): PreparedStaff {
   const full = fullMeasureLength(ts);
   const onlyRest = measure.length === 1 && measure[0].kind === 'rest' && eventTicks(measure[0]) === full;
-  const notes = measure.map((event) => toStaveNote(event, staff, onlyRest));
-  measure.forEach((event, i) =>
+  const notes = measure.map((event) => toStaveNote(event, staff, part, onlyRest));
+  const starts = placeEvents(measure).map((p) => p.start);
+  measure.forEach((event, i) => {
     (signs[i] ?? []).forEach((sign, k) => {
       if (event.kind === 'note' && sign) notes[i].addModifier(new Accidental(ACCIDENTAL_CODES[sign]), k);
-    }),
-  );
+    });
+    // In a chord only the selected tone is drawn in the accent colour.
+    if (selection && starts[i] === selection.tick && event.kind === 'note' && event.pitches.length > 1) {
+      const accent = cssColor('--accent');
+      notes[i].setKeyStyle(selection.tone, { fillStyle: accent, strokeStyle: accent });
+    }
+  });
   // Triplet groups: three of the same kind, with a "3" (and a bracket where not beamed).
   const tuplets: Tuplet[] = [];
-  const starts = placeEvents(measure).map((p) => p.start);
   for (const item of toItems(measure) ?? []) {
     if (item.type !== 'group') continue;
     const index = starts.indexOf(item.start);
@@ -113,137 +158,211 @@ function prepareMeasure(measure: ScoreEvent[], staff: Staff, ts: TimeSignature, 
   }
   const voice = new Voice({ numBeats: ts.beats, beatValue: ts.beatValue }).setMode(Voice.Mode.SOFT).addTickables(notes);
   const beams = Beam.generateBeams(notes, { groups: [beamGroup(ts)] });
-  const formatter = new Formatter().joinVoices([voice]);
-  const minWidth = formatter.preCalculateMinTotalWidth([voice]);
-  return { events: measure, notes, voice, beams, tuplets, formatter, minWidth };
+  return { events: measure, notes, voice, beams, tuplets };
 }
 
-/** Width of the fixed margin: instrument name, clef and key signature. */
-function drawMargin(container: HTMLDivElement, score: Score, staff: Staff): void {
-  const name = SHORT_NAMES[partOfStaff(score, 0)?.instrument ?? ''] ?? '';
-  const nameWidth = name ? 44 : 8;
-  const probe = new Stave(nameWidth, STAVE_Y, 200).addClef(staff.clef).addKeySignature(KEY_NAMES[score.keySignature] ?? 'C');
-  const width = probe.getNoteStartX() + 6;
-
-  const renderer = new Renderer(container, Renderer.Backends.SVG);
-  renderer.resize(width, HEIGHT);
-  const ctx = renderer.getContext();
-  scaleSvg(container, width);
-  const stave = new Stave(nameWidth, STAVE_Y, width - nameWidth)
-    .addClef(staff.clef)
-    .addKeySignature(KEY_NAMES[score.keySignature] ?? 'C');
-  stave.setEndBarType(BarlineType.NONE);
-  stave.setContext(ctx).draw();
-  if (name) {
-    ctx.openGroup('instrument-name');
-    ctx.setFont('sans-serif', 13);
-    ctx.fillText(name, 2, stave.getYForLine(2) + 4);
-    ctx.closeGroup();
-  }
+/** Top of each staff's band (drawing units), with extra room between instruments. */
+function staffTops(score: Score): number[] {
+  const tops: number[] = [];
+  let y = 0;
+  allStaves(score).forEach((_, i) => {
+    if (i > 0 && partOfStaff(score, i) !== partOfStaff(score, i - 1)) y += PART_GAP;
+    tops.push(y);
+    y += ROW;
+  });
+  return tops;
 }
 
 /** The SVG gets a fixed size in screen pixels (ZOOM per drawing unit), not the screen width. */
-function scaleSvg(container: HTMLDivElement, width: number): SVGSVGElement | null {
+function newDrawing(container: HTMLDivElement, width: number, height: number): RenderContext {
+  const renderer = new Renderer(container, Renderer.Backends.SVG);
+  renderer.resize(width, height);
   const svg = container.querySelector('svg');
-  if (!svg) return null;
-  svg.setAttribute('viewBox', `0 0 ${width} ${HEIGHT}`);
-  svg.setAttribute('width', String(Math.round(width * ZOOM)));
-  svg.setAttribute('height', String(Math.round(HEIGHT * ZOOM)));
-  svg.style.width = '';
-  svg.style.height = '';
-  return svg;
+  if (svg) {
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    svg.setAttribute('width', String(Math.round(width * ZOOM)));
+    svg.setAttribute('height', String(Math.round(height * ZOOM)));
+    svg.style.width = '';
+    svg.style.height = '';
+  }
+  return renderer.getContext();
+}
+
+/** The fixed margin: short names, clefs and keys, a brace for the piano, the line on the left. */
+function drawMargin(container: HTMLDivElement, score: Score, tops: number[], height: number): number {
+  const staves = allStaves(score);
+  const key = KEY_NAMES[score.keySignature] ?? 'C';
+  const nameWidth = 48;
+  const probe = new Stave(nameWidth, 0, 200).addClef('treble').addKeySignature(key);
+  const width = probe.getNoteStartX() + 6;
+  const ctx = newDrawing(container, width, height);
+  const drawn = staves.map((staff, i) => {
+    const stave = new Stave(nameWidth, tops[i] + STAVE_OFFSET, width - nameWidth).addClef(staff.clef).addKeySignature(key);
+    stave.setEndBarType(BarlineType.NONE);
+    stave.setContext(ctx).draw();
+    return stave;
+  });
+  if (drawn.length > 1) new StaveConnector(drawn[0], drawn[drawn.length - 1]).setType('singleLeft').setContext(ctx).draw();
+  const names = partNames(score, true);
+  let first = 0;
+  score.parts.forEach((part, p) => {
+    const own = drawn.slice(first, first + part.staves.length);
+    if (own.length > 1) new StaveConnector(own[0], own[own.length - 1]).setType('brace').setContext(ctx).draw();
+    // The name in the middle of the instrument's staves.
+    const middle = (own[0].getYForLine(2) + own[own.length - 1].getYForLine(2)) / 2;
+    ctx.openGroup('instrument-name');
+    ctx.setFont('sans-serif', 13);
+    ctx.fillText(names[p], 2, middle + 4);
+    ctx.closeGroup();
+    first += part.staves.length;
+  });
+  return width;
 }
 
 /** Draws the full version's score on the screen and returns where things were drawn. */
-export function renderFullScore(container: HTMLElement, score: Score, options: RenderOptions): ScoreLayout {
+export function renderFullScore(container: HTMLElement, score: Score, options: FullRenderOptions): FullLayout {
   container.innerHTML = '';
   container.classList.add('full-score');
+  const staves = allStaves(score);
+  const parts = staves.map((_, i) => partOfStaff(score, i));
+  const tops = staffTops(score);
+  const height = tops[tops.length - 1] + ROW;
+  const ts = score.timeSignature;
+
+  // Prepare every measure of every staff, then give each measure the width its widest staff needs.
+  const signs = staves.map((staff) => accidentalsForStaff(staff, score.keySignature));
+  const count = staves[0].measures.length;
+  const selectionIn = (s: number, m: number) =>
+    options.selection && options.selection.staff === s && options.selection.measure === m
+      ? { tick: options.selection.tick, tone: options.selectedTone }
+      : null;
+  const prepared = Array.from({ length: count }, (_, m) =>
+    staves.map((staff, s) => prepareStaff(staff.measures[m], staff, parts[s], ts, signs[s][m], selectionIn(s, m))),
+  );
+  const formatters = prepared.map((column) => {
+    const formatter = new Formatter();
+    column.forEach((p) => formatter.joinVoices([p.voice]));
+    return { formatter, minWidth: formatter.preCalculateMinTotalWidth(column.map((p) => p.voice)) };
+  });
+  const timeSignature = `${ts.beats}/${ts.beatValue}`;
+  const timeWidth = new Stave(0, 0, 200).addTimeSignature(timeSignature).getNoteStartX() - new Stave(0, 0, 200).getNoteStartX();
+  const widths = formatters.map((f, i) => Math.max(MIN_MEASURE_WIDTH, f.minWidth + MEASURE_PADDING) + (i === 0 ? timeWidth : 0));
+  const total = widths.reduce((sum, w) => sum + w, 0) + 12;
+
+  // Measure numbers on top; below them margin and music side by side.
+  const numbersRow = document.createElement('div');
+  numbersRow.className = 'score-numbers-row';
+  const numbersSpacer = document.createElement('div');
+  numbersSpacer.className = 'score-numbers-spacer';
+  const numbersScroller = document.createElement('div');
+  numbersScroller.className = 'score-numbers';
+  const numbersDrawing = document.createElement('div');
+  numbersScroller.append(numbersDrawing);
+  numbersRow.append(numbersSpacer, numbersScroller);
+  const body = document.createElement('div');
+  body.className = 'score-body';
   const margin = document.createElement('div');
   margin.className = 'score-margin';
   const scroller = document.createElement('div');
   scroller.className = 'score-scroller';
   const drawing = document.createElement('div');
   scroller.append(drawing);
-  container.append(scroller, margin); // the music first: the input reads the first SVG
-  margin.style.order = '-1';
+  body.append(scroller, margin); // the music first: the input reads the first SVG
+  container.append(body, numbersRow);
 
-  const staffIndex = 0; // more staves come with the instruments
-  const staff = allStaves(score)[staffIndex];
-  drawMargin(margin, score, staff);
+  const marginWidth = drawMargin(margin, score, tops, height);
+  numbersSpacer.style.width = `${Math.round(marginWidth * ZOOM)}px`;
+  const numbersCtx = newDrawing(numbersDrawing, total, NUMBERS_HEIGHT);
+  const ctx = newDrawing(drawing, total, height);
+  drawing.querySelector('svg')?.classList.add('music');
 
-  const ts = score.timeSignature;
-  const signs = accidentalsForStaff(staff, score.keySignature);
-  const prepared = staff.measures.map((measure, i) => prepareMeasure(measure, staff, ts, signs[i]));
-
-  // Each measure as wide as its notes need; the first also holds the time signature.
-  const timeSignature = `${ts.beats}/${ts.beatValue}`;
-  const timeWidth = new Stave(0, 0, 200).addTimeSignature(timeSignature).getNoteStartX() - new Stave(0, 0, 200).getNoteStartX();
-  const widths = prepared.map((p, i) => Math.max(MIN_MEASURE_WIDTH, p.minWidth + MEASURE_PADDING) + (i === 0 ? timeWidth : 0));
-  const total = widths.reduce((sum, w) => sum + w, 0) + 12;
-
-  const renderer = new Renderer(drawing, Renderer.Backends.SVG);
-  renderer.resize(total, HEIGHT);
-  const ctx = renderer.getContext();
-  scaleSvg(drawing, total)?.classList.add('music');
-
-  const layout: ScoreLayout = { topLineY: 0, lineSpacing: 10, measures: [] };
-  const count = staff.measures.length;
+  const layout: FullLayout = {
+    staves: staves.map((_, s) => ({ index: s, top: tops[s], bottom: tops[s] + ROW, topLineY: 0, lineSpacing: 10, measures: [] })),
+    width: total,
+    height,
+  };
   let x = 0;
-  prepared.forEach((p, i) => {
-    const width = widths[i];
-    const stave = new Stave(x, STAVE_Y, width);
-    if (i === 0) stave.setBegBarType(BarlineType.NONE).addTimeSignature(timeSignature);
-    if (i === count - 1) stave.setEndBarType(BarlineType.END);
-    stave.setContext(ctx).draw();
-    layout.topLineY = stave.getYForLine(0);
-    layout.lineSpacing = stave.getSpacingBetweenLines();
-    drawMeasureNumber(ctx, score, i, x, stave.getYForLine(0));
-
-    p.notes.forEach((note) => note.setStave(stave));
-    p.formatter.formatToStave([p.voice], stave);
-    p.voice.draw(ctx, stave);
-    p.beams.forEach((beam) => beam.setContext(ctx).draw());
-    p.tuplets.forEach((tuplet) => tuplet.setContext(ctx).draw());
-
-    const placed = placeEvents(p.events);
-    const measureLayout: MeasureLayout = {
-      x,
-      width,
-      events: placed.map(({ start, event }, j) => ({
-        tick: start,
-        kind: event.kind,
-        headLeft: p.notes[j].getNoteHeadBeginX(),
-        headRight: p.notes[j].getNoteHeadEndX(),
-        y: p.notes[j].getYs()[0],
-      })),
-    };
-    layout.measures.push(measureLayout);
-
-    placed.forEach(({ start, event }, j) => {
-      if (same(options.preview, staffIndex, i, start)) markNote(p.notes[j], 'preview');
-      if (event.kind === 'rest' && event.auto && !options.showRests) return;
-      if (same(options.selection, staffIndex, i, start)) markNote(p.notes[j], 'selected');
-      if (same(options.playing, staffIndex, i, start)) markNote(p.notes[j], 'playing');
+  prepared.forEach((column, m) => {
+    const width = widths[m];
+    const drawnStaves = column.map((p, s) => {
+      const stave = new Stave(x, tops[s] + STAVE_OFFSET, width);
+      if (m === 0) stave.setBegBarType(BarlineType.NONE).addTimeSignature(timeSignature);
+      if (m === count - 1) stave.setEndBarType(BarlineType.END);
+      stave.setContext(ctx).draw();
+      p.notes.forEach((note) => note.setStave(stave));
+      return stave;
     });
-
-    // Cursor: a line just before the spot where the next note will go.
-    if (options.cursor && options.cursor.staff === staffIndex && options.cursor.measure === i) {
-      const top = stave.getYForLine(0);
-      const bottom = stave.getYForLine(stave.getNumLines() - 1);
-      const target = measureLayout.events.find((e) => e.tick === options.cursor!.tick);
-      const onlyRest = p.events.length === 1 && p.events[0].kind === 'rest';
-      const cursorX = onlyRest ? stave.getNoteStartX() + 4 : target ? target.headLeft - 6 : x + width - 6;
-      ctx.openGroup('cursor');
-      ctx.beginPath();
-      ctx.rect(cursorX - 1.5, top - 14, 3, bottom - top + 28);
-      ctx.fill();
-      ctx.closeGroup();
+    // The bar lines of a piano go through both staves.
+    let first = 0;
+    for (const part of score.parts) {
+      if (part.staves.length > 1) {
+        const type = m === count - 1 ? 'boldDoubleRight' : 'singleRight';
+        new StaveConnector(drawnStaves[first], drawnStaves[first + part.staves.length - 1]).setType(type).setContext(ctx).draw();
+      }
+      first += part.staves.length;
     }
+    drawMeasureNumber(numbersCtx, score, m, x);
+    formatters[m].formatter.formatToStave(
+      column.map((p) => p.voice),
+      drawnStaves[0],
+    );
+
+    column.forEach((p, s) => {
+      const stave = drawnStaves[s];
+      p.voice.draw(ctx, stave);
+      p.beams.forEach((beam) => beam.setContext(ctx).draw());
+      p.tuplets.forEach((tuplet) => tuplet.setContext(ctx).draw());
+      const staffLayout = layout.staves[s];
+      staffLayout.topLineY = stave.getYForLine(0);
+      staffLayout.lineSpacing = stave.getSpacingBetweenLines();
+      const placed = placeEvents(p.events);
+      const measureLayout: MeasureLayout = {
+        x,
+        width,
+        events: placed.map(({ start, event }, j) => ({
+          tick: start,
+          kind: event.kind,
+          headLeft: p.notes[j].getNoteHeadBeginX(),
+          headRight: p.notes[j].getNoteHeadEndX(),
+          y: p.notes[j].getYs()[0],
+          ys: p.notes[j].getYs(),
+        })),
+      };
+      staffLayout.measures.push(measureLayout);
+
+      placed.forEach(({ start, event }, j) => {
+        const note = p.notes[j];
+        if (same(options.preview, s, m, start)) markNote(note, 'preview');
+        if (same(options.playing, s, m, start)) markNote(note, 'playing');
+        // A single note or rest is selected completely (a chord: see prepareStaff).
+        if (same(options.selection, s, m, start) && !(event.kind === 'note' && event.pitches.length > 1)) {
+          markNote(note, 'selected');
+        }
+      });
+
+      // Cursor line where no event starts at the cursor.
+      if (options.cursor && options.cursor.staff === s && options.cursor.measure === m) {
+        const top = stave.getYForLine(0);
+        const bottom = stave.getYForLine(stave.getNumLines() - 1);
+        const target = measureLayout.events.find((e) => e.tick === options.cursor!.tick);
+        const cursorX = target ? target.headLeft - 6 : x + width - 6;
+        ctx.openGroup('cursor');
+        ctx.beginPath();
+        ctx.rect(cursorX - 1.5, top - 14, 3, bottom - top + 28);
+        ctx.fill();
+        ctx.closeGroup();
+      }
+    });
     x += width;
   });
 
-  drawTies(ctx, staff, prepared);
-  if (options.showNoteNames) drawNoteNames(ctx, staff, prepared);
+  staves.forEach((staff, s) => {
+    const notesOf = prepared.map((column) => column[s]);
+    drawTies(ctx, staff, notesOf);
+    if (options.showNoteNames) {
+      drawNoteNames(ctx, staff, notesOf, layout.staves[s].topLineY + 4 * layout.staves[s].lineSpacing);
+    }
+  });
   return layout;
 }
 
@@ -251,24 +370,29 @@ export function renderFullScore(container: HTMLElement, score: Score, options: R
  * Measure numbers above every measure. With a pickup, the pickup measure has no number
  * and the first full measure is 1.
  */
-function drawMeasureNumber(ctx: RenderContext, score: Score, index: number, x: number, topLineY: number): void {
+function drawMeasureNumber(ctx: RenderContext, score: Score, index: number, x: number): void {
   const number = score.pickup > 0 ? index : index + 1;
   if (number < 1) return;
   ctx.openGroup('measure-number');
   ctx.setFont('sans-serif', 11);
-  ctx.fillText(String(number), x + 3, topLineY - 18);
+  ctx.fillText(String(number), x + 3, NUMBERS_HEIGHT - 4);
   ctx.closeGroup();
 }
 
-/** Ties between notes, also over the bar line (all measures are on one line). */
-function drawTies(ctx: RenderContext, staff: Staff, prepared: PreparedMeasure[]): void {
-  const events = staffEvents(staff);
+/** For each event of a staff (in order), its drawn note. */
+function drawnNotes(staff: Staff, prepared: PreparedStaff[]): StaveNote[] {
   const indexInMeasure = new Map<number, number>();
-  const noteOf = events.map(({ measure }) => {
+  return staffEvents(staff).map(({ measure }) => {
     const j = indexInMeasure.get(measure) ?? 0;
     indexInMeasure.set(measure, j + 1);
     return prepared[measure].notes[j];
   });
+}
+
+/** Ties between notes, also over the bar line (all measures are on one line). */
+function drawTies(ctx: RenderContext, staff: Staff, prepared: PreparedStaff[]): void {
+  const events = staffEvents(staff);
+  const notes = drawnNotes(staff, prepared);
   events.forEach(({ event }, i) => {
     const next = events[i + 1]?.event;
     if (event.kind !== 'note' || !event.tieToNext || !next || next.kind !== 'note') return;
@@ -282,25 +406,26 @@ function drawTies(ctx: RenderContext, staff: Staff, prepared: PreparedMeasure[])
       }
     });
     if (firstIndexes.length === 0) return;
-    new StaveTie({ firstNote: noteOf[i], lastNote: noteOf[i + 1], firstIndexes, lastIndexes }).setContext(ctx).draw();
+    new StaveTie({ firstNote: notes[i], lastNote: notes[i + 1], firstIndexes, lastIndexes }).setContext(ctx).draw();
   });
 }
 
-/** German note names below the staff; a note tied over from before gets none. */
-function drawNoteNames(ctx: RenderContext, staff: Staff, prepared: PreparedMeasure[]): void {
+/**
+ * German note names below the staff; in a chord below each other, the lowest at the
+ * bottom. A note tied over from before gets none.
+ */
+function drawNoteNames(ctx: RenderContext, staff: Staff, prepared: PreparedStaff[], bottomLineY: number): void {
   const events = staffEvents(staff);
+  const notes = drawnNotes(staff, prepared);
   ctx.openGroup('note-names');
-  ctx.setFont('sans-serif', 14);
-  const indexInMeasure = new Map<number, number>();
-  events.forEach(({ measure, event }, i) => {
-    const j = indexInMeasure.get(measure) ?? 0;
-    indexInMeasure.set(measure, j + 1);
+  ctx.setFont('sans-serif', 13);
+  events.forEach(({ event }, i) => {
     if (event.kind !== 'note') return;
     const prev = events[i - 1]?.event;
     if (prev?.kind === 'note' && prev.tieToNext && shareAPitch(prev, event)) return;
-    const note = prepared[measure].notes[j];
-    const center = (note.getNoteHeadBeginX() + note.getNoteHeadEndX()) / 2;
-    ctx.fillText(germanNoteName(event.pitches[0]), center, NAME_Y);
+    const center = (notes[i].getNoteHeadBeginX() + notes[i].getNoteHeadEndX()) / 2;
+    const names = [...event.pitches].reverse().map(germanNoteName);
+    names.forEach((name, k) => ctx.fillText(name, center, bottomLineY + 34 + k * 14));
   });
   ctx.closeGroup();
 }

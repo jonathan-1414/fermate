@@ -27,7 +27,8 @@ export function hitTest(layout: ScoreLayout, x: number, y: number): Hit | null {
       e.kind === 'note' &&
       x >= e.headLeft - NOTE_MARGIN_X &&
       x <= e.headRight + NOTE_MARGIN_X &&
-      Math.abs(y - e.y) <= layout.lineSpacing * NOTE_MARGIN_Y_SPACES,
+      // In a chord every note head counts.
+      (e.ys ?? [e.y]).some((head) => Math.abs(y - head) <= layout.lineSpacing * NOTE_MARGIN_Y_SPACES),
   );
   return { measure: index, noteTick: note ? note.tick : null, columnTick: columnAt(measure.events, x) };
 }

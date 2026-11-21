@@ -4,9 +4,10 @@ import { History } from '../model/history';
 import { isCompound } from '../model/meter';
 import { isMetaComplete } from '../model/meta';
 import {
+  addChordTone,
+  removeChordTone,
   changeNoteDuration,
   changeNotePitch,
-  deleteNoteAt,
   fitsTimeSignature,
   isAllowedDuration,
   isOnRest,
@@ -15,17 +16,17 @@ import {
   setTie,
   writeNoteAt,
 } from '../model/overwrite';
-import { isInRange, pitchAtStaffPosition } from '../model/pitch';
+import { pitchAtStaffPosition, pitchToMidi } from '../model/pitch';
+import { entryRange, instrumentById, partNames } from '../model/instruments';
 import { createEmptyScore } from '../model/score';
 import { eventAtPosition, nextPosition, positionAtTick } from '../model/sequence';
-import { staffAt } from '../model/staves';
+import { allStaves, partOfStaff, staffAt } from '../model/staves';
 import type { BaseValue, Duration, Pitch, Position, Score } from '../model/types';
 import type { EditResult } from '../model/edit';
 import type { ModuleConfig } from '../modules/types';
 import { hitTest, staffPositionAt } from '../input/hitTest';
 import { attachScoreInput } from '../input/scoreInput';
-import type { ScoreLayout } from '../render/layout';
-import { renderFullScore, ZOOM } from '../render/renderFull';
+import { renderFullScore, ZOOM, type FullLayout, type StaffLayout } from '../render/renderFull';
 import { createPlayer } from '../playback/player';
 import { buildSchedule } from '../playback/schedule';
 import { loadScore, saveScore } from '../storage/autosave';
@@ -36,7 +37,7 @@ import { askForMeta, askHandIn, confirm, showInfo } from './dialogs';
 import { createTimedReveal } from './timedReveal';
 import { createScoreHeader } from './scoreHeader';
 import { createFullToolbar } from './toolbarFull';
-import { createOverview } from './overview';
+import { createOverview, createVerticalOverview } from './overview';
 import { deleteMeasure, insertMeasure } from '../model/measures';
 
 const NOTE_NAMES_SHOW_MS = 5000;
@@ -49,7 +50,9 @@ interface Snapshot {
 
 type Gesture =
   | { kind: 'place'; before: Snapshot }
-  | { kind: 'drag'; before: Snapshot; changed: boolean };
+  | { kind: 'drag'; before: Snapshot; changed: boolean }
+  /** Akkord pressed: a tap adds a tone at the finger to the selected note. */
+  | { kind: 'chord'; before: Snapshot; pitch: Pitch | null };
 
 /**
  * The app of the full version (…/?modul=voll). Input as described in CLAUDE.md,
@@ -60,7 +63,7 @@ type Gesture =
 export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   root.innerHTML = `
     <header class="toolbar"></header>
-    <main class="score-area"><div class="sheet"><div id="score"></div></div></main>
+    <main class="score-area"><div class="sheet"><div class="score-frame"><div id="score"></div><div></div></div></div></main>
     <div class="toolbar toolbar-bottom"></div>
     <footer class="app-footer"><button type="button" class="link-button">Info und Lizenzen</button></footer>
   `;
@@ -69,6 +72,14 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   const header = createScoreHeader(root.querySelector('.sheet')!, () => void askForDetails('edit'));
   /** How far the music is scrolled to the right (screen pixels). Only the overview bar scrolls it. */
   let scrollX = 0;
+  /** How far the music is scrolled down (screen pixels), by the vertical overview bar only. */
+  let scrollY = 0;
+  const verticalOverview = createVerticalOverview(root.querySelector<HTMLElement>('.score-frame > div:last-child')!, (center) => {
+    const body = scoreBody();
+    if (!body) return;
+    scrollY = center * body.scrollHeight - body.clientHeight / 2;
+    applyScroll();
+  });
   let lastCursorKey = '';
   let lastPlayingKey = '';
   const overview = createOverview(root.querySelector('.sheet')!, {
@@ -103,11 +114,15 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
    * (opening, undo, after setting a note in front of it), the next tap only selects it.
    */
   let selectedByTap = false;
+  /** In a chord: the selected tone (0 = lowest). A value, a tie apply to the whole chord. */
+  let tone = 0;
+  /** "Akkord" pressed: a tap on the selected note adds a tone. */
+  let chordMode = false;
   let duration: Duration = plain(48);
   let showNoteNames = false;
   let preview: { at: Position; pitch: Pitch } | null = null;
   let gesture: Gesture | null = null;
-  let layout: ScoreLayout | null = null;
+  let layout: FullLayout | null = null;
   const history = new History<Snapshot>();
 
   let playing: Position | null = null;
@@ -186,6 +201,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       score = createEmptyScore(module);
       cursor = { staff: 0, measure: 0, tick: 0 };
       selectedByTap = false;
+      tone = 0;
+      chordMode = false;
       history.clear();
       render();
       await askForDetails('start');
@@ -213,14 +230,24 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       applyDuration({ ...duration, triplet: !duration.triplet, dotted: false });
     },
     setAccidental(alter) {
-      if (commit(setAccidental(score, module, cursor, alter))) render();
+      if (commit(setAccidental(score, module, cursor, alter, tone))) {
+        followTone(selectedPitch()?.step, selectedPitch()?.octave, alter);
+        render();
+      }
     },
     toggleTie() {
       const note = selectedNote();
       if (note && commit(setTie(score, module, cursor, !note.tieToNext))) render();
     },
+    toggleChord() {
+      chordMode = !chordMode;
+      render();
+    },
     deleteSelection() {
-      if (commit(deleteNoteAt(score, cursor))) render();
+      // In a chord only the selected tone goes; a single note becomes rest.
+      if (!commit(removeChordTone(score, cursor, tone))) return;
+      tone = Math.max(0, tone - 1);
+      render();
     },
   });
 
@@ -229,6 +256,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     score = { ...snapshot.score, meta: score.meta };
     cursor = snapshot.cursor;
     selectedByTap = false;
+    tone = 0;
     duration = selectedNote()?.duration ?? duration;
     render();
   }
@@ -246,8 +274,26 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     render();
   }
 
-  /** What is drawn: the score, with the preview note or the split rest. */
+  /** The selected tone of the selected note (in a chord: one of its tones). */
+  function selectedPitch(): Pitch | null {
+    const note = selectedNote();
+    if (!note) return null;
+    tone = Math.min(tone, note.pitches.length - 1);
+    return note.pitches[tone];
+  }
+
+  /** After a change the tones are sorted again: find the selected tone by its pitch. */
+  function followTone(step: Pitch['step'] | undefined, octave: number | undefined, alter: number): void {
+    const index = selectedNote()?.pitches.findIndex((p) => p.step === step && p.octave === octave && p.alter === alter) ?? -1;
+    if (index >= 0) tone = index;
+  }
+
+  /** What is drawn: the score, with the preview note, the preview chord tone or the split rest. */
   function shownScore(): Score {
+    if (gesture?.kind === 'chord' && gesture.pitch) {
+      const result = addChordTone(score, module, cursor, gesture.pitch);
+      if (result.ok) return result.score;
+    }
     if (preview) {
       const result = writeNoteAt(score, module, preview.at, [preview.pitch], duration);
       if (result.ok) return result.score;
@@ -278,7 +324,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       playing,
       showRests: true,
       measureCheck: false,
+      selectedTone: tone,
     });
+    fitHeight();
     followView();
     header.update(score.meta);
     const ts = score.timeSignature;
@@ -290,8 +338,10 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       canDot: fits({ base: duration.base, dotted: true, triplet: false }),
       tripletsShown: module.triplets && !isCompound(ts),
       canTriplet: fits({ base: duration.base, dotted: false, triplet: true }),
-      alter: note ? note.pitches[0].alter : null,
+      alter: note ? (selectedPitch()?.alter ?? null) : null,
       tie: note && module.ties ? note.tieToNext === true : null,
+      chordShown: chordsOn(cursor.staff),
+      chordMode,
       canDelete: note !== null,
       canUndo: history.canUndo(),
       canRedo: history.canRedo(),
@@ -303,24 +353,57 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     return scoreElement.querySelector<HTMLElement>('.score-scroller');
   }
 
-  /** Puts the music at the remembered scroll position and moves the frame in the overview. */
-  function applyScroll(): void {
-    const sc = scroller();
-    if (!sc) return;
-    scrollX = Math.min(Math.max(0, scrollX), Math.max(0, sc.scrollWidth - sc.clientWidth));
-    sc.scrollLeft = scrollX;
-    overview.setView(scrollX / sc.scrollWidth, sc.clientWidth / sc.scrollWidth);
+  function scoreBody(): HTMLElement | null {
+    return scoreElement.querySelector<HTMLElement>('.score-body');
   }
 
-  /** Scrolls just enough that this measure is on the screen. */
-  function showMeasure(measure: number): void {
+  function chordsOn(staff: number): boolean {
+    return instrumentById(partOfStaff(score, staff)?.instrument ?? '')?.chords === true;
+  }
+
+  /**
+   * The music gets the height that is left on the screen; if not all staves fit,
+   * the vertical overview bar appears and the notes stay large.
+   */
+  function fitHeight(): void {
+    const body = scoreBody();
+    if (!body) return;
+    body.style.maxHeight = 'none';
+    const page = document.documentElement.scrollHeight;
+    const free = window.innerHeight - (page - body.offsetHeight) - 4;
+    body.style.maxHeight = `${Math.max(Math.round(130 * ZOOM), free)}px`;
+  }
+
+  /** Puts the music at the remembered scroll position and moves the frames in the overviews. */
+  function applyScroll(): void {
     const sc = scroller();
-    const box = layout?.measures[measure];
-    if (!sc || !box) return;
+    const body = scoreBody();
+    if (!sc || !body) return;
+    scrollX = Math.min(Math.max(0, scrollX), Math.max(0, sc.scrollWidth - sc.clientWidth));
+    sc.scrollLeft = scrollX;
+    const numbers = scoreElement.querySelector<HTMLElement>('.score-numbers');
+    if (numbers) numbers.scrollLeft = scrollX;
+    overview.setView(scrollX / sc.scrollWidth, sc.clientWidth / sc.scrollWidth);
+    scrollY = Math.min(Math.max(0, scrollY), Math.max(0, body.scrollHeight - body.clientHeight));
+    body.scrollTop = scrollY;
+    verticalOverview.setView(scrollY / body.scrollHeight, body.clientHeight / body.scrollHeight);
+  }
+
+  /** Scrolls just enough that this measure (of this staff) is on the screen. */
+  function showMeasure(measure: number, staff: number): void {
+    const sc = scroller();
+    const body = scoreBody();
+    const band = layout?.staves[staff];
+    const box = band?.measures[measure];
+    if (!sc || !body || !band || !box) return;
     const left = box.x * ZOOM;
     const right = (box.x + box.width) * ZOOM;
     if (left < scrollX) scrollX = left - 24;
     else if (right > scrollX + sc.clientWidth) scrollX = Math.min(left - 24, right - sc.clientWidth + 24);
+    const top = band.top * ZOOM;
+    const bottom = band.bottom * ZOOM;
+    if (top < scrollY) scrollY = top;
+    else if (bottom > scrollY + body.clientHeight) scrollY = Math.min(top, bottom - body.clientHeight);
   }
 
   /**
@@ -329,24 +412,24 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
    */
   function followView(): void {
     const cursorKey = `${cursor.staff}/${cursor.measure}/${cursor.tick}`;
-    if (cursorKey !== lastCursorKey) showMeasure(cursor.measure);
+    if (cursorKey !== lastCursorKey) showMeasure(cursor.measure, cursor.staff);
     lastCursorKey = cursorKey;
     const playingKey = playing ? `${playing.measure}/${playing.tick}` : '';
-    if (playing && playingKey !== lastPlayingKey) showMeasure(playing.measure);
+    if (playing && playingKey !== lastPlayingKey) showMeasure(playing.measure, playing.staff);
     lastPlayingKey = playingKey;
     applyScroll();
 
-    const measures = layout?.measures ?? [];
+    const measures = layout?.staves[0]?.measures ?? [];
     const total = measures.reduce((sum, m) => sum + m.width, 0) || 1;
-    const staff = staffAt(score, 0)!;
-    const count = staff.measures.length;
+    const staves = allStaves(score);
+    const count = staves[0].measures.length;
     overview.update({
       measures: measures.map((m, i) => {
         const number = score.pickup > 0 ? i : i + 1;
         return {
           share: m.width / total,
           number: number >= 1 ? number : null,
-          hasNotes: staff.measures[i]?.some((e) => e.kind === 'note') ?? false,
+          hasNotes: staves.some((staff) => staff.measures[i]?.some((e) => e.kind === 'note')),
         };
       }),
       viewStart: 0,
@@ -355,29 +438,56 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       canInsert: count < module.maxMeasures,
       canDelete: count > Math.max(module.minMeasures, score.pickup > 0 ? 2 : 1) || score.pickup > 0,
     });
-    applyScroll(); // the frame again, after the boxes were drawn
+    // Vertical overview: one box per staff, the instrument's short name at its first staff.
+    const body = scoreBody();
+    const names = partNames(score, true);
+    const height = layout?.height ?? 1;
+    verticalOverview.update({
+      rows: (layout?.staves ?? []).map((band, s) => {
+        const part = partOfStaff(score, s);
+        const first = part ? allStaves(score).indexOf(part.staves[0]) === s : false;
+        return { share: (band.bottom - band.top) / height, label: first && part ? names[score.parts.indexOf(part)] : '' };
+      }),
+      viewStart: 0,
+      viewHeight: 1,
+      visible: body !== null && body.scrollHeight > body.clientHeight + 1,
+    });
+    applyScroll(); // the frames again, after the boxes were drawn
+  }
+
+  /** The staff band under this height (or the nearest one). */
+  function staffLayoutAt(y: number): StaffLayout | null {
+    const staves = layout?.staves ?? [];
+    return staves.find((s) => y >= s.top && y < s.bottom) ?? null;
   }
 
   const samePosition = (a: Position, b: Position) => a.staff === b.staff && a.measure === b.measure && a.tick === b.tick;
 
-  /** Pitch under the finger as the key makes it (new notes follow the key), or null outside the range. */
+  /**
+   * Pitch under the finger on the cursor's staff as the key makes it (new notes follow
+   * the key), or null outside what can be entered for this instrument.
+   */
   function pitchAt(y: number): Pitch | null {
-    if (!layout) return null;
+    const band = layout?.staves[cursor.staff];
+    if (!band) return null;
     const clef = staffAt(score, cursor.staff)!.clef;
-    const pitch = inKey(pitchAtStaffPosition(clef, staffPositionAt(layout, y)), score.keySignature);
-    return isInRange(pitch, module.range) ? pitch : null;
+    const pitch = inKey(pitchAtStaffPosition(clef, staffPositionAt(band, y)), score.keySignature);
+    const range = entryRange(module, partOfStaff(score, cursor.staff));
+    const midi = pitchToMidi(pitch);
+    return midi >= range.low && midi <= range.high ? pitch : null;
   }
 
   const samePitch = (a: Pitch | null, b: Pitch | null) =>
     a === b || (a !== null && b !== null && a.step === b.step && a.octave === b.octave && a.alter === b.alter);
 
-  /** Moves the selected note to the pitch under the finger; tied notes move along. */
+  /** Moves the selected note (in a chord: the selected tone) to the finger; tied notes move along. */
   function dragTo(drag: Extract<Gesture, { kind: 'drag' }>, y: number): boolean {
     const pitch = pitchAt(y);
-    if (!pitch || samePitch(pitch, selectedNote()?.pitches[0] ?? null)) return false;
-    const result = changeNotePitch(score, module, cursor, pitch);
+    if (!pitch || samePitch(pitch, selectedPitch())) return false;
+    const result = changeNotePitch(score, module, cursor, pitch, tone);
     if (!result.ok) return false;
     score = result.score;
+    followTone(pitch.step, pitch.octave, pitch.alter);
     drag.changed = true;
     return true;
   }
@@ -391,26 +501,35 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
 
   attachScoreInput(scoreElement, {
     down(x, y) {
-      if (!layout) return;
-      const hit = hitTest(layout, x, y);
+      const band = staffLayoutAt(y);
+      if (!band) return;
+      const hit = hitTest(band, x, y);
       if (!hit) return;
       const before = { score, cursor };
       // The spot under the finger, as drawn (a split rest counts with its parts).
-      let spot: Position = { staff: 0, measure: hit.measure, tick: hit.noteTick ?? hit.columnTick };
+      let spot: Position = { staff: band.index, measure: hit.measure, tick: hit.noteTick ?? hit.columnTick };
       if (eventAtPosition(score, spot) === null && !isOnRest(score, spot)) {
-        spot = positionAtTick(score, 0, hit.measure, spot.tick) ?? spot;
+        spot = positionAtTick(score, band.index, hit.measure, spot.tick) ?? spot;
       }
+      // A tap on a note head of a chord means that tone.
+      const heads = hit.noteTick !== null ? band.measures[hit.measure].events.find((e) => e.tick === hit.noteTick)?.ys : undefined;
+      const tappedTone =
+        heads && heads.length > 1 ? heads.reduce((best, h, k) => (Math.abs(h - y) < Math.abs(heads[best] - y) ? k : best), 0) : null;
 
-      // The first tap on a spot only selects it; on a note, the toolbar shows its value.
-      // A note is changed only by a second tap on it.
-      if (!samePosition(spot, cursor) || (selectedNote() && !selectedByTap)) {
+      // The first tap on a spot (or on another tone of the chord) only selects it; on a
+      // note, the toolbar shows its value. A note is changed only by a second tap on it.
+      const otherTone = tappedTone !== null && tappedTone !== tone && !chordMode;
+      if (!samePosition(spot, cursor) || (selectedNote() && !selectedByTap) || otherTone) {
         cursor = spot;
         selectedByTap = true;
+        tone = tappedTone ?? 0;
         duration = selectedNote()?.duration ?? duration;
         render();
         return;
       }
-      if (selectedNote()) {
+      if (selectedNote() && chordMode && chordsOn(cursor.staff)) {
+        gesture = { kind: 'chord', before, pitch: pitchAt(y) };
+      } else if (selectedNote()) {
         gesture = { kind: 'drag', before, changed: false };
         dragTo(gesture, y);
       } else {
@@ -422,6 +541,13 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
 
     move(_x, y) {
       if (!gesture) return;
+      if (gesture.kind === 'chord') {
+        const pitch = pitchAt(y);
+        if (samePitch(pitch, gesture.pitch)) return;
+        gesture.pitch = pitch;
+        render();
+        return;
+      }
       if (gesture.kind === 'place') {
         const next = previewAt(y);
         if (samePitch(next?.pitch ?? null, preview?.pitch ?? null)) return;
@@ -446,6 +572,10 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
         }
       }
       if (done?.kind === 'drag' && done.changed) history.push(done.before);
+      if (done?.kind === 'chord' && done.pitch) {
+        const added = done.pitch;
+        if (commit(addChordTone(score, module, cursor, added))) followTone(added.step, added.octave, added.alter);
+      }
       preview = null;
       render();
     },

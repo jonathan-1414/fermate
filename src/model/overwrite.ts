@@ -3,9 +3,10 @@ import { durationTicks, isValidDuration } from './duration';
 import type { EditResult } from './edit';
 import { clearSpan, fromItems, groupAt, type Item, type NoteEvent, toItems } from './items';
 import { beatLength, fullMeasureLength, isCompound, measureLengths, splitIntoValues } from './meter';
-import { isInRange, parsePitch } from './pitch';
+import { entryRange, instrumentById } from './instruments';
+import { parsePitch, pitchToMidi } from './pitch';
 import { cleanTies, indexAt, samePitch, staffEvents, tieChain } from './sequence';
-import { allStaves } from './staves';
+import { allStaves, partOfStaff } from './staves';
 import type { Duration, Pitch, Position, Score, Staff, TimeSignature } from './types';
 
 /**
@@ -144,9 +145,26 @@ function writeNote(ctx: StaffContext, at: Position, pitches: Pitch[], duration: 
   return null;
 }
 
-function checkPitches(module: ModuleConfig, pitches: Pitch[]): Fail | null {
-  if (pitches.length !== 1) return fail('chords-not-allowed'); // chords come with the instruments
-  return pitches.every((p) => isInRange(p, module.range)) ? null : fail('out-of-range');
+/** Can this pitch be entered on this staff (the instrument's range and an octave more)? */
+function inEntryRange(score: Score, module: ModuleConfig, staff: number, pitch: Pitch): boolean {
+  const range = entryRange(module, partOfStaff(score, staff));
+  const midi = pitchToMidi(pitch);
+  return midi >= range.low && midi <= range.high;
+}
+
+function chordsAllowed(score: Score, staff: number): boolean {
+  return instrumentById(partOfStaff(score, staff)?.instrument ?? '')?.chords === true;
+}
+
+function checkPitches(score: Score, module: ModuleConfig, staff: number, pitches: Pitch[]): Fail | null {
+  if (pitches.length !== 1 && !chordsAllowed(score, staff)) return fail('chords-not-allowed');
+  return pitches.every((p) => inEntryRange(score, module, staff, p)) ? null : fail('out-of-range');
+}
+
+/** Pitches of a chord sorted from low to high, without doubles. */
+export function sortPitches(pitches: Pitch[]): Pitch[] {
+  const sorted = [...pitches].sort((a, b) => pitchToMidi(a) - pitchToMidi(b) || a.alter - b.alter);
+  return sorted.filter((p, i) => i === 0 || !samePitch(p, sorted[i - 1]));
 }
 
 /**
@@ -155,12 +173,12 @@ function checkPitches(module: ModuleConfig, pitches: Pitch[]): Fail | null {
  */
 export function writeNoteAt(score: Score, module: ModuleConfig, at: Position, pitches: Pitch[], duration: Duration): EditResult {
   if (!isAllowedDuration(module, score.timeSignature, duration)) return fail('duration-not-allowed');
-  const pitchError = checkPitches(module, pitches);
+  const pitchError = checkPitches(score, module, at.staff, pitches);
   if (pitchError) return pitchError;
   const ctx = context(score, at);
   if (!ctx || !isWritable(ctx.staff, at)) return fail('invalid-position');
   if (durationTicks(duration) > ctx.lengths[at.measure] - at.tick && !module.ties) return fail('does-not-fit');
-  const error = writeNote(ctx, at, pitches.map((p) => ({ ...p })), duration, false);
+  const error = writeNote(ctx, at, sortPitches(pitches).map((p) => ({ ...p })), duration, false);
   return error ?? done(ctx);
 }
 
@@ -216,32 +234,64 @@ export function changeNoteDuration(score: Score, module: ModuleConfig, at: Posit
   return error ?? done(ctx);
 }
 
-/** Gives the note at the cursor and all notes tied to it a new pitch (ties stay). */
-function repitch(score: Score, module: ModuleConfig, at: Position, pitch: (old: Pitch) => Pitch): EditResult {
+/**
+ * Gives one tone of the note at the cursor (in a chord: the tone with this index)
+ * a new pitch; the same tone in the notes tied to it changes along, so ties stay.
+ */
+function repitch(score: Score, module: ModuleConfig, at: Position, tone: number, pitch: (old: Pitch) => Pitch): EditResult {
   const ctx = context(score, at);
   if (!ctx) return fail('invalid-position');
   const events = staffEvents(ctx.staff);
   const index = indexAt(events, at);
   const first = events[index]?.event;
-  if (first?.kind !== 'note') return fail('no-note');
-  const newPitch = pitch(first.pitches[0]);
-  if (!isInRange(newPitch, module.range)) return fail('out-of-range');
+  if (first?.kind !== 'note' || !first.pitches[tone]) return fail('no-note');
+  const old = first.pitches[tone];
+  const newPitch = pitch(old);
+  if (!inEntryRange(score, module, at.staff, newPitch)) return fail('out-of-range');
+  if (first.pitches.some((p, i) => i !== tone && samePitch(p, newPitch))) return fail('duplicate-tone');
   for (const i of tieChain(events, index)) {
     const event = events[i].event;
-    if (event.kind === 'note') event.pitches = [{ ...newPitch }];
+    if (event.kind !== 'note') continue;
+    const k = i === index ? tone : event.pitches.findIndex((p) => samePitch(p, old));
+    if (k < 0) continue;
+    event.pitches = sortPitches(event.pitches.map((p, j) => (j === k ? { ...newPitch } : p)));
   }
   return done(ctx);
 }
 
-/** Moves the note to a new pitch; notes tied to it move along. */
-export function changeNotePitch(score: Score, module: ModuleConfig, at: Position, pitch: Pitch): EditResult {
-  return repitch(score, module, at, () => pitch);
+/** Moves a note (in a chord: one tone) to a new pitch; tied notes move along. */
+export function changeNotePitch(score: Score, module: ModuleConfig, at: Position, pitch: Pitch, tone = 0): EditResult {
+  return repitch(score, module, at, tone, () => pitch);
 }
 
-/** Sharp (+1), flat (-1) or natural (0) for the note at the cursor (and the notes tied to it). */
-export function setAccidental(score: Score, module: ModuleConfig, at: Position, alter: -1 | 0 | 1): EditResult {
+/** Sharp (+1), flat (-1) or natural (0) for a note (in a chord: one tone) and the notes tied to it. */
+export function setAccidental(score: Score, module: ModuleConfig, at: Position, alter: -1 | 0 | 1, tone = 0): EditResult {
   if (alter !== 0 && !module.accidentals.includes(alter)) return fail('not-allowed');
-  return repitch(score, module, at, (old) => ({ ...old, alter }));
+  return repitch(score, module, at, tone, (old) => ({ ...old, alter }));
+}
+
+/** Adds a tone to the note at the cursor (a chord; only where the instrument allows chords). */
+export function addChordTone(score: Score, module: ModuleConfig, at: Position, pitch: Pitch): EditResult {
+  if (!chordsAllowed(score, at.staff)) return fail('chords-not-allowed');
+  if (!inEntryRange(score, module, at.staff, pitch)) return fail('out-of-range');
+  const ctx = context(score, at);
+  if (!ctx) return fail('invalid-position');
+  const found = noteAt(ctx, at);
+  if (!found) return fail('no-note');
+  if (found.note.pitches.some((p) => samePitch(p, pitch))) return fail('duplicate-tone');
+  found.note.pitches = sortPitches([...found.note.pitches, { ...pitch }]);
+  return done(ctx);
+}
+
+/** Removes one tone of a chord; if it is the last tone, the note becomes rest. */
+export function removeChordTone(score: Score, at: Position, tone: number): EditResult {
+  const ctx = context(score, at);
+  if (!ctx) return fail('invalid-position');
+  const found = noteAt(ctx, at);
+  if (!found || !found.note.pitches[tone]) return fail('no-note');
+  if (found.note.pitches.length === 1) return deleteNoteAt(score, at);
+  found.note.pitches = found.note.pitches.filter((_, i) => i !== tone);
+  return done(ctx);
 }
 
 /**

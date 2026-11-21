@@ -2,8 +2,9 @@ import type { ModuleConfig } from '../modules/types';
 import { eventTicks, isValidDuration } from './duration';
 import { toItems } from './items';
 import { isValidPickup, measureLengths } from './meter';
-import { isInRange } from './pitch';
-import type { Duration, Pitch, Score, ScoreEvent } from './types';
+import { entryRange, instrumentById } from './instruments';
+import { pitchToMidi } from './pitch';
+import type { Duration, Part, Pitch, Score, ScoreEvent } from './types';
 
 /**
  * Checks data read from outside (browser storage, later files) before the app uses it.
@@ -34,8 +35,12 @@ export function parseScore(data: unknown, module: ModuleConfig): Score | null {
     if (typeof part.volume !== 'number' || typeof part.mute !== 'boolean' || typeof part.solo !== 'boolean') {
       return null;
     }
+    const instrument = instrumentById(part.instrument);
+    if (module.overwrite && !instrument) return null;
     const staves = part.staves;
-    if (!Array.isArray(staves) || staves.length < 1) return null;
+    if (!Array.isArray(staves) || staves.length < 1 || staves.length > (instrument?.clefs.length ?? 1)) return null;
+    const range = entryRange(module, part as unknown as Part);
+    const chords = instrument?.chords === true && module.overwrite;
     for (const staff of staves) {
       staffCount++;
       if (!isObject(staff) || typeof staff.id !== 'string') return null;
@@ -49,7 +54,7 @@ export function parseScore(data: unknown, module: ModuleConfig): Score | null {
       if (measureCount !== null && measures.length !== measureCount) return null;
       measureCount = measures.length;
       for (const [i, measure] of measures.entries()) {
-        if (!Array.isArray(measure) || !measure.every((e) => isValidEvent(e, module))) return null;
+        if (!Array.isArray(measure) || !measure.every((e) => isValidEvent(e, module, range, chords))) return null;
         if ((measure as ScoreEvent[]).reduce((sum, e) => sum + eventTicks(e), 0) !== lengths[i]) return null;
         // Triplets always come as complete groups of three of the same kind.
         if (!toItems(measure as ScoreEvent[])) return null;
@@ -60,7 +65,7 @@ export function parseScore(data: unknown, module: ModuleConfig): Score | null {
   return structuredClone(data) as unknown as Score;
 }
 
-function isValidEvent(e: unknown, module: ModuleConfig): boolean {
+function isValidEvent(e: unknown, module: ModuleConfig, range: { low: number; high: number }, chords: boolean): boolean {
   if (!isObject(e) || !isObject(e.duration) || !isValidDuration(e.duration as unknown as Duration)) return false;
   const d = e.duration as unknown as Duration;
   if (e.kind === 'rest' && e.auto === true) return true; // gaps: any value the app uses
@@ -71,9 +76,8 @@ function isValidEvent(e: unknown, module: ModuleConfig): boolean {
   if (e.kind !== 'note' || (e.tieToNext !== undefined && typeof e.tieToNext !== 'boolean')) return false;
   if (e.tieToNext && !module.ties) return false;
   const pitches = e.pitches;
-  // Chords come with the instruments (later step); until then one pitch per note.
-  if (!Array.isArray(pitches) || pitches.length !== 1) return false;
-  return pitches.every((p) => isValidPitch(p) && isInRange(p as Pitch, module.range));
+  if (!Array.isArray(pitches) || pitches.length < 1 || (pitches.length > 1 && !chords)) return false;
+  return pitches.every((p) => isValidPitch(p) && pitchToMidi(p as Pitch) >= range.low && pitchToMidi(p as Pitch) <= range.high);
 }
 
 function isValidPitch(p: unknown): boolean {

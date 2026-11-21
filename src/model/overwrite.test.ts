@@ -63,10 +63,8 @@ group('writing notes: rests everywhere else', () => {
     expect(writeNoteAt(empty(), voll, at(0, 50), [p('C4')], Q)).toEqual({ ok: false, error: 'invalid-position' });
   });
 
-  it('rejects values the module does not have, and chords (for now)', () => {
-    const fail = (error: string) => ({ ok: false, error });
-    expect(writeNoteAt(empty(), modul1, at(0, 0), [p('C4')], dotted(48))).toEqual(fail('duration-not-allowed'));
-    expect(writeNoteAt(empty(), voll, at(0, 0), [p('C4'), p('E4')], Q)).toEqual(fail('chords-not-allowed'));
+  it('rejects values the module does not have', () => {
+    expect(writeNoteAt(empty(), modul1, at(0, 0), [p('C4')], dotted(48))).toEqual({ ok: false, error: 'duration-not-allowed' });
   });
 });
 

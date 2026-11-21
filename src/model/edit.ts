@@ -26,6 +26,11 @@ export type EditError =
   | 'triplet-position' // a triplet group must start on a beat
   | 'inside-triplet' // a plain value cannot start in the middle of a triplet group
   | 'chords-not-allowed' // more than one pitch where chords are not allowed
+  | 'duplicate-tone' // this tone is already in the chord
+  | 'unknown-instrument'
+  | 'too-many-instruments'
+  | 'piano-only-once'
+  | 'last-instrument'
   | 'no-matching-note' // a tie needs a next note with the same pitch
   | 'not-allowed' // the module does not have this feature
   | 'not-empty' // only possible while the score has no notes
