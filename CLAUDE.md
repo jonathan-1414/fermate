@@ -370,8 +370,20 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
   per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
   PWA, Aufgaben der Lehrkraft, Hördiktat.
-- *Vor dem Bauen noch zu klären:* Ansicht (endlos
-  waagrecht oder Zeilen untereinander), Startassistent, Anordnung der Leiste.
+- *Vor dem Bauen noch zu klären:* Startassistent und Einstellungsmenü, Anordnung der Leiste.
+
+**Ansicht (beschlossen 21.11.2026):**
+- Auf dem Bildschirm **endlos nach rechts**: jedes Instrument eine durchgehende Notenzeile,
+  jeder Takt so breit, wie er braucht. Im PDF Zeilen untereinander auf A4-Seiten.
+- Ein **fester Rand links** bleibt stehen und zeigt pro Zeile Kurzname (Fl., Vl. 1, Klav.),
+  Schlüssel und Tonart.
+- **Gescrollt wird ausschließlich über die Übersichtsleiste** unter den Noten (alle Takte als
+  kleine Kästchen, Tippen springt zur Stelle). Wischen mit einem oder zwei Fingern scrollt nicht,
+  ein Finger ist immer für die Eingabe da. Automatisch folgt die Ansicht dem Cursor, wenn er aus
+  dem Bild wandert, und bei der Wiedergabe (Mitscrollen).
+- **Taktnummern:** auf dem Bildschirm klein über jedem Takt, im PDF am Zeilenanfang.
+- **Kopfzeile** (Titel, Namen, Klasse) bleibt fest oben, Tippen öffnet „Angaben“.
+- Offen: was passiert, wenn nicht alle Notenzeilen in die Höhe passen.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
 - **Immer Eingabemodus**, kein Umschalten in einen eigenen Auswahlmodus (wie in Modul 1).
