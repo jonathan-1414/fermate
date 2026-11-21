@@ -165,6 +165,13 @@ Regeln:
 - **Triolengruppen** bestehen nur aus einer Sorte (nie Viertel- und Achteltriolen gemischt),
   Pausen darin sind erlaubt. Eine Gruppe beginnt immer auf einer Zählzeit, nie mitten im Schlag.
   Die Klammer „3“ bestimmt die App selbst aus der Reihenfolge, das Modell speichert keine Gruppe.
+- **Haltebögen** (`tieToNext`, ab Modul 2) verbinden eine Note mit der direkt folgenden Note
+  gleicher Tonhöhe, innerhalb eines Takts und über den Taktstrich. Ändert sich die Tonhöhe
+  einer verbundenen Note, wandert die andere mit. Folgt keine passende Note mehr (gelöscht,
+  zur Pause gemacht, durch Zusammenrücken ersetzt), verschwindet der Bogen. Die letzte Note
+  des Stücks hat keinen Bogen. Verbundene Noten klingen als ein Ton, die mitlaufende Markierung
+  leuchtet über beiden, der Notenname steht nur unter der ersten. Die App setzt nie selbst
+  Bögen: Passt eine verlängerte Note nicht mehr in den Takt, ändert sich nichts.
 - Notiert wird **immer klingend**, transponierende Instrumente gibt es im Notenbild nicht.
 - Notennamen in der Oberfläche sind **deutsch**: c d e f g a h, B = H, Be-Vorzeichen auf h
   heißt b. Oktaven: c' … h' = 4. Oktave, c'' … = 5. Oktave.
