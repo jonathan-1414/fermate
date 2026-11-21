@@ -120,11 +120,9 @@ export function createToolbar(
   actionGroup.append(undoButton, deleteButton, namesButton);
 
   // New and hand in: symbols only, always in the top right corner.
-  // Hand in is the important one at the end of a lesson: it gets a stronger border.
   const scoreGroup = document.createElement('div');
   scoreGroup.className = 'tool-group corner';
   const handInButton = iconButton('Abgeben', ICONS.share, actions.handIn);
-  handInButton.classList.add('strong');
   scoreGroup.append(
     iconButton('Neue Partitur', ICONS.plus, actions.newScore),
     handInButton,

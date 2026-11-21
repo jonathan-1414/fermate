@@ -61,10 +61,6 @@ body {
 .tool.icon svg {
   display: block;
 }
-/* Hand in: a stronger border, so it is easy to find without a label. */
-.tool.icon.strong {
-  border: 2px solid var(--text);
-}
 
 .tool-group {
   display: flex;

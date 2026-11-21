@@ -74,8 +74,8 @@ Teil des Bildschirms ein, alles andere tritt zurück.
 - **Formen:** abgerundete Ecken, keine Schatten, keine Verläufe, keine Animationen außer der
   mitlaufenden Markierung und dem Zeitbalken im Button „Notennamen“. Symbole in Leisten
   immer mit kurzer Beschriftung („Halbe“, „Abspielen“), damit niemand raten muss.
-  Ausnahme: die Buttons „Neu“ (+) und „Abgeben“ (Teilen-Symbol, mit kräftigerem Rand)
-  zeigen nur ein gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
+  Ausnahme: die Buttons „Neu“ (+) und „Abgeben“ (Teilen-Symbol) zeigen nur ein
+  gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
   Tooltip und für Screenreader).
 - Kein dunkler Modus in Modul 1.
 
