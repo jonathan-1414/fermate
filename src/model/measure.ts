@@ -1,4 +1,5 @@
 import { TICKS_PER_WHOLE } from './constants';
+import { eventTicks, plain } from './duration';
 import type { ScoreEvent, TimeSignature } from './types';
 
 /** Rest values used to fill gaps, largest first. */
@@ -18,7 +19,7 @@ export function placeEvents(measure: ScoreEvent[]): PlacedEvent[] {
   let start = 0;
   return measure.map((event) => {
     const placed = { start, event };
-    start += event.ticks;
+    start += eventTicks(event);
     return placed;
   });
 }
@@ -36,7 +37,7 @@ export function autoRests(start: number, length: number): ScoreEvent[] {
       REST_VALUES.find((v) => v <= remaining && pos % v === 0) ??
       REST_VALUES.find((v) => v <= remaining) ??
       remaining;
-    rests.push({ kind: 'rest', ticks, auto: true });
+    rests.push({ kind: 'rest', duration: plain(ticks), auto: true });
     pos += ticks;
     remaining -= ticks;
   }
@@ -62,7 +63,7 @@ export function buildMeasure(occupants: PlacedEvent[], length: number): ScoreEve
   for (const { start, event } of occupants) {
     if (start > pos) result.push(...autoRests(pos, start - pos));
     result.push(event);
-    pos = start + event.ticks;
+    pos = start + eventTicks(event);
   }
   if (pos < length) result.push(...autoRests(pos, length - pos));
   return result;

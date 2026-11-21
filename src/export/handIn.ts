@@ -1,5 +1,6 @@
 import { strToU8, zipSync } from 'fflate';
 import type { Score } from '../model/types';
+import { moduleById } from '../modules';
 import { renderScoreToCanvas } from '../render/renderScore';
 import { baseFileName } from './filename';
 
@@ -64,7 +65,7 @@ async function pdfBytes(score: Score, date: Date): Promise<Uint8Array> {
   }
 
   // The music as a high-resolution picture (about 300 dpi when printed).
-  const canvas = renderScoreToCanvas(score, 4.5);
+  const canvas = renderScoreToCanvas(score, 4.5, moduleById(score.moduleId).showRests);
   const height = (width * canvas.height) / canvas.width;
   // 'FAST' compresses the picture (black notes on white: small), otherwise the PDF gets very large.
   pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y + 6, width, height, undefined, 'FAST');

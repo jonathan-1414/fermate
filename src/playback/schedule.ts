@@ -1,5 +1,7 @@
 import { TICKS_PER_QUARTER } from '../model/constants';
+import { eventTicks } from '../model/duration';
 import { placeEvents } from '../model/measure';
+import { allStaves } from '../model/staves';
 import type { Pitch, Position, Score } from '../model/types';
 
 /**
@@ -32,17 +34,19 @@ export function buildSchedule(score: Score): Schedule {
   const secondsPerTick = 60 / score.tempo / TICKS_PER_QUARTER;
   const notes: ScheduledNote[] = [];
   let end = 0;
-  score.staves.forEach((staff, staffIndex) => {
+  allStaves(score).forEach((staff, staffIndex) => {
     let measureStart = 0;
     staff.measures.forEach((measure, measureIndex) => {
       let length = 0;
       for (const { start, event } of placeEvents(measure)) {
-        length = start + event.ticks;
+        length = start + eventTicks(event);
         if (event.kind === 'rest' && event.auto) continue;
         const time = (measureStart + start) * secondsPerTick;
-        const duration = event.ticks * secondsPerTick;
-        const note = event.kind === 'note' ? noteName(event.pitch) : null;
-        notes.push({ time, duration, note, at: { staff: staffIndex, measure: measureIndex, tick: start } });
+        const duration = eventTicks(event) * secondsPerTick;
+        const at = { staff: staffIndex, measure: measureIndex, tick: start };
+        // A chord is one entry per pitch; a set rest is one silent entry.
+        const sounding = event.kind === 'note' ? event.pitches.map(noteName) : [null];
+        for (const note of sounding) notes.push({ time, duration, note, at });
         end = Math.max(end, time + duration);
       }
       measureStart += length;

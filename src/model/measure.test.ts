@@ -1,5 +1,6 @@
 import { describe as group, expect, it } from 'vitest';
 import { describe } from '../test/helpers';
+import { eventTicks } from './duration';
 import { autoRests, emptyMeasure, firstFreeTick, measureLength } from './measure';
 
 group('measure', () => {
@@ -14,9 +15,9 @@ group('measure', () => {
   it('splits gaps into rests that sit on the beat', () => {
     expect(describe(autoRests(48, 144))).toEqual(['r48@0', 'r96@48']);
     // from the 2nd eighth: eighth, quarter, half
-    expect(autoRests(24, 168).map((e) => e.ticks)).toEqual([24, 48, 96]);
+    expect(autoRests(24, 168).map((e) => eventTicks(e))).toEqual([24, 48, 96]);
     // a half rest never starts on beat 2
-    expect(autoRests(48, 96).map((e) => e.ticks)).toEqual([48, 48]);
+    expect(autoRests(48, 96).map((e) => eventTicks(e))).toEqual([48, 48]);
   });
 
   it('finds the first free spot', () => {

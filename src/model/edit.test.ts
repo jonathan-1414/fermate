@@ -22,20 +22,23 @@ function place(notes: Array<[number, number, string]>, measure = 0): Score {
   );
 }
 
-const m = (score: Score, measure = 0) => describe(score.staves[0].measures[measure]);
+const m = (score: Score, measure = 0) => describe(score.parts[0].staves[0].measures[measure]);
 
 group('createEmptyScore', () => {
   it('creates 4 empty 4/4 measures in one treble staff, tempo 90', () => {
     const score = createEmptyScore(modul1);
     expect(score.format).toBe('fermate');
-    expect(score.version).toBe(1);
+    expect(score.version).toBe(2);
+    expect(score.pickup).toBe(0);
+    expect(score.parts).toHaveLength(1);
+    expect(score.parts[0]).toMatchObject({ instrument: 'piano', volume: 1, mute: false, solo: false });
     expect(score.moduleId).toBe('1');
     expect(score.timeSignature).toEqual({ beats: 4, beatValue: 4 });
     expect(score.keySignature).toBe(0);
     expect(score.tempo).toBe(90);
-    expect(score.staves).toHaveLength(1);
-    expect(score.staves[0].clef).toBe('treble');
-    expect(score.staves[0].measures.map((x) => describe(x))).toEqual([
+    expect(score.parts[0].staves).toHaveLength(1);
+    expect(score.parts[0].staves[0].clef).toBe('treble');
+    expect(score.parts[0].staves[0].measures.map((x) => describe(x))).toEqual([
       ['r192@0'],
       ['r192@0'],
       ['r192@0'],
@@ -229,8 +232,8 @@ group('changeDuration', () => {
 
   it('the split notes are independent copies', () => {
     const score = ok(changeDuration(place([[0, 48, 'E4']]), modul1, at(0), 24));
-    const [a, b] = score.staves[0].measures[0];
-    expect(a.kind === 'note' && b.kind === 'note' && a.pitch !== b.pitch).toBe(true);
+    const [a, b] = score.parts[0].staves[0].measures[0];
+    expect(a.kind === 'note' && b.kind === 'note' && a.pitches !== b.pitches).toBe(true);
   });
 
   it('rejects note values that Modul 1 does not have', () => {
@@ -258,8 +261,8 @@ group('changeDuration', () => {
 
 group('firstFreeTick', () => {
   it('is where the cursor goes when tapping a measure', () => {
-    expect(firstFreeTick(place([[0, 48, 'C4']]).staves[0].measures[0])).toBe(48);
-    expect(firstFreeTick(place([[0, 192, 'C4']]).staves[0].measures[0])).toBeNull();
+    expect(firstFreeTick(place([[0, 48, 'C4']]).parts[0].staves[0].measures[0])).toBe(48);
+    expect(firstFreeTick(place([[0, 192, 'C4']]).parts[0].staves[0].measures[0])).toBeNull();
   });
 });
 
@@ -288,7 +291,7 @@ group('setRest', () => {
 
   it('a set rest makes the measure full like a note', () => {
     const score = rest(place([[0, 48, 'C4'], [48, 48, 'D4'], [96, 48, 'E4']]), 144, 48);
-    expect(firstFreeTick(score.staves[0].measures[0])).toBeNull();
+    expect(firstFreeTick(score.parts[0].staves[0].measures[0])).toBeNull();
   });
 
   it('rejects rests that do not fit or values the module does not have', () => {

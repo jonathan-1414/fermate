@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { modul1 } from '../modules/modul1';
+import { voll } from '../modules/voll';
 import { p } from '../test/helpers';
+import { plain } from './duration';
 import { setNote } from './edit';
 import { createEmptyScore } from './score';
 import { parseScore } from './validate';
@@ -25,41 +27,42 @@ describe('parseScore', () => {
 
   it('rejects a score of another module or version', () => {
     expect(parseScore({ ...sample(), moduleId: '2' }, modul1)).toBeNull();
-    expect(parseScore({ ...sample(), version: 2 }, modul1)).toBeNull();
+    expect(parseScore({ ...sample(), version: 1 }, modul1)).toBeNull();
+
   });
 
   it('rejects broken measures', () => {
     const tooShort = sample();
-    tooShort.staves[0].measures[1] = [{ kind: 'rest', ticks: 96, auto: true }];
+    tooShort.parts[0].staves[0].measures[1] = [{ kind: 'rest', duration: plain(96), auto: true }];
     expect(parseScore(tooShort, modul1)).toBeNull();
 
     const outOfRange = sample();
-    outOfRange.staves[0].measures[0][0] = { kind: 'note', pitch: p('C6'), ticks: 48 };
+    outOfRange.parts[0].staves[0].measures[0][0] = { kind: 'note', pitches: [p('C6')], duration: plain(48) };
     expect(parseScore(outOfRange, modul1)).toBeNull();
 
     const missingMeasure = sample();
-    missingMeasure.staves[0].measures.pop();
+    missingMeasure.parts[0].staves[0].measures.pop();
     expect(parseScore(missingMeasure, modul1)).toBeNull();
   });
 
   it('keeps set rests, also when the link does not allow setting new ones', () => {
     const score = sample();
-    score.staves[0].measures[1] = [
-      { kind: 'rest', ticks: 48, auto: false },
-      { kind: 'rest', ticks: 48, auto: true },
-      { kind: 'rest', ticks: 96, auto: true },
+    score.parts[0].staves[0].measures[1] = [
+      { kind: 'rest', duration: plain(48), auto: false },
+      { kind: 'rest', duration: plain(48), auto: true },
+      { kind: 'rest', duration: plain(96), auto: true },
     ];
     expect(parseScore(JSON.parse(JSON.stringify(score)), modul1)).toEqual(score);
   });
 
   it('rejects set rests with a value the module does not have', () => {
     const score = sample();
-    score.staves[0].measures[1] = [
-      { kind: 'rest', ticks: 12, auto: false },
-      { kind: 'rest', ticks: 12, auto: true },
-      { kind: 'rest', ticks: 24, auto: true },
-      { kind: 'rest', ticks: 48, auto: true },
-      { kind: 'rest', ticks: 96, auto: true },
+    score.parts[0].staves[0].measures[1] = [
+      { kind: 'rest', duration: plain(12), auto: false },
+      { kind: 'rest', duration: plain(12), auto: true },
+      { kind: 'rest', duration: plain(24), auto: true },
+      { kind: 'rest', duration: plain(48), auto: true },
+      { kind: 'rest', duration: plain(96), auto: true },
     ];
     expect(parseScore(score, modul1)).toBeNull();
   });
@@ -68,5 +71,50 @@ describe('parseScore', () => {
     const score = sample() as unknown as { meta: { names: unknown } };
     score.meta.names = 'Mia';
     expect(parseScore(score, modul1)).toBeNull();
+  });
+
+  it('checks note values against the module: dotted notes only where allowed', () => {
+    const dotted = (moduleId: string) => {
+      const score = { ...sample(), moduleId };
+      score.parts[0].staves[0].measures[1] = [
+        { kind: 'note', pitches: [p('G4')], duration: { base: 48, dotted: true, triplet: false } },
+        { kind: 'rest', duration: plain(24), auto: true },
+        { kind: 'rest', duration: plain(96), auto: true },
+      ];
+      return score;
+    };
+    expect(parseScore(dotted('1'), modul1)).toBeNull();
+    expect(parseScore(dotted('voll'), voll)).not.toBeNull();
+  });
+
+  it('rejects impossible note values (dotted whole, sixteenth triplet)', () => {
+    for (const duration of [
+      { base: 192, dotted: true, triplet: false },
+      { base: 12, dotted: false, triplet: true },
+      { base: 48, dotted: true, triplet: true },
+    ]) {
+      const score = { ...sample(), moduleId: 'voll' };
+      score.parts[0].staves[0].measures[0][0] = { kind: 'note', pitches: [p('G4')], duration } as never;
+      expect(parseScore(score, voll)).toBeNull();
+    }
+  });
+
+  it('rejects more instruments or measures than the module allows', () => {
+    const twoParts = sample();
+    twoParts.parts.push({ ...structuredClone(twoParts.parts[0]), id: 'part-2' });
+    expect(parseScore(twoParts, modul1)).toBeNull();
+    expect(parseScore({ ...twoParts, moduleId: 'voll' }, voll)).not.toBeNull();
+
+    const tooMany = { ...sample(), moduleId: 'voll' };
+    const measures = tooMany.parts[0].staves[0].measures;
+    while (measures.length < 33) measures.push(structuredClone(measures[1]));
+    expect(parseScore(tooMany, voll)).toBeNull();
+  });
+
+  it('rejects staves with different numbers of measures', () => {
+    const score = { ...sample(), moduleId: 'voll' };
+    score.parts.push({ ...structuredClone(score.parts[0]), id: 'part-2' });
+    score.parts[1].staves[0].measures.pop();
+    expect(parseScore(score, voll)).toBeNull();
   });
 });

@@ -11,7 +11,9 @@ import {
   type RenderContext,
 } from 'vexflow/bravura';
 import { isMeasureFull } from '../model/check';
+import { eventTicks } from '../model/duration';
 import { measureLength, placeEvents } from '../model/measure';
+import { allStaves } from '../model/staves';
 import { germanNoteName } from '../model/noteName';
 import type { Position, Score, ScoreEvent, Staff } from '../model/types';
 import type { MeasureLayout, ScoreLayout } from './layout';
@@ -42,6 +44,10 @@ export interface RenderOptions {
   preview: Position | null;
   /** The note that sounds right now during playback (lights up). */
   playing: Position | null;
+  /** Draw automatic rests (full version) instead of leaving gaps empty (Modul 1). */
+  showRests: boolean;
+  /** Tick or dashed circle below each measure (Modul 1). */
+  measureCheck: boolean;
 }
 
 function durationCode(ticks: number): string {
@@ -50,21 +56,21 @@ function durationCode(ticks: number): string {
   return code;
 }
 
-function toStaveNote(event: ScoreEvent, staff: Staff, wholeMeasure: boolean): StaveNote {
+function toStaveNote(event: ScoreEvent, staff: Staff, wholeMeasure: boolean, showRests: boolean): StaveNote {
   if (event.kind === 'rest') {
     // A whole rest hangs from the 4th line; a rest filling the whole measure sits in the middle.
-    const key = event.ticks === 192 ? 'd/5' : 'b/4';
-    const rest = new StaveNote({ keys: [key], duration: durationCode(event.ticks) + 'r', clef: staff.clef });
+    const ticks = eventTicks(event);
+    const key = ticks === 192 ? 'd/5' : 'b/4';
+    const rest = new StaveNote({ keys: [key], duration: durationCode(ticks) + 'r', clef: staff.clef });
     if (wholeMeasure) rest.setCenterAlignment(true);
-    // Gaps (automatic rests) are not shown: they keep their space, but stay empty.
-    // Written into the drawing itself, so it also holds when drawn for the PDF.
-    if (event.auto) rest.setStyle({ fillStyle: 'transparent', strokeStyle: 'transparent' });
+    // In Modul 1, gaps (automatic rests) are not shown: they keep their space, but stay
+    // empty. Written into the drawing itself, so it also holds when drawn for the PDF.
+    if (event.auto && !showRests) rest.setStyle({ fillStyle: 'transparent', strokeStyle: 'transparent' });
     return rest;
   }
-  const { step, octave } = event.pitch;
   return new StaveNote({
-    keys: [`${step.toLowerCase()}/${octave}`],
-    duration: durationCode(event.ticks),
+    keys: event.pitches.map(({ step, octave }) => `${step.toLowerCase()}/${octave}`),
+    duration: durationCode(eventTicks(event)),
     clef: staff.clef,
     autoStem: true,
   });
@@ -121,7 +127,7 @@ export function renderScore(container: HTMLElement, score: Score, options: Rende
   const { layout, boxes } = drawMusic(ctx, score, options);
 
   // Measure check below each measure: a tick when full, otherwise an empty dashed circle.
-  for (const box of boxes) {
+  for (const box of options.measureCheck ? boxes : []) {
     const cell = document.createElement('div');
     cell.className = box.full ? 'status full' : 'status missing';
     cell.style.left = `${(box.left / WIDTH) * 100}%`;
@@ -138,7 +144,7 @@ export function renderScore(container: HTMLElement, score: Score, options: Rende
  * Draws only the music (no cursor, selection or measure check) on a canvas,
  * `scale` times larger than on the screen. Used for the PDF.
  */
-export function renderScoreToCanvas(score: Score, scale: number): HTMLCanvasElement {
+export function renderScoreToCanvas(score: Score, scale: number, showRests: boolean): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(WIDTH * scale);
   canvas.height = Math.round(PRINT_HEIGHT * scale);
@@ -154,6 +160,8 @@ export function renderScoreToCanvas(score: Score, scale: number): HTMLCanvasElem
     selection: null,
     preview: null,
     playing: null,
+    showRests,
+    measureCheck: false,
   });
   return canvas;
 }
@@ -167,7 +175,7 @@ function drawMusic(
   options: RenderOptions,
 ): { layout: ScoreLayout; boxes: MeasureBox[] } {
   const staffIndex = 0;
-  const staff = score.staves[staffIndex];
+  const staff = allStaves(score)[staffIndex]; // more staves come with the instruments
   const { beats, beatValue } = score.timeSignature;
   const timeSignature = `${beats}/${beatValue}`;
   const length = measureLength(score.timeSignature);
@@ -190,7 +198,7 @@ function drawMusic(
     const bottom = stave.getYForLine(stave.getNumLines() - 1);
 
     const placed = placeEvents(measure);
-    const notes = measure.map((event) => toStaveNote(event, staff, event.ticks === length));
+    const notes = measure.map((event) => toStaveNote(event, staff, eventTicks(event) === length, options.showRests));
     const voice = new Voice({ numBeats: beats, beatValue }).addTickables(notes);
     notes.forEach((note) => note.setStave(stave)); // needed before reading note positions
     // Eighths are beamed per beat.
@@ -214,7 +222,7 @@ function drawMusic(
     beams.forEach((beam) => beam.setContext(ctx).draw());
 
     placed.forEach(({ start, event }, j) => {
-      if (event.kind === 'rest' && event.auto) return; // gaps are never marked
+      if (event.kind === 'rest' && event.auto) return; // gaps are never marked (yet)
       if (same(options.preview, staffIndex, i, start)) markNote(notes[j], 'preview');
       // Selected note or rest: drawn in the accent colour, the staff lines stay visible.
       if (same(options.selection, staffIndex, i, start)) markNote(notes[j], 'selected');
@@ -241,7 +249,7 @@ function drawMusic(
       placed.forEach(({ event }, j) => {
         if (event.kind !== 'note') return;
         const center = (notes[j].getNoteHeadBeginX() + notes[j].getNoteHeadEndX()) / 2;
-        ctx.fillText(germanNoteName(event.pitch), center, NAME_Y);
+        ctx.fillText(germanNoteName(event.pitches[0]), center, NAME_Y);
       });
       ctx.closeGroup();
     }

@@ -7,26 +7,37 @@ export function parseTimeSignature(text: string): TimeSignature {
   return { beats, beatValue };
 }
 
-/** A new, empty score as the module prescribes it. */
+/**
+ * A new, empty score as the module prescribes it: one piano with one staff
+ * (the start wizard of the full version comes in a later step).
+ */
 export function createEmptyScore(module: ModuleConfig): Score {
   const timeSignature = parseTimeSignature(module.timeSignatures[0]);
   const length = measureLength(timeSignature);
   return {
     format: 'fermate',
-    version: 1,
+    version: 2,
     meta: { title: '', names: [], className: '' },
     moduleId: module.id,
     timeSignature,
-    keySignature: module.keySignatures[0],
+    keySignature: module.keySignatures.includes(0) ? 0 : module.keySignatures[0],
+    pickup: 0,
     tempo: module.tempoFixed ?? 90,
     swing: false,
-    staves: [
+    parts: [
       {
-        id: 'staff-1',
+        id: 'part-1',
         instrument: 'piano',
-        clef: 'treble',
         volume: 1,
-        measures: Array.from({ length: module.measures }, () => emptyMeasure(length)),
+        mute: false,
+        solo: false,
+        staves: [
+          {
+            id: 'staff-1',
+            clef: 'treble',
+            measures: Array.from({ length: module.measures }, () => emptyMeasure(length)),
+          },
+        ],
       },
     ],
   };

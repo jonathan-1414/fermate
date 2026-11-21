@@ -1,3 +1,4 @@
+import { eventTicks } from '../model/duration';
 import { placeEvents } from '../model/measure';
 import { parsePitch } from '../model/pitch';
 import type { Pitch, ScoreEvent } from '../model/types';
@@ -8,7 +9,7 @@ export const p = (text: string): Pitch => parsePitch(text);
 export function describe(measure: ScoreEvent[]): string[] {
   return placeEvents(measure).map(({ start, event }) =>
     event.kind === 'note'
-      ? `n${event.ticks}@${start} ${event.pitch.step}${event.pitch.octave}`
-      : `${event.auto ? 'r' : 'R'}${event.ticks}@${start}`,
+      ? `n${eventTicks(event)}@${start} ${event.pitches.map((x) => `${x.step}${x.octave}`).join('+')}`
+      : `${event.auto ? 'r' : 'R'}${eventTicks(event)}@${start}`,
   );
 }

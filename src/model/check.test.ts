@@ -12,7 +12,7 @@ function full(notes: Array<[number, number]>): boolean {
     if (!result.ok) throw new Error(result.error);
     score = result.score;
   }
-  return isMeasureFull(score.staves[0].measures[0]);
+  return isMeasureFull(score.parts[0].staves[0].measures[0]);
 }
 
 describe('measure check', () => {

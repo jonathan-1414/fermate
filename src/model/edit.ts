@@ -1,9 +1,15 @@
 import type { ModuleConfig } from '../modules/types';
 import { buildMeasure, isOccupant, measureLength, placeEvents } from './measure';
+import { eventTicks, plain } from './duration';
 import { isInRange } from './pitch';
+import { allStaves, staffAt } from './staves';
 import type { Pitch, Position, Score, ScoreEvent } from './types';
 
 /**
+ * Modul 1's editing rules: notes in a measure stand together from the start and the
+ * free space stays at the end. Note values are plain values given in ticks. The full
+ * version gets its own overwriting functions (CLAUDE.md, section 8, step 2).
+ *
  * All edit functions are pure: they never change the given score,
  * they return a new one (or the reason why the edit is not allowed).
  */
@@ -23,12 +29,12 @@ function fail(error: EditError): EditResult {
 }
 
 function getMeasure(score: Score, at: Position): ScoreEvent[] | undefined {
-  return score.staves[at.staff]?.measures[at.measure];
+  return staffAt(score, at.staff)?.measures[at.measure];
 }
 
 function withMeasure(score: Score, at: Position, measure: ScoreEvent[]): Score {
   const copy = structuredClone(score);
-  copy.staves[at.staff].measures[at.measure] = measure;
+  allStaves(copy)[at.staff].measures[at.measure] = measure;
   return copy;
 }
 
@@ -42,7 +48,7 @@ function packed(events: ScoreEvent[], length: number): ScoreEvent[] {
   let start = 0;
   const placed = events.map((event) => {
     const p = { start, event };
-    start += event.ticks;
+    start += eventTicks(event);
     return p;
   });
   return buildMeasure(placed, length);
@@ -57,7 +63,7 @@ function slotAt(events: ScoreEvent[], tick: number): { index: number; replace: b
   let start = 0;
   for (let index = 0; index < events.length; index++) {
     if (start === tick) return { index, replace: true };
-    start += events[index].ticks;
+    start += eventTicks(events[index]);
     if (tick < start) return null;
   }
   return tick >= start ? { index: events.length, replace: false } : null;
@@ -72,13 +78,13 @@ function withEventAt(events: ScoreEvent[], tick: number, event: ScoreEvent): Sco
   return result;
 }
 
-const totalTicks = (events: ScoreEvent[]) => events.reduce((sum, e) => sum + e.ticks, 0);
+const totalTicks = (events: ScoreEvent[]) => events.reduce((sum, e) => sum + eventTicks(e), 0);
 
 /** Can a note of this value be placed here (does everything still fit into the measure)? */
 export function canPlace(score: Score, module: ModuleConfig, at: Position, ticks: number): boolean {
   const measure = getMeasure(score, at);
   if (!module.durations.includes(ticks) || !measure) return false;
-  const placeholder: ScoreEvent = { kind: 'rest', ticks, auto: false };
+  const placeholder: ScoreEvent = { kind: 'rest', duration: plain(ticks), auto: false };
   const result = withEventAt(occupantsOf(measure), at.tick, placeholder);
   return result !== null && totalTicks(result) <= measureLength(score.timeSignature);
 }
@@ -91,7 +97,7 @@ export function canPlace(score: Score, module: ModuleConfig, at: Position, ticks
 function placeEvent(score: Score, module: ModuleConfig, at: Position, event: ScoreEvent): EditResult {
   const measure = getMeasure(score, at);
   if (!measure) return fail('invalid-position');
-  if (!module.durations.includes(event.ticks)) return fail('duration-not-allowed');
+  if (!module.durations.includes(eventTicks(event))) return fail('duration-not-allowed');
   const events = withEventAt(occupantsOf(measure), at.tick, event);
   if (!events) return fail('invalid-position');
   const length = measureLength(score.timeSignature);
@@ -115,7 +121,7 @@ export function setNote(
   if (!getMeasure(score, at)) return fail('invalid-position');
   if (!module.durations.includes(ticks)) return fail('duration-not-allowed');
   if (!isInRange(pitch, module.range)) return fail('out-of-range');
-  return placeEvent(score, module, at, { kind: 'note', pitch: { ...pitch }, ticks });
+  return placeEvent(score, module, at, { kind: 'note', pitches: [{ ...pitch }], duration: plain(ticks) });
 }
 
 /**
@@ -125,7 +131,8 @@ export function setNote(
  */
 export function setRest(score: Score, module: ModuleConfig, at: Position, ticks: number): EditResult {
   if (!module.manualRests) return fail('rests-not-allowed');
-  return placeEvent(score, module, at, { kind: 'rest', ticks, auto: false });
+  if (!module.durations.includes(ticks)) return fail('duration-not-allowed');
+  return placeEvent(score, module, at, { kind: 'rest', duration: plain(ticks), auto: false });
 }
 
 /** Deletes the note or set rest that starts at this position; the following events move left. */
@@ -147,7 +154,7 @@ export function changePitch(score: Score, module: ModuleConfig, at: Position, pi
   const index = placeEvents(measure).findIndex((p) => p.start === at.tick && p.event.kind === 'note');
   if (index < 0) return fail('no-note');
 
-  const updated = measure.map((event, i) => (i === index ? { ...event, pitch: { ...pitch } } : event));
+  const updated = measure.map((event, i) => (i === index ? { ...event, pitches: [{ ...pitch }] } : event));
   return { ok: true, score: withMeasure(score, at, updated) };
 }
 
@@ -167,9 +174,12 @@ export function changeDuration(score: Score, module: ModuleConfig, at: Position,
   const old = events[slot.index];
   if (!module.durations.includes(ticks)) return fail('duration-not-allowed');
   const withTicks = (n: number): ScoreEvent =>
-    old.kind === 'note' ? { kind: 'note', pitch: { ...old.pitch }, ticks: n } : { kind: 'rest', ticks: n, auto: false };
-  if (ticks >= old.ticks || old.ticks % ticks !== 0) return placeEvent(score, module, at, withTicks(ticks));
-  const parts = Array.from({ length: old.ticks / ticks }, () => withTicks(ticks));
+    old.kind === 'note'
+      ? { kind: 'note', pitches: old.pitches.map((p) => ({ ...p })), duration: plain(n) }
+      : { kind: 'rest', duration: plain(n), auto: false };
+  const oldTicks = eventTicks(old);
+  if (ticks >= oldTicks || oldTicks % ticks !== 0) return placeEvent(score, module, at, withTicks(ticks));
+  const parts = Array.from({ length: oldTicks / ticks }, () => withTicks(ticks));
   events.splice(slot.index, 1, ...parts);
   return { ok: true, score: withMeasure(score, at, packed(events, measureLength(score.timeSignature))) };
 }

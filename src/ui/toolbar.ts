@@ -8,6 +8,7 @@ const DURATION_GLYPHS: Record<number, string> = {
   96: '',
   48: '',
   24: '',
+  12: '',
 };
 
 export interface ToolbarState {

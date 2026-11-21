@@ -117,10 +117,10 @@ interface Pitch {
   octave: number;                                 // c' = C4, f'' = F5
 }
 
-// Zielmodell der Vollversion (beschlossen 21.11.2026). Der Code von Modul 1 nutzt noch
-// `ticks` (+ `dotted?`), `pitch` statt `pitches` und `staves` ohne `Part`; er wird mit der
-// Vollversion umgestellt. Es gibt noch keine gespeicherten Dateien oder Stände aus dem
-// Unterricht, eine Umwandlung alter Daten ist daher nicht nötig.
+// Zielmodell der Vollversion (beschlossen 21.11.2026). Seit Schritt 1 der Beta nutzt der
+// Code dieses Modell, auch für Modul 1 (Dateiversion 2; Version 1 wird nicht mehr gelesen).
+// Noch nicht im Code: `lyric`, `chordSymbols`, `accompaniment` (kommen nach der Beta).
+// Im Code heißt `Event` `ScoreEvent` (der Browser hat schon einen Typ `Event`).
 
 // Gespeichert wird der gewählte Wert, die Ticks werden daraus berechnet.
 interface Duration {
@@ -153,7 +153,7 @@ interface Part {          // ein Instrument
 
 interface Score {
   format: 'fermate';
-  version: 1;
+  version: 2;
   meta: { title: string; names: string[]; className: string };
   moduleId: string;
   timeSignature: { beats: number; beatValue: number }; // Modul 1: 4/4

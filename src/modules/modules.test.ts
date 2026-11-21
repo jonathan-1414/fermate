@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { moduleFromSearch } from './index';
+import { moduleById, moduleFromSearch } from './index';
 import { modul1 } from './modul1';
+import { voll } from './voll';
 
 describe('moduleFromSearch', () => {
   it('uses Modul 1 without a parameter', () => {
@@ -26,5 +27,11 @@ describe('moduleFromSearch', () => {
     expect(moduleFromSearch('?modul=1').manualRests).toBe(false);
     moduleFromSearch('?pausen=ja');
     expect(modul1.manualRests).toBe(false);
+  });
+
+  it('reads ?modul=voll (the full version beta)', () => {
+    expect(moduleFromSearch('?modul=voll')).toBe(voll);
+    expect(moduleById('voll')).toBe(voll);
+    expect(moduleById('1')).toBe(modul1);
   });
 });

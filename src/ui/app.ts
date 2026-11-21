@@ -5,6 +5,8 @@ import { History } from '../model/history';
 import { isInRange, pitchAtStaffPosition } from '../model/pitch';
 import { createEmptyScore } from '../model/score';
 import { isOccupant } from '../model/measure';
+import { eventTicks } from '../model/duration';
+import { staffAt } from '../model/staves';
 import type { Pitch, Position, Score, ScoreEvent } from '../model/types';
 import type { ModuleConfig } from '../modules/types';
 import { hitTest, staffPositionAt } from '../input/hitTest';
@@ -199,6 +201,8 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       selection: preview || playedScore ? null : selectedEvent(),
       preview: preview?.at ?? null,
       playing,
+      showRests: module.showRests,
+      measureCheck: module.measureCheck,
     });
     header.update(score.meta);
     toolbar.update({
@@ -213,16 +217,17 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
   /** The note or set rest that starts at this position, if there is one (not a gap). */
   function eventAt(at: Position): ScoreEvent | null {
     let start = 0;
-    for (const event of score.staves[at.staff].measures[at.measure]) {
+    for (const event of staffAt(score, at.staff)!.measures[at.measure]) {
       if (start === at.tick && isOccupant(event)) return event;
-      start += event.ticks;
+      start += eventTicks(event);
     }
     return null;
   }
 
   /** Value of the note or set rest that starts at this position, if there is one. */
   function eventTicksAt(at: Position): number | null {
-    return eventAt(at)?.ticks ?? null;
+    const event = eventAt(at);
+    return event ? eventTicks(event) : null;
   }
 
   function restAt(at: Position): boolean {
@@ -248,7 +253,7 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
     const event = eventAt(drag.at);
     const result =
       event?.kind === 'rest'
-        ? setNote(score, module, drag.at, pitch, event.ticks)
+        ? setNote(score, module, drag.at, pitch, eventTicks(event))
         : changePitch(score, module, drag.at, pitch);
     if (!result.ok || JSON.stringify(result.score) === JSON.stringify(score)) return false;
     score = result.score;
@@ -259,7 +264,7 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
   /** Pitch under the finger, or null outside the module's range. */
   function pitchAt(y: number): Pitch | null {
     if (!layout) return null;
-    const clef = score.staves[cursor.staff].clef;
+    const clef = staffAt(score, cursor.staff)!.clef;
     const pitch = pitchAtStaffPosition(clef, staffPositionAt(layout, y));
     return isInRange(pitch, module.range) ? pitch : null;
   }
