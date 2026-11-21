@@ -104,7 +104,7 @@ Kopien des Modells (Verlauf von Zuständen).
 ### 3.1 Datenmodell
 
 Es ist von Anfang an für mehrere Notenzeilen, Instrumente und Lautstärken ausgelegt, auch
-wenn Modul 1 nur eine Notenzeile benutzt.
+wenn Modul 1 nur eine Notenzeile benutzt. Der folgende Stand ist das Zielmodell der Vollversion.
 
 ```ts
 const TICKS_PER_QUARTER = 48; // Ganze 192, Halbe 96, Viertel 48, Achtel 24, Sechzehntel 12,
@@ -117,10 +117,11 @@ interface Pitch {
   octave: number;                                 // c' = C4, f'' = F5
 }
 
-// Zielmodell (beschlossen 21.11.2026): gespeichert wird der gewählte Wert,
-// die Ticks werden daraus berechnet. Der Code von Modul 1 nutzt noch `ticks`
-// (+ `dotted?`) und wird mit der Vollversion umgestellt; alte Dateien werden beim Laden
-// umgewandelt.
+// Zielmodell der Vollversion (beschlossen 21.11.2026). Der Code von Modul 1 nutzt noch
+// `ticks` (+ `dotted?`), `pitch` statt `pitches` und `staves` ohne `Part`; er wird mit der
+// Vollversion umgestellt, alte Dateien werden beim Laden umgewandelt.
+
+// Gespeichert wird der gewählte Wert, die Ticks werden daraus berechnet.
 interface Duration {
   base: 192 | 96 | 48 | 24 | 12; // Ganze, Halbe, Viertel, Achtel, Sechzehntel
   dotted: boolean;               // nur bei Halbe, Viertel, Achtel
@@ -128,15 +129,24 @@ interface Duration {
 }
 
 type Event =
-  | { kind: 'note'; pitch: Pitch; duration: Duration; tieToNext?: boolean }
+  | { kind: 'note'; pitches: Pitch[]; duration: Duration; tieToNext?: boolean }
+    // pitches: von unten nach oben sortiert, ohne doppelte Töne;
+    // mehr als ein Ton nur, wenn das Instrument Akkorde erlaubt (Klavier)
   | { kind: 'rest'; duration: Duration; auto: boolean }; // auto = von der App aufgefüllte Lücke
 
 interface Staff {
   id: string;
-  instrument: string; // Modul 1: 'piano'
   clef: 'treble' | 'bass';
-  volume: number;     // 0..1, Lautstärke pro Notenzeile (Vollversion: Mischpult)
   measures: Event[][];
+}
+
+interface Part {          // ein Instrument
+  id: string;
+  instrument: string;     // Schlüssel in der Instrumenten-Tabelle, z. B. 'violin', 'piano'
+  staves: Staff[];        // 1 Notenzeile, Klavier 2 (Violin- + Bassschlüssel)
+  volume: number;         // 0..1, Lautstärke pro Instrument (Mischpult)
+  mute: boolean;
+  solo: boolean;
 }
 
 interface Score {
@@ -148,9 +158,15 @@ interface Score {
   keySignature: number;                                // Vorzeichen: -4..4, Modul 1: 0
   tempo: number;                                       // Viertel pro Minute
   swing: boolean;                                      // nur Wiedergabe, Notenbild bleibt gerade
-  staves: Staff[];
+  parts: Part[];
 }
 ```
+
+Was zu einem Instrument fest gehört (deutscher Name, Schlüssel, Tonumfang, Klänge, ob Akkorde
+erlaubt sind), steht in einer Instrumenten-Tabelle im Code, nicht in der Datei. Dasselbe
+Instrument darf mehrmals vorkommen (die App nummeriert: Violine 1, Violine 2), das Klavier nur
+einmal. Beim Klavier dürfen Noten frei auf beiden Zeilen stehen (beide mit dem Tonumfang des
+Klaviers), beide Zeilen klingen als ein Klavier.
 
 Regeln:
 
@@ -364,7 +380,14 @@ Datei, Teilen per Link, Abgabe zusätzlich als Audio, PWA.
   Violinschlüssel notiert, weitere Schlüssel gibt es nicht.
 - Tonumfang pro Instrument, Noten außerhalb farbig markiert.
 - Eine Stimme pro Notenzeile, Akkorde nur beim Klavier.
-- **Lautstärke pro Notenzeile** (Kernfunktion), Stumm/Solo.
+- **Akkorde eingeben** (beschlossen 21.11.2026): Button „Akkord“, nur beim Klavier sichtbar.
+  Ist er gedrückt, fügt ein Tipp in Fingerhöhe dem ausgewählten Akkord einen Ton hinzu, statt
+  die Note zu verschieben. Ein Tipp auf einen Notenkopf wählt diesen einen Ton aus: Ziehen
+  verschiebt nur ihn, Löschen entfernt nur ihn (der letzte Ton → Pause). Ein Notenwert gilt
+  immer für den ganzen Akkord. Ein Haltebogen gehört zum ganzen Akkord und verbindet alle
+  Töne, die im nächsten Akkord ebenfalls vorkommen; einzelne Töne bindet man nicht von Hand.
+  Notennamen stehen untereinander, der tiefste unten.
+- **Lautstärke pro Instrument** (Kernfunktion, das Klavier hat einen Regler), Stumm/Solo.
 - **Swing-Achtel:** Gerade notierte Achtel klingen lang–kurz (etwa 2:1).
 - Notenwerte Ganze bis Sechzehntel, punktierte Halbe, Viertel und Achtel, Achtel- und
   Vierteltriolen, alle auch als Pausen (siehe 3.1).
