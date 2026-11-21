@@ -35,7 +35,7 @@ const HEIGHT = 180;
 const STAVE_Y = 50;
 const NAME_Y = 168;
 /** Drawing units → screen pixels. Matches the staff size of Modul 1 on an iPad. */
-const ZOOM = 1.4;
+export const ZOOM = 1.4;
 const MIN_MEASURE_WIDTH = 90;
 const MEASURE_PADDING = 36;
 

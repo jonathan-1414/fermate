@@ -559,10 +559,11 @@ Tests für die Programmlogik. **Modul 1 muss nach jedem Schritt unverändert fun
 4. **Eingabe:** untere Leiste (Notenwerte, Punkt, Triole, Kreuz, Be, Auflösung, Haltebogen,
    Löschen), obere Leiste (Rückgängig, Wiederholen, Notennamen), Auswählen von Noten und Pausen,
    Tonhöhe setzen und ziehen. Erst mit Maus, dann auf dem iPad.
-5. **Übersichtsleiste:** waagrecht und senkrecht, Mitlaufen mit dem Cursor, „+ Takt“ und
-   „Takt löschen“.
+5. **Übersichtsleiste:** waagrecht, Mitlaufen mit dem Cursor und der Wiedergabe, „+ Takt“ und
+   „Takt löschen“. (Die senkrechte Leiste kommt mit Schritt 6, erst dann gibt es mehrere
+   Notenzeilen.)
 6. **Mehrere Instrumente:** Instrumenten-Tabelle (13 Instrumente), Partiturordnung, Klavier mit
-   zwei Zeilen, Akkorde (Button „Akkord“, einzelne Töne auswählen), Tonumfang farbig markiert.
+   zwei Zeilen, senkrechte Übersichtsleiste, Akkorde (Button „Akkord“, einzelne Töne auswählen), Tonumfang farbig markiert.
 7. **Klänge und Wiedergabe:** Samples aller Instrumente (nur benötigte Dateien, nur verwendete
    Instrumente laden, Viola aus Cello- und Violinen-Samples), Lizenzhinweise, Abspielen mit
    mitlaufender Markierung und Mitscrollen, Tempo-Regler, Mischpult.

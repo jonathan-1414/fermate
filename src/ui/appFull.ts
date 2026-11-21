@@ -25,7 +25,7 @@ import type { ModuleConfig } from '../modules/types';
 import { hitTest, staffPositionAt } from '../input/hitTest';
 import { attachScoreInput } from '../input/scoreInput';
 import type { ScoreLayout } from '../render/layout';
-import { renderFullScore } from '../render/renderFull';
+import { renderFullScore, ZOOM } from '../render/renderFull';
 import { createPlayer } from '../playback/player';
 import { buildSchedule } from '../playback/schedule';
 import { loadScore, saveScore } from '../storage/autosave';
@@ -36,6 +36,8 @@ import { askForMeta, askHandIn, confirm, showInfo } from './dialogs';
 import { createTimedReveal } from './timedReveal';
 import { createScoreHeader } from './scoreHeader';
 import { createFullToolbar } from './toolbarFull';
+import { createOverview } from './overview';
+import { deleteMeasure, insertMeasure } from '../model/measures';
 
 const NOTE_NAMES_SHOW_MS = 5000;
 const NOTE_NAMES_LOCK_MS = 30000;
@@ -65,6 +67,32 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   root.querySelector('.app-footer button')!.addEventListener('click', showInfo);
   const scoreElement = root.querySelector<HTMLDivElement>('#score')!;
   const header = createScoreHeader(root.querySelector('.sheet')!, () => void askForDetails('edit'));
+  /** How far the music is scrolled to the right (screen pixels). Only the overview bar scrolls it. */
+  let scrollX = 0;
+  let lastCursorKey = '';
+  let lastPlayingKey = '';
+  const overview = createOverview(root.querySelector('.sheet')!, {
+    scrollTo(center) {
+      const sc = scroller();
+      if (!sc) return;
+      scrollX = center * sc.scrollWidth - sc.clientWidth / 2;
+      applyScroll();
+    },
+    insertMeasure() {
+      // An empty measure after the one with the cursor; the cursor goes into it.
+      if (!commit(insertMeasure(score, module, cursor.measure))) return;
+      cursor = { staff: cursor.staff, measure: cursor.measure + 1, tick: 0 };
+      selectedByTap = false;
+      render();
+    },
+    deleteMeasure() {
+      if (!commit(deleteMeasure(score, module, cursor.measure))) return;
+      const count = staffAt(score, cursor.staff)!.measures.length;
+      cursor = { staff: cursor.staff, measure: Math.min(cursor.measure, count - 1), tick: 0 };
+      selectedByTap = false;
+      render();
+    },
+  });
 
   let score = loadScore(module) ?? createEmptyScore(module);
   let savedScore: Score | null = score;
@@ -251,6 +279,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       showRests: true,
       measureCheck: false,
     });
+    followView();
     header.update(score.meta);
     const ts = score.timeSignature;
     const note = selectedNote();
@@ -268,6 +297,65 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       canRedo: history.canRedo(),
       playing: playedScore !== null,
     });
+  }
+
+  function scroller(): HTMLElement | null {
+    return scoreElement.querySelector<HTMLElement>('.score-scroller');
+  }
+
+  /** Puts the music at the remembered scroll position and moves the frame in the overview. */
+  function applyScroll(): void {
+    const sc = scroller();
+    if (!sc) return;
+    scrollX = Math.min(Math.max(0, scrollX), Math.max(0, sc.scrollWidth - sc.clientWidth));
+    sc.scrollLeft = scrollX;
+    overview.setView(scrollX / sc.scrollWidth, sc.clientWidth / sc.scrollWidth);
+  }
+
+  /** Scrolls just enough that this measure is on the screen. */
+  function showMeasure(measure: number): void {
+    const sc = scroller();
+    const box = layout?.measures[measure];
+    if (!sc || !box) return;
+    const left = box.x * ZOOM;
+    const right = (box.x + box.width) * ZOOM;
+    if (left < scrollX) scrollX = left - 24;
+    else if (right > scrollX + sc.clientWidth) scrollX = Math.min(left - 24, right - sc.clientWidth + 24);
+  }
+
+  /**
+   * After drawing: the view keeps its place; it follows the cursor when the cursor moved
+   * (also out of the screen after setting a note) and the sounding note during playback.
+   */
+  function followView(): void {
+    const cursorKey = `${cursor.staff}/${cursor.measure}/${cursor.tick}`;
+    if (cursorKey !== lastCursorKey) showMeasure(cursor.measure);
+    lastCursorKey = cursorKey;
+    const playingKey = playing ? `${playing.measure}/${playing.tick}` : '';
+    if (playing && playingKey !== lastPlayingKey) showMeasure(playing.measure);
+    lastPlayingKey = playingKey;
+    applyScroll();
+
+    const measures = layout?.measures ?? [];
+    const total = measures.reduce((sum, m) => sum + m.width, 0) || 1;
+    const staff = staffAt(score, 0)!;
+    const count = staff.measures.length;
+    overview.update({
+      measures: measures.map((m, i) => {
+        const number = score.pickup > 0 ? i : i + 1;
+        return {
+          share: m.width / total,
+          number: number >= 1 ? number : null,
+          hasNotes: staff.measures[i]?.some((e) => e.kind === 'note') ?? false,
+        };
+      }),
+      viewStart: 0,
+      viewWidth: 1,
+      cursorMeasure: cursor.measure,
+      canInsert: count < module.maxMeasures,
+      canDelete: count > Math.max(module.minMeasures, score.pickup > 0 ? 2 : 1) || score.pickup > 0,
+    });
+    applyScroll(); // the frame again, after the boxes were drawn
   }
 
   const samePosition = (a: Position, b: Position) => a.staff === b.staff && a.measure === b.measure && a.tick === b.tick;

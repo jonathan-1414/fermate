@@ -227,8 +227,7 @@ body {
 
 /* Full version: the music runs on to the right; the margin with clef and key stays.
    A finger on the music never scrolls it (it enters notes and may slide sideways while
-   changing a pitch, as in Modul 1); scrolling comes with the overview bar (beta step 5).
-   Until then, a mouse or trackpad can scroll sideways. */
+   changing a pitch, as in Modul 1); only the overview bar below scrolls it. */
 #score.full-score {
   display: flex;
   align-items: flex-start;
@@ -239,8 +238,57 @@ body {
 .score-scroller {
   flex: 1;
   min-width: 0;
-  overflow-x: auto;
+  overflow: hidden; /* scrolled only by the overview bar */
   touch-action: pinch-zoom;
+}
+
+/* Overview bar below the music: one box per measure, a frame for the visible part. */
+.overview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 16px 12px;
+}
+.overview-bar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.overview-boxes {
+  display: flex;
+  gap: 2px;
+  height: 100%;
+}
+.overview-box {
+  flex-basis: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--bg);
+  font-size: 12px;
+  color: var(--text);
+}
+.overview-box.has-notes {
+  background: var(--accent-soft);
+}
+.overview-box.current {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+.overview-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--text);
+  border-radius: 6px;
+  pointer-events: none;
 }
 .score-margin,
 .score-scroller * {
