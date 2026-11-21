@@ -20,7 +20,18 @@ export type EditError =
   | 'does-not-fit' // note would go past the end of the measure
   | 'no-note' // there is no note at this position
   | 'no-event' // there is no note or set rest at this position
-  | 'rests-not-allowed'; // this module (or link) does not allow setting rests
+  | 'rests-not-allowed' // this module (or link) does not allow setting rests
+  // Full version (overwrite.ts, measures.ts):
+  | 'triplet-mismatch' // another kind of triplet is already there
+  | 'triplet-position' // a triplet group must start on a beat
+  | 'inside-triplet' // a plain value cannot start in the middle of a triplet group
+  | 'chords-not-allowed' // more than one pitch where chords are not allowed
+  | 'no-matching-note' // a tie needs a next note with the same pitch
+  | 'not-allowed' // the module does not have this feature
+  | 'not-empty' // only possible while the score has no notes
+  | 'invalid-pickup' // pickup length not possible in this time signature
+  | 'too-many-measures'
+  | 'too-few-measures';
 
 export type EditResult = { ok: true; score: Score } | { ok: false; error: EditError };
 

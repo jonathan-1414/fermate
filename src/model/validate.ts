@@ -1,6 +1,7 @@
 import type { ModuleConfig } from '../modules/types';
 import { eventTicks, isValidDuration } from './duration';
-import { measureLength } from './measure';
+import { toItems } from './items';
+import { isValidPickup, measureLengths } from './meter';
 import { isInRange } from './pitch';
 import type { Duration, Pitch, Score, ScoreEvent } from './types';
 
@@ -21,10 +22,9 @@ export function parseScore(data: unknown, module: ModuleConfig): Score | null {
   if (!isObject(ts) || !module.timeSignatures.includes(`${ts.beats}/${ts.beatValue}`)) return null;
   if (typeof data.keySignature !== 'number' || !module.keySignatures.includes(data.keySignature)) return null;
   if (typeof data.tempo !== 'number' || typeof data.swing !== 'boolean') return null;
-  // The pickup is not used yet (it comes with the full version's input rules).
-  if (data.pickup !== 0) return null;
-
-  const length = measureLength({ beats: Number(ts.beats), beatValue: Number(ts.beatValue) });
+  const timeSignature = { beats: Number(ts.beats), beatValue: Number(ts.beatValue) };
+  if (typeof data.pickup !== 'number' || !isValidPickup(timeSignature, data.pickup)) return null;
+  if (data.pickup !== 0 && !module.pickup) return null;
   const parts = data.parts;
   if (!Array.isArray(parts) || parts.length < 1 || parts.length > module.maxParts) return null;
   let staffCount = 0;
@@ -43,12 +43,16 @@ export function parseScore(data: unknown, module: ModuleConfig): Score | null {
       const measures = staff.measures;
       if (!Array.isArray(measures)) return null;
       if (measures.length < module.minMeasures || measures.length > module.maxMeasures) return null;
+      if (data.pickup !== 0 && measures.length < 2) return null;
+      const lengths = measureLengths(timeSignature, data.pickup, measures.length);
       // All staves have the same number of measures.
       if (measureCount !== null && measures.length !== measureCount) return null;
       measureCount = measures.length;
-      for (const measure of measures) {
+      for (const [i, measure] of measures.entries()) {
         if (!Array.isArray(measure) || !measure.every((e) => isValidEvent(e, module))) return null;
-        if ((measure as ScoreEvent[]).reduce((sum, e) => sum + eventTicks(e), 0) !== length) return null;
+        if ((measure as ScoreEvent[]).reduce((sum, e) => sum + eventTicks(e), 0) !== lengths[i]) return null;
+        // Triplets always come as complete groups of three of the same kind.
+        if (!toItems(measure as ScoreEvent[])) return null;
       }
     }
   }

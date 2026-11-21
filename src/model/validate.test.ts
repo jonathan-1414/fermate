@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { modul1 } from '../modules/modul1';
 import { voll } from '../modules/voll';
-import { p } from '../test/helpers';
+import { ok, p } from '../test/helpers';
+import { setPickup } from './measures';
 import { plain } from './duration';
 import { setNote } from './edit';
 import { createEmptyScore } from './score';
@@ -115,6 +116,28 @@ describe('parseScore', () => {
     const score = { ...sample(), moduleId: 'voll' };
     score.parts.push({ ...structuredClone(score.parts[0]), id: 'part-2' });
     score.parts[1].staves[0].measures.pop();
+    expect(parseScore(score, voll)).toBeNull();
+  });
+
+  it('accepts a pickup in the full version, with the shortened last measure', () => {
+    const score = ok(setPickup(createEmptyScore(voll), voll, 48));
+    expect(parseScore(JSON.parse(JSON.stringify(score)), voll)).toEqual(score);
+    const wrongLast = structuredClone(score);
+    wrongLast.parts[0].staves[0].measures[8] = [{ kind: 'rest', duration: plain(192), auto: true }];
+    expect(parseScore(wrongLast, voll)).toBeNull();
+    expect(parseScore({ ...score, moduleId: '1' }, modul1)).toBeNull();
+  });
+
+  it('rejects broken triplet groups', () => {
+    const score = createEmptyScore(voll);
+    const t = { base: 24, dotted: false, triplet: true } as const;
+    score.parts[0].staves[0].measures[0] = [
+      { kind: 'note', pitches: [p('C4')], duration: t },
+      { kind: 'rest', duration: t, auto: true },
+      { kind: 'rest', duration: plain(12), auto: true },
+      { kind: 'rest', duration: plain(48), auto: true },
+      { kind: 'rest', duration: plain(96), auto: true },
+    ];
     expect(parseScore(score, voll)).toBeNull();
   });
 });

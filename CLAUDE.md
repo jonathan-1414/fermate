@@ -439,6 +439,10 @@ Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für di
   Note wird zur Pause mit der Restlänge. Reicht die Länge über den Taktstrich, setzt die App
   einen Haltebogen in den nächsten Takt und überschreibt dort ebenso.
 - **Löschen:** Die Note wird zur Pause, nichts rückt nach.
+- **Triolen beim Überschreiben** (festgelegt mit Schritt 2): Ein normaler Notenwert kann nicht
+  mitten in einer Triolengruppe beginnen (es ändert sich nichts), am Anfang der Gruppe
+  überschreibt er die ganze Gruppe. Wird eine Gruppe nur teilweise überdeckt, verschwindet sie
+  ganz (Rückgängig holt sie zurück). Eine Gruppe ohne Noten verschwindet von selbst.
 - **Keine Takt-Prüfung** (jeder Takt ist immer voll).
 - **Vorzeichen:** Neue Noten folgen der Tonart (in G-Dur ergibt die f-Linie fis). Buttons
   „Kreuz“, „Be“, „Auflösung“ ändern die ausgewählte Note bzw. den ausgewählten Akkordton
