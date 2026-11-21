@@ -226,7 +226,9 @@ body {
 }
 
 /* Full version: the music runs on to the right; the margin with clef and key stays.
-   (Until the overview bar comes, the music can be scrolled sideways.) */
+   A finger on the music never scrolls it (it enters notes and may slide sideways while
+   changing a pitch, as in Modul 1); scrolling comes with the overview bar (beta step 5).
+   Until then, a mouse or trackpad can scroll sideways. */
 #score.full-score {
   display: flex;
   align-items: flex-start;
@@ -238,6 +240,11 @@ body {
   flex: 1;
   min-width: 0;
   overflow-x: auto;
+  touch-action: pinch-zoom;
+}
+.score-margin,
+.score-scroller * {
+  touch-action: pinch-zoom;
 }
 #score.full-score svg {
   width: auto;
