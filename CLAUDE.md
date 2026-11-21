@@ -78,7 +78,7 @@ Teil des Bildschirms ein, alles andere tritt zurück.
   immer mit kurzer Beschriftung („Halbe“, „Abspielen“), damit niemand raten muss.
   Ausnahme: die Buttons „Neu“ (+) und „Abgeben“ (Teilen-Symbol) zeigen nur ein
   gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
-  Tooltip und für Screenreader).
+  Tooltip und für Screenreader). In der Vollversion kommt „Einstellungen“ (Zahnrad) dazu.
 - Kein dunkler Modus in Modul 1.
 
 ## 3. Architektur
@@ -370,7 +370,7 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
   per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
   PWA, Aufgaben der Lehrkraft, Hördiktat.
-- *Vor dem Bauen noch zu klären:* Startassistent und Einstellungsmenü, Anordnung der Leiste.
+- *Vor dem Bauen noch zu klären:* Anordnung der Leiste.
 
 **Ansicht (beschlossen 21.11.2026):**
 - Auf dem Bildschirm **endlos nach rechts**: jedes Instrument eine durchgehende Notenzeile,
@@ -386,6 +386,23 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - Passen nicht alle Notenzeilen in die Höhe, bleiben die Noten groß, und eine zweite, schmale
   **senkrechte Übersichtsleiste** neben den Noten springt zu den übrigen Zeilen. Der Rand links
   und die Taktnummern bleiben dabei stehen. Pinch-Zoom bleibt.
+
+**Startassistent (beschlossen 21.11.2026):** drei kurze Seiten, nicht wegklickbar.
+1. *Angaben:* Name(n), Klasse, Titel wie in Modul 1 (Namen und Klasse Pflicht).
+2. *Instrumente:* Liste der 13 Instrumente mit „+“, **ohne Voreinstellung** (mindestens ein
+   Instrument muss gewählt werden), höchstens 5, Klavier nur einmal, gleiche Instrumente werden
+   nummeriert. Schlüssel setzt die App, die Reihenfolge ist automatisch die übliche
+   Partiturordnung (Holz, Blech, Klavier, Streicher); selbst umsortieren erst nach der Beta.
+3. *Takt und Tonart:* Taktart, Tonart (Dur/Moll bis 4 Vorzeichen), Auftakt (an/aus, Länge),
+   Tempo; mit Voreinstellung 4/4, C-Dur, kein Auftakt, ♩ = 90.
+
+**Einstellungsmenü (beschlossen 21.11.2026):** nur ein Zahnrad-Symbol oben rechts neben „Neu“
+und „Abgeben“ (Name „Einstellungen“ als Tooltip und für Screenreader). Inhalt: Instrumente
+hinzufügen und entfernen (Rückfrage, wenn das Instrument Noten hat), Tonart (die Töne bleiben
+gleich, aus fis in G-Dur wird in C-Dur fis mit Kreuz; Transponieren erst nach der Beta),
+Auftakt. Die **Taktart** lässt sich nur ändern, solange die Partitur leer ist, sonst steht dort
+ein kurzer Hinweis. Das Tempo steht nicht im Menü, sondern als Regler bei der Wiedergabe.
+Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für die Angaben.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
 - **Immer Eingabemodus**, kein Umschalten in einen eigenen Auswahlmodus (wie in Modul 1).
