@@ -369,7 +369,7 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
   per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
   PWA, Aufgaben der Lehrkraft, Hördiktat.
-- *Vor dem Bauen noch zu klären:* Vorzeichen eingeben, Anzahl der Takte, Ansicht (endlos
+- *Vor dem Bauen noch zu klären:* Anzahl der Takte, Ansicht (endlos
   waagrecht oder Zeilen untereinander), Startassistent, Anordnung der Leiste.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
@@ -393,6 +393,14 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
   einen Haltebogen in den nächsten Takt und überschreibt dort ebenso.
 - **Löschen:** Die Note wird zur Pause, nichts rückt nach.
 - **Keine Takt-Prüfung** (jeder Takt ist immer voll).
+- **Vorzeichen:** Neue Noten folgen der Tonart (in G-Dur ergibt die f-Linie fis). Buttons
+  „Kreuz“, „Be“, „Auflösung“ ändern die ausgewählte Note bzw. den ausgewählten Akkordton
+  (Kreuz → fis, Be → fes, Auflösung → f); der Button, der zur Note passt, erscheint gedrückt
+  (auch wenn wegen der Tonart kein Zeichen davor steht). Die Buttons wirken nur auf eine
+  ausgewählte Note, nie vorab auf die nächste. Tonhöhe ziehen setzt das Vorzeichen zurück, die
+  Note folgt wieder der Tonart. Die Zeichen im Notenbild setzt die App selbst: ein Vorzeichen
+  gilt bis zum Taktende, danach nötige Auflösungszeichen kommen automatisch, keine
+  Hinweis-Vorzeichen im nächsten Takt. Enharmonische Verwechslung erst nach der Beta.
 - Rückgängig und Wiederholen.
 
 **Weitere Funktionen (Entwurf):**
