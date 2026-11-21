@@ -4,16 +4,16 @@ import { renderScoreToCanvas } from '../render/renderScore';
 import { baseFileName } from './filename';
 
 /**
- * Builds the files for handing in: the Auftakt file, the PDF, or both in one ZIP file.
+ * Builds the files for handing in: the Fermate file, the PDF, or both in one ZIP file.
  * The file name follows [klasse]_[name(n)]_[jjjj-mm-tt].
  */
-export type Format = 'auftakt' | 'pdf';
+export type Format = 'fermate' | 'pdf';
 
 export async function buildHandIn(score: Score, formats: Format[], date: Date): Promise<File> {
   const base = baseFileName(score.meta, date);
   const parts: Array<{ name: string; type: string; bytes: Uint8Array }> = [];
-  if (formats.includes('auftakt')) {
-    parts.push({ name: `${base}.auftakt`, type: 'application/json', bytes: auftaktBytes(score) });
+  if (formats.includes('fermate')) {
+    parts.push({ name: `${base}.fermate`, type: 'application/json', bytes: fermateBytes(score) });
   }
   if (formats.includes('pdf')) {
     parts.push({ name: `${base}.pdf`, type: 'application/pdf', bytes: await pdfBytes(score, date) });
@@ -24,8 +24,8 @@ export async function buildHandIn(score: Score, formats: Format[], date: Date): 
   return new File([zip as BlobPart], `${base}.zip`, { type: 'application/zip' });
 }
 
-/** The Auftakt file: the score as readable JSON (with format and version). */
-export function auftaktBytes(score: Score): Uint8Array {
+/** The Fermate file: the score as readable JSON (with format and version). */
+export function fermateBytes(score: Score): Uint8Array {
   return strToU8(JSON.stringify(score, null, 2));
 }
 

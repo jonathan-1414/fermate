@@ -26,7 +26,7 @@ const m = (score: Score, measure = 0) => describe(score.staves[0].measures[measu
 group('createEmptyScore', () => {
   it('creates 4 empty 4/4 measures in one treble staff, tempo 90', () => {
     const score = createEmptyScore(modul1);
-    expect(score.format).toBe('auftakt');
+    expect(score.format).toBe('fermate');
     expect(score.version).toBe(1);
     expect(score.moduleId).toBe('1');
     expect(score.timeSignature).toEqual({ beats: 4, beatValue: 4 });

@@ -1,4 +1,4 @@
-export type ExportFormat = 'auftakt' | 'pdf';
+export type ExportFormat = 'fermate' | 'pdf';
 
 /** A module decides which features the app shows and which inputs the model accepts. */
 export interface ModuleConfig {

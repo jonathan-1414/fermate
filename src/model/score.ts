@@ -12,7 +12,7 @@ export function createEmptyScore(module: ModuleConfig): Score {
   const timeSignature = parseTimeSignature(module.timeSignatures[0]);
   const length = measureLength(timeSignature);
   return {
-    format: 'auftakt',
+    format: 'fermate',
     version: 1,
     meta: { title: '', names: [], className: '' },
     moduleId: module.id,

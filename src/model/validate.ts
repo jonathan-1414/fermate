@@ -10,7 +10,7 @@ import type { Pitch, Score, ScoreEvent } from './types';
  */
 export function parseScore(data: unknown, module: ModuleConfig): Score | null {
   if (!isObject(data)) return null;
-  if (data.format !== 'auftakt' || data.version !== 1 || data.moduleId !== module.id) return null;
+  if (data.format !== 'fermate' || data.version !== 1 || data.moduleId !== module.id) return null;
 
   const meta = data.meta;
   if (!isObject(meta) || typeof meta.title !== 'string' || typeof meta.className !== 'string') return null;

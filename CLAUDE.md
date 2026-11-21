@@ -1,11 +1,11 @@
-# Auftakt – Projektbeschreibung für Claude Code
+# Fermate – Projektbeschreibung für Claude Code
 
-Auftakt ist ein kleines, modulares Notensatzprogramm als WebApp für den Musikunterricht
+Fermate ist ein kleines, modulares Notensatzprogramm als WebApp für den Musikunterricht
 (Schwerpunkt iPad). Das Hauptziel: **Notentext und Klang verbinden.** Schüler.innen sollen
 sehen, was sie hören, und hören, was sie schreiben. Wer eine Melodie notiert, kann sie sofort
 abspielen und entscheiden, ob sie gefällt.
 
-Auftakt ist kein Ersatz für MuseScore. Es ist absichtlich klein. Jedes Modul schaltet einen
+Fermate ist kein Ersatz für MuseScore. Es ist absichtlich klein. Jedes Modul schaltet einen
 etwas größeren Funktionsumfang frei. **Gebaut wird zuerst nur Modul 1 (Prototyp).** Die
 Abschnitte zu Modul 2 und Vollversion beschreiben das Ziel, damit Datenmodell und Aufbau
 von Anfang an dazu passen. Diese Funktionen werden noch **nicht** gebaut.
@@ -91,7 +91,7 @@ src/
   render/     Modell → VexFlow (zeichnet nur, enthält keine Logik)
   input/      Touch-/Maus-Ereignisse → Aufrufe der Modell-Funktionen
   playback/   Modell → Tone.js (Zeitplan, mitlaufende Markierung)
-  export/     Auftakt-Datei, PDF, ZIP, Dateinamen, Teilen
+  export/     Fermate-Datei, PDF, ZIP, Dateinamen, Teilen
   ui/         Leisten, Dialoge, Startdialog
   storage/    automatisches Speichern im Browser
 ```
@@ -127,7 +127,7 @@ interface Staff {
 }
 
 interface Score {
-  format: 'auftakt';
+  format: 'fermate';
   version: 1;
   meta: { title: string; names: string[]; className: string };
   moduleId: string;
@@ -151,7 +151,7 @@ Regeln:
 - Notiert wird **immer klingend**, transponierende Instrumente gibt es im Notenbild nicht.
 - Notennamen in der Oberfläche sind **deutsch**: c d e f g a h, B = H, Be-Vorzeichen auf h
   heißt b. Oktaven: c' … h' = 4. Oktave, c'' … = 5. Oktave.
-- Gespeichert wird das Modell als JSON. Die Auftakt-Datei hat die Endung `.auftakt`
+- Gespeichert wird das Modell als JSON. Die Fermate-Datei hat die Endung `.fermate`
   (JSON-Inhalt mit `format` und `version`, damit spätere Versionen alte Dateien lesen können).
 
 ### 3.2 Modul-Konfiguration
@@ -175,7 +175,7 @@ const modul1: ModuleConfig = {
   accidentals: [],
   range: { low: 'C4', high: 'F5' }, // c' bis f''
   tempoFixed: 90,
-  exportFormats: ['auftakt', 'pdf'],
+  exportFormats: ['fermate', 'pdf'],
 };
 ```
 
@@ -249,7 +249,7 @@ const modul1: ModuleConfig = {
 - Automatisches Speichern im Browser nach jeder Änderung, beim Öffnen wird der letzte
   Stand geladen (eigener Speicherplatz pro Modul). Gespeicherte Daten werden vor dem Laden
   geprüft; ungültige werden ignoriert. Ohne `localStorage` läuft die App ohne Speichern.
-- Button **Abgeben** (Teilen-Symbol oben rechts): Auswahl der Formate **Auftakt-Datei** und
+- Button **Abgeben** (Teilen-Symbol oben rechts): Auswahl der Formate **Fermate-Datei** und
   **PDF** (nichts vorausgewählt, man wählt bewusst). Kein Warnhinweis bei nicht vollen Takten.
   - Dateiname: `[klasse]_[name(n)]_[jjjj-mm-tt]`, z. B. `7a_Mia-Ben_2026-11-11.pdf`.
   - Klasse und Namen kommen aus `meta`, das Datum ist der Tag der Abgabe.
@@ -292,14 +292,14 @@ Regler, Metronom, Einzähler, Schleife, Mitscrollen; Zeilen untereinander; Speic
 - **Swing-Achtel:** Gerade notierte Achtel klingen lang–kurz (etwa 2:1).
 - Dur und Moll bis 4 Vorzeichen, 6/8 und 2/2, Sechzehntel, Triolen, Auflösungszeichen,
   Transponieren, Liedtext, Akkordsymbole mit Begleitung, Tempoangabe im Notentext.
-- Export: Auftakt-Datei, PDF, Audio, MusicXML. Abgabe mit frei wählbaren Formaten.
+- Export: Fermate-Datei, PDF, Audio, MusicXML. Abgabe mit frei wählbaren Formaten.
 - Aufgaben der Lehrkraft (Melodieanfang vorgeben, Noten sperren) und Hördiktat
   (Melodie hören ohne Notenbild, mitschreiben, vergleichen).
 - PWA, offline nutzbar, Klänge zwischengespeichert.
 
 ## 6. Ausdrücklich ausgeschlossen (in keinem Modul)
 
-Dynamik, Artikulation (auch Bindebögen), Verzierungen, Agogik (Ritardando, Fermate),
+Dynamik, Artikulation (auch Bindebögen), Verzierungen, Agogik (Ritardando, Fermate als Zeichen; der Name der App ist davon unberührt),
 Generalbass, Panorama/Hall/Effekte, mehrere Stimmen in einer Notenzeile,
 Schlüssel-/Tonart-/Taktartwechsel im Stück, Wiederholungszeichen, weitere Schlüssel
 (Alt, Tenor), transponierte Notation, MIDI-Keyboard (Safari auf iOS hat kein Web MIDI),
@@ -316,7 +316,7 @@ Echtzeit-Einspielen, MIDI-Export, Konten, Server, Mailversand.
    Rückgängig. Zuerst mit Maus testen, dann auf dem iPad.
 5. **Wiedergabe:** Klavier-Sampler, Play/Stop, mitlaufende Markierung (kein Ton beim Setzen).
 6. **Startdialog und Speichern:** Pflichtfelder, automatisches Speichern, „Neu“.
-7. **Abgabe:** Dateinamen (mit Tests), Auftakt-Datei, PDF, ZIP, Teilen.
+7. **Abgabe:** Dateinamen (mit Tests), Fermate-Datei, PDF, ZIP, Teilen.
 8. **Feinschliff auf dem iPad:** Tippflächen, Zoom, Querformat und Hochformat, Info-Seite.
 
 Nach Schritt 8 wird Modul 1 im Unterricht getestet. Danach geht es mit Modul 2 weiter.

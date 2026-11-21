@@ -29,7 +29,7 @@ export interface TimeSignature {
 }
 
 export interface Score {
-  format: 'auftakt';
+  format: 'fermate';
   version: 1;
   meta: { title: string; names: string[]; className: string };
   moduleId: string;

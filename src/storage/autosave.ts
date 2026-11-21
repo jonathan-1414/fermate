@@ -8,7 +8,7 @@ import type { ModuleConfig } from '../modules/types';
  * is wrapped in try/catch: then the app simply works without saving.
  */
 
-const key = (module: ModuleConfig) => `auftakt:score:modul-${module.id}`;
+const key = (module: ModuleConfig) => `fermate:score:modul-${module.id}`;
 
 function storage(): Storage | null {
   try {

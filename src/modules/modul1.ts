@@ -14,5 +14,5 @@ export const modul1: ModuleConfig = {
   accidentals: [],
   range: { low: 'C4', high: 'F5' }, // c' to f''
   tempoFixed: 90,
-  exportFormats: ['auftakt', 'pdf'],
+  exportFormats: ['fermate', 'pdf'],
 };

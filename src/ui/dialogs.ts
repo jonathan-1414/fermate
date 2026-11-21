@@ -150,7 +150,7 @@ export function confirm(text: string, confirmLabel: string): Promise<boolean> {
   });
 }
 
-export type HandInFormat = 'auftakt' | 'pdf';
+export type HandInFormat = 'fermate' | 'pdf';
 
 /**
  * The hand-in dialog: choose the formats (none chosen at first), then share.
@@ -166,7 +166,7 @@ export function askHandIn(options: {
   return new Promise((resolve) => {
     const dialog = el('dialog', { className: 'dialog' });
     const choices: Array<[HandInFormat, string]> = [
-      ['auftakt', 'Auftakt-Datei'],
+      ['fermate', 'Fermate-Datei'],
       ['pdf', 'PDF'],
     ];
     const boxes = choices.map(([format, label]) => {
@@ -247,7 +247,7 @@ function credit(name: string, href: string, ...details: (Node | string)[]): HTML
   return el('li', {}, externalLink(name, href), ...details);
 }
 
-/** Info and licenses: what Auftakt uses and under which terms. */
+/** Info and licenses: what Fermate uses and under which terms. */
 export function showInfo(): void {
   const dialog = el('dialog', { className: 'dialog info' });
   const ok = textButton('Schließen', 'tool primary');
@@ -256,8 +256,8 @@ export function showInfo(): void {
     el(
       'p',
       { className: 'dialog-text' },
-      'Auftakt ist ein kleines Notensatzprogramm für den Musikunterricht. Alle Daten bleiben auf diesem Gerät, es gibt keinen Server und keine Anmeldung. Der ',
-      externalLink('Quellcode', 'https://github.com/jonathan-1414/auftakt'),
+      'Fermate ist ein kleines Notensatzprogramm für den Musikunterricht. Alle Daten bleiben auf diesem Gerät, es gibt keinen Server und keine Anmeldung. Der ',
+      externalLink('Quellcode', 'https://github.com/jonathan-1414/fermate'),
       ' steht unter der Lizenz GNU AGPL 3.0.',
     ),
     el('h3', { textContent: 'Klang' }),

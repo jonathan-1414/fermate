@@ -36,9 +36,9 @@ describe('autosave', () => {
   it('ignores broken data', () => {
     const storage = fakeStorage();
     vi.stubGlobal('localStorage', storage);
-    storage.setItem('auftakt:score:modul-1', '{not json');
+    storage.setItem('fermate:score:modul-1', '{not json');
     expect(loadScore(modul1)).toBeNull();
-    storage.setItem('auftakt:score:modul-1', '{"format":"other"}');
+    storage.setItem('fermate:score:modul-1', '{"format":"other"}');
     expect(loadScore(modul1)).toBeNull();
   });
 
