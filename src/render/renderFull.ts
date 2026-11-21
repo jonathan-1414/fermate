@@ -37,11 +37,16 @@ import type { RenderOptions } from './renderScore';
 
 /** Drawing units → screen pixels. Matches the staff size of Modul 1 on an iPad. */
 export const ZOOM = 1.4;
-/** Height of one staff with room for ledger lines and note names. */
-const ROW = 108;
+/**
+ * Height of one staff's band: room above for ledger lines, the five lines (40 units),
+ * room below for ledger lines and note names. The top line lies STAVE_OFFSET below the
+ * band's top (VexFlow's own room above the staff is switched off, see STAVE_OPTIONS).
+ */
+const ROW = 124;
 /** Extra room between two instruments (the two piano staves stay closer). */
 const PART_GAP = 16;
-const STAVE_OFFSET = 30;
+const STAVE_OFFSET = 38;
+const STAVE_OPTIONS = { spaceAboveStaffLn: 0, spaceBelowStaffLn: 0 };
 const NUMBERS_HEIGHT = 18;
 const MIN_MEASURE_WIDTH = 90;
 const MEASURE_PADDING = 36;
@@ -199,7 +204,7 @@ function drawMargin(container: HTMLDivElement, score: Score, tops: number[], hei
   const width = probe.getNoteStartX() + 6;
   const ctx = newDrawing(container, width, height);
   const drawn = staves.map((staff, i) => {
-    const stave = new Stave(nameWidth, tops[i] + STAVE_OFFSET, width - nameWidth).addClef(staff.clef).addKeySignature(key);
+    const stave = new Stave(nameWidth, tops[i] + STAVE_OFFSET, width - nameWidth, STAVE_OPTIONS).addClef(staff.clef).addKeySignature(key);
     stave.setEndBarType(BarlineType.NONE);
     stave.setContext(ctx).draw();
     return stave;
@@ -288,7 +293,7 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
   prepared.forEach((column, m) => {
     const width = widths[m];
     const drawnStaves = column.map((p, s) => {
-      const stave = new Stave(x, tops[s] + STAVE_OFFSET, width);
+      const stave = new Stave(x, tops[s] + STAVE_OFFSET, width, STAVE_OPTIONS);
       if (m === 0) stave.setBegBarType(BarlineType.NONE).addTimeSignature(timeSignature);
       if (m === count - 1) stave.setEndBarType(BarlineType.END);
       stave.setContext(ctx).draw();
