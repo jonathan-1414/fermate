@@ -326,7 +326,8 @@ const modul1: ModuleConfig = {
 **Ansicht**
 - Groß und für Touch optimiert (Tippflächen mindestens 44 × 44 pt), Pinch-Zoom. Ausnahme in der
   Vollversion: die beiden Übersichtsleisten sind lange Streifen und dürfen schmaler sein
-  (waagrecht 28 px hoch, senkrecht 20 px breit; festgelegt 21.11.2026).
+  (waagrecht 36 px hoch, senkrecht 28 px breit), „+ Takt“ und „Takt löschen“ daneben sind so
+  hoch wie die waagrechte Leiste (festgelegt 21.11.2026).
 - Querformat auf dem iPad ist der Hauptfall, Hochformat muss benutzbar sein.
 
 **Speichern und Abgabe**

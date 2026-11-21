@@ -280,7 +280,7 @@ body {
   order: -1;
   position: relative;
   flex: none;
-  width: 20px; /* narrower than other tap areas: a long strip, set in CLAUDE.md */
+  width: 28px; /* narrower than other tap areas: a long strip, set in CLAUDE.md */
   margin: 26px 0 8px;
   border-radius: 6px;
   background: var(--bg);
@@ -303,7 +303,7 @@ body {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 28px; /* narrower than other tap areas: a long strip, set in CLAUDE.md */
+  height: 36px; /* lower than other tap areas: a long strip, set in CLAUDE.md */
   cursor: pointer;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
@@ -714,4 +714,9 @@ body {
 .dialog-actions.settings-actions {
   justify-content: space-between;
   align-items: center;
+}
+
+/* "+ Takt" and "Takt löschen" as high as the overview bar next to them */
+.overview .tool {
+  min-height: 36px;
 }
