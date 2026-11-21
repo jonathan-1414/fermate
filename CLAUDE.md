@@ -386,7 +386,8 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - **Taktnummern:** auf dem Bildschirm klein über jedem Takt, im PDF am Zeilenanfang.
 - **Kopfzeile** (Titel, Namen, Klasse) bleibt fest oben, Tippen öffnet „Angaben“.
 - Passen nicht alle Notenzeilen in die Höhe, bleiben die Noten groß, und eine zweite, schmale
-  **senkrechte Übersichtsleiste** neben den Noten springt zu den übrigen Zeilen. Der Rand links
+  **senkrechte Leiste ganz links** (ohne Instrumentennamen, nur ein Rahmen für den sichtbaren
+  Teil) springt zu den übrigen Zeilen (geändert 21.11.2026). Der Rand links
   und die Taktnummern bleiben dabei stehen. Pinch-Zoom bleibt.
 
 **Startassistent (beschlossen 21.11.2026):** drei kurze Seiten, nicht wegklickbar.

@@ -583,16 +583,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       canInsert: count < module.maxMeasures,
       canDelete: count > Math.max(module.minMeasures, score.pickup > 0 ? 2 : 1) || score.pickup > 0,
     });
-    // Vertical overview: one box per staff, the instrument's short name at its first staff.
+    // Vertical bar on the left, only when not all staves fit into the height.
     const body = scoreBody();
-    const names = partNames(score, true);
-    const height = layout?.height ?? 1;
     verticalOverview.update({
-      rows: (layout?.staves ?? []).map((band, s) => {
-        const part = partOfStaff(score, s);
-        const first = part ? allStaves(score).indexOf(part.staves[0]) === s : false;
-        return { share: (band.bottom - band.top) / height, label: first && part ? names[score.parts.indexOf(part)] : '' };
-      }),
       viewStart: 0,
       viewHeight: 1,
       visible: body !== null && body.scrollHeight > body.clientHeight + 1,

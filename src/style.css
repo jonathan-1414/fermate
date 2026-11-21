@@ -267,36 +267,29 @@ body {
 .score-frame {
   display: flex;
   align-items: stretch;
-  gap: 8px;
-  padding-right: 8px;
+  gap: 6px;
+  padding-left: 8px;
 }
 .score-frame #score {
   flex: 1;
   min-width: 0;
 }
 /* Vertical overview bar: one box per staff, shown only when not all staves fit. */
+/* Vertical bar on the far left: a frame for the visible part of the staves. */
 .overview-v {
+  order: -1;
   position: relative;
   flex: none;
-  width: 44px;
-  margin: 18px 0 8px;
+  width: 44px; /* tap area at least 44 px (CLAUDE.md) */
+  margin: 26px 0 8px;
+  border-radius: 6px;
+  background: var(--bg);
   cursor: pointer;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
 .overview-v[hidden] {
   display: none;
-}
-.overview-v-boxes {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  height: 100%;
-}
-.overview-v .overview-box {
-  flex-basis: 0;
-  min-height: 0;
-  font-size: 11px;
 }
 
 /* Overview bar below the music: one box per measure, a frame for the visible part. */
@@ -709,4 +702,10 @@ body {
 }
 .dialog .field .tempo-line {
   margin: 0;
+}
+/* In the vertical bar the frame spans the full width and moves up and down. */
+.overview-v .overview-frame {
+  left: 0;
+  right: 0;
+  bottom: auto;
 }
