@@ -38,8 +38,11 @@ import { createTimedReveal } from './timedReveal';
 import { createScoreHeader } from './scoreHeader';
 import { createFullToolbar } from './toolbarFull';
 import { showMixer, showTempo } from './mixer';
+import { askInstruments, askMeter, showSettings, type MeterChoice } from './setup';
+import { createConfiguredScore } from '../model/setup';
+import { addPart, removePart } from '../model/instruments';
+import { deleteMeasure, insertMeasure, setKeySignature, setPickup, setTimeSignature } from '../model/measures';
 import { createOverview, createVerticalOverview } from './overview';
-import { deleteMeasure, insertMeasure } from '../model/measures';
 
 const NOTE_NAMES_SHOW_MS = 5000;
 const NOTE_NAMES_LOCK_MS = 30000;
@@ -226,14 +229,45 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       const yes = await confirm('Neue Partitur beginnen? Alle Noten dieser Partitur werden gelöscht.', 'Neu beginnen');
       if (!yes) return;
       player.stop();
+      // Everything starts empty, also names, class and title; then the start wizard.
       score = createEmptyScore(module);
-      cursor = { staff: 0, measure: 0, tick: 0 };
-      selectedByTap = false;
-      tone = 0;
-      chordMode = false;
+      resetCursor();
       history.clear();
       render();
-      await askForDetails('start');
+      await runWizard();
+    },
+    openSettings() {
+      showSettings(module, {
+        score: () => score,
+        addInstrument(id) {
+          if (commit(addPart(score, module, id))) render();
+        },
+        async removeInstrument(index) {
+          const part = score.parts[index];
+          const hasNotes = part.staves.some((s) => s.measures.some((m) => m.some((e) => e.kind === 'note')));
+          const name = partNames(score)[index];
+          if (hasNotes && !(await confirm(`${name} entfernen? Die Noten dieses Instruments gehen verloren.`, 'Entfernen'))) return;
+          if (commit(removePart(score, index))) {
+            checkCursor();
+            render();
+          }
+        },
+        setKey(key) {
+          if (commit(setKeySignature(score, module, key))) render();
+        },
+        setTimeSignature(text) {
+          if (commit(setTimeSignature(score, module, text))) {
+            checkCursor();
+            render();
+          }
+        },
+        setPickup(ticks) {
+          if (commit(setPickup(score, module, ticks))) {
+            checkCursor();
+            render();
+          }
+        },
+      });
     },
     handIn() {
       player.stop();
@@ -294,6 +328,65 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     toolbar.setNoteNamesPhase(phase, ms);
     render();
   });
+
+  function resetCursor(): void {
+    cursor = { staff: 0, measure: 0, tick: 0 };
+    selectedByTap = false;
+    tone = 0;
+    chordMode = false;
+  }
+
+  /** After instruments or measures changed: the cursor must still stand on something. */
+  function checkCursor(): void {
+    const staves = allStaves(score);
+    const staff = Math.min(cursor.staff, staves.length - 1);
+    const measure = Math.min(cursor.measure, staves[staff].measures.length - 1);
+    const at = { staff, measure, tick: cursor.tick };
+    cursor = eventAtPosition(score, at) || isOnRest(score, at) ? at : { staff, measure, tick: 0 };
+    selectedByTap = false;
+    tone = 0;
+  }
+
+  /**
+   * The start wizard: details (names, class, title), instruments, then time signature,
+   * key, pickup and tempo. It cannot be cancelled; "Zurück" goes to the page before.
+   */
+  async function runWizard(): Promise<void> {
+    let meta = score.meta;
+    let instruments: string[] = [];
+    let meter: MeterChoice = { timeSignature: module.timeSignatures[0], keySignature: 0, pickup: 0, tempo: 90 };
+    let page = 1;
+    for (;;) {
+      if (page === 1) {
+        meta = (await askForMeta('start', meta)) ?? meta;
+        page = 2;
+      } else if (page === 2) {
+        const chosen = await askInstruments(instruments, module.maxParts);
+        if (chosen === 'back') page = 1;
+        else {
+          instruments = chosen;
+          page = 3;
+        }
+      } else {
+        const chosen = await askMeter(module, meter);
+        if (chosen === 'back') {
+          page = 2;
+          continue;
+        }
+        meter = chosen;
+        const result = createConfiguredScore(module, { instruments, ...meter });
+        if (!result.ok) {
+          page = 2;
+          continue;
+        }
+        score = { ...result.score, meta };
+        resetCursor();
+        history.clear();
+        render();
+        return;
+      }
+    }
+  }
 
   async function askForDetails(mode: 'start' | 'edit'): Promise<void> {
     const meta = await askForMeta(mode, score.meta);
@@ -643,5 +736,5 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   // A turned iPad (portrait / landscape) has another height for the music.
   window.addEventListener('resize', () => render());
   render();
-  if (!isMetaComplete(score.meta)) void askForDetails('start');
+  if (!isMetaComplete(score.meta)) void runWizard();
 }

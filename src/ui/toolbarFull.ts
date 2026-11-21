@@ -51,6 +51,7 @@ export interface FullToolbarActions {
   showNoteNames(): void;
   newScore(): void;
   handIn(): void;
+  openSettings(): void;
   selectBase(base: BaseValue): void;
   toggleDot(): void;
   toggleTriplet(): void;
@@ -98,7 +99,12 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   const topMain = document.createElement('div');
   topMain.className = 'toolbar-main';
   topMain.append(group('Wiedergabe', playButton, tempoButton, mixerButton), group('Bearbeiten', undoButton, redoButton, namesButton));
-  const corner = group('Partitur', iconButton('Neue Partitur', ICONS.plus, actions.newScore), iconButton('Abgeben', ICONS.share, actions.handIn));
+  const corner = group(
+    'Partitur',
+    iconButton('Neue Partitur', ICONS.plus, actions.newScore),
+    iconButton('Abgeben', ICONS.share, actions.handIn),
+    iconButton('Einstellungen', ICONS.gear, actions.openSettings),
+  );
   corner.classList.add('corner');
   top.append(topMain, corner);
 

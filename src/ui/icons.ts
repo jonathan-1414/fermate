@@ -10,6 +10,10 @@ export const ICONS = {
   share: svg(
     '<path d="M8 9H6a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1h-2"/><path d="M12 3v11"/><path d="M8.5 6.5 12 3l3.5 3.5"/>',
   ),
+  /** Gear: settings (full version). */
+  gear: svg(
+    '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/><circle cx="12" cy="12" r="6.6"/>',
+  ),
   /** Plus: new score. */
   plus: svg('<path d="M12 5v14"/><path d="M5 12h14"/>'),
   /** Pencil: the header with title, names and class can be changed (small). */
