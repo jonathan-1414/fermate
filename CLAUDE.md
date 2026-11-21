@@ -6,9 +6,10 @@ sehen, was sie hören, und hören, was sie schreiben. Wer eine Melodie notiert, 
 abspielen und entscheiden, ob sie gefällt.
 
 Fermate ist kein Ersatz für MuseScore. Es ist absichtlich klein. Jedes Modul schaltet einen
-etwas größeren Funktionsumfang frei. **Gebaut wird zuerst nur Modul 1 (Prototyp).** Die
-Abschnitte zu Modul 2 und Vollversion beschreiben das Ziel, damit Datenmodell und Aufbau
-von Anfang an dazu passen. Diese Funktionen werden noch **nicht** gebaut.
+etwas größeren Funktionsumfang frei. **Modul 1 (Prototyp) ist fertig.** Als Nächstes wird die
+**Vollversion** geplant (Abschnitt 5); gebaut wird sie erst, wenn ihr Umfang feststeht.
+Weitere Module entstehen danach durch Reduzieren oder leichtes Abändern der Vollversion
+(beschlossen 21.11.2026, ein eigenes Modul 2 als nächster Schritt entfällt).
 
 ---
 
@@ -18,7 +19,8 @@ von Anfang an dazu passen. Diese Funktionen werden noch **nicht** gebaut.
   Entscheidungen kurz und verständlich, ohne Fachjargon vorauszusetzen.
 - Arbeite in kleinen Schritten (siehe Abschnitt 7). Nach jedem Schritt muss die App
   lauffähig sein. Sag mir, wie ich das Ergebnis im Browser und auf dem iPad ansehe.
-- Baue nichts, was nicht in Modul 1 steht, auch keine „kleinen Extras“. Wenn etwas fehlt oder
+- Baue nichts, was nicht beschlossen ist (Modul 1, später die festgelegte Vollversion), auch
+  keine „kleinen Extras“. Wenn etwas fehlt oder
   unklar ist, frag nach.
 - Neue Abhängigkeiten (npm-Pakete) nur nach Rückfrage, außer den in Abschnitt 2 genannten.
 - Ein Commit pro abgeschlossenem Schritt, Commit-Nachrichten auf Deutsch.
@@ -87,7 +89,7 @@ Das Datenmodell ist die einzige Wahrheit. Darstellung, Eingabe und Wiedergabe le
 ```
 src/
   model/      Datenmodell, Typen, reine Funktionen (Note setzen, löschen, Takt prüfen)
-  modules/    Modul-Konfigurationen (modul1.ts, später modul2.ts …)
+  modules/    Modul-Konfigurationen (modul1.ts, später voll.ts …)
   render/     Modell → VexFlow (zeichnet nur, enthält keine Logik)
   input/      Touch-/Maus-Ereignisse → Aufrufe der Modell-Funktionen
   playback/   Modell → Tone.js (Zeitplan, mitlaufende Markierung)
@@ -117,7 +119,7 @@ interface Pitch {
 
 // Zielmodell (beschlossen 21.11.2026): gespeichert wird der gewählte Wert,
 // die Ticks werden daraus berechnet. Der Code von Modul 1 nutzt noch `ticks`
-// (+ `dotted?`) und wird vor Modul 2 umgestellt; alte Dateien werden beim Laden
+// (+ `dotted?`) und wird mit der Vollversion umgestellt; alte Dateien werden beim Laden
 // umgewandelt.
 interface Duration {
   base: 192 | 96 | 48 | 24 | 12; // Ganze, Halbe, Viertel, Achtel, Sechzehntel
@@ -153,9 +155,10 @@ interface Score {
 Regeln:
 
 - **Jeder Takt ist im Modell immer vollständig gefüllt.** Was keine Note ist, ist eine Pause
-  mit `auto: true` (eine Lücke). Lücken werden **nicht gezeichnet**, der Platz im Takt bleibt
-  leer. Die Takt-Prüfung kennt nur „voll“ (keine Lücke) und „nicht voll“.
-- **Noten rücken zusammen:** Die Ereignisse eines Takts stehen immer lückenlos ab dem
+  mit `auto: true` (eine Lücke). In Modul 1 werden Lücken **nicht gezeichnet**, der Platz im
+  Takt bleibt leer, und die Takt-Prüfung kennt nur „voll“ (keine Lücke) und „nicht voll“.
+  In der Vollversion werden alle Pausen gezeichnet (siehe Abschnitt 5, Eingabe).
+- **Noten rücken zusammen** (nur Modul 1, die Vollversion überschreibt): Die Ereignisse eines Takts stehen immer lückenlos ab dem
   Taktanfang, wie Buchstaben in einem Wort. Freier Platz (Lücke) gibt es nur am Taktende.
   So entsteht nie eine Pause, die man hört, aber nicht sieht. Gezielt gesetzte Pausen
   (`auto: false`, in Modul 1 per Link zuschaltbar) sind weitere Ereignisse in dieser Reihe.
@@ -171,15 +174,14 @@ Regeln:
   ausgeblendet. Im 2/2 zählen Metronom und Einzähler 2 Halbe, Triolen beginnen wie im 4/4
   auf einer Viertel.
 - **Notenwert-Leiste und Taktart:** Werte, die in der gewählten Taktart nie in einen Takt
-  passen (z. B. Ganze im 3/4, punktierte Halbe im 2/4), blendet die Leiste aus. Was nur gerade
-  nicht mehr passt, bleibt sichtbar (keine Vorschau, siehe Modul 1).
-- **Haltebögen** (`tieToNext`, ab Modul 2) verbinden eine Note mit der direkt folgenden Note
+  passen (z. B. Ganze im 3/4, punktierte Halbe im 2/4), blendet die Leiste aus.
+- **Haltebögen** (`tieToNext`, Vollversion) verbinden eine Note mit der direkt folgenden Note
   gleicher Tonhöhe, innerhalb eines Takts und über den Taktstrich. Ändert sich die Tonhöhe
   einer verbundenen Note, wandert die andere mit. Folgt keine passende Note mehr (gelöscht,
-  zur Pause gemacht, durch Zusammenrücken ersetzt), verschwindet der Bogen. Die letzte Note
-  des Stücks hat keinen Bogen. Verbundene Noten klingen als ein Ton, die mitlaufende Markierung
-  leuchtet über beiden, der Notenname steht nur unter der ersten. Die App setzt nie selbst
-  Bögen: Passt eine verlängerte Note nicht mehr in den Takt, ändert sich nichts.
+  überschrieben), verschwindet der Bogen. Die letzte Note des Stücks hat keinen Bogen.
+  Verbundene Noten klingen als ein Ton, die mitlaufende Markierung leuchtet über beiden, der
+  Notenname steht nur unter der ersten. Wird eine Note über den Taktstrich hinaus verlängert,
+  setzt die App selbst einen Bogen in den nächsten Takt (siehe Eingabe der Vollversion).
 - Notiert wird **immer klingend**, transponierende Instrumente gibt es im Notenbild nicht.
 - Notennamen in der Oberfläche sind **deutsch**: c d e f g a h, B = H, Be-Vorzeichen auf h
   heißt b. Oktaven: c' … h' = 4. Oktave, c'' … = 5. Oktave.
@@ -319,17 +321,39 @@ const modul1: ModuleConfig = {
 - Info-Seite mit Lizenzhinweisen (Samples CC BY 3.0, Schriften, verwendete Bibliotheken):
   unauffälliger Link „Info und Lizenzen“ unten rechts, öffnet ein Fenster über der Partitur.
 - Läuft als WebApp im Browser (Safari auf dem iPad, dazu Chrome und Firefox am Rechner).
-  Eine PWA ist erst für Modul 2 vorgesehen, aber nichts verbauen, was das verhindert.
+  Eine PWA ist erst für die Vollversion vorgesehen, aber nichts verbauen, was das verhindert.
 
-## 5. Ausblick (nicht bauen, aber im Aufbau berücksichtigen)
+## 5. Vollversion (in Planung, noch nicht bauen)
 
-**Modul 2 (Entwurf):** 8 Takte, 4/4, 3/4, 2/4, Auftakt; C-, G- und F-Dur; zusätzlich
-punktierte Noten, Haltebögen, Pausen gezielt setzen (immer an); Kreuz und Be; Tonumfang c'–a'';
-Taktnummern; Bildschirmklaviatur; Takt auswählen und kopieren; Wiedergabe ab Takt, Tempo-
-Regler, Metronom, Einzähler, Schleife, Mitscrollen; Zeilen untereinander; Speichern und
-Öffnen als Datei; Teilen per Link; Abgabe zusätzlich als Audio; PWA.
+Ein eigenes Modul 2 als nächster Schritt entfällt (21.11.2026). Spätere Module entstehen durch
+Reduzieren der Vollversion. Aus dem früheren Modul-2-Entwurf gehören in die Vollversion:
+Auftakt, Taktnummern, Bildschirmklaviatur, Takt auswählen und kopieren, Wiedergabe ab einer
+Stelle, Tempo-Regler, Metronom, Einzähler, Schleife, Mitscrollen, Speichern und Öffnen als
+Datei, Teilen per Link, Abgabe zusätzlich als Audio, PWA.
 
-**Vollversion (Entwurf):**
+**Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
+- **Überall, wo keine Note steht, steht eine Pause**, und alle Pausen werden gezeichnet.
+  Ein leerer Takt zeigt eine Ganztaktpause (Ganzepausen-Zeichen in der Taktmitte, in jeder
+  Taktart).
+- **Pausen entstehen immer automatisch**, es gibt keinen Button „Pause“. Wer eine Pause will,
+  löscht eine Note. Die App teilt Pausen selbst nach Zählzeiten auf und ordnet sie nach jeder
+  Änderung neu (4/4: Halbe Pause nur auf Schlag 1 oder 3, keine Pause über die Taktmitte;
+  6/8: punktierte Viertelpausen pro Halbtakt). Beispiel: Viertel auf Schlag 1 → Viertelpause,
+  Halbe Pause.
+- **Überschreiben statt Zusammenrücken:** Noten bleiben an ihrer Stelle, nichts rückt nach.
+  Eine Note oder Pause antippen wählt sie aus. Ein Wert aus der Leiste ändert ihre Länge
+  (ausgewählte Ganztaktpause + Viertel → Viertelpause, Viertelpause, Halbe Pause). Ein Tipp
+  auf das Notensystem macht aus der ausgewählten Pause eine Note in Fingerhöhe, danach steht
+  der Cursor an der nächsten Stelle.
+- **Kürzer:** Der Rest wird zur Pause. **Länger:** Die Note überschreibt, was folgt; folgende
+  Noten können dabei verschwinden („Rückgängig“ holt sie zurück), eine nur teilweise überdeckte
+  Note wird zur Pause mit der Restlänge. Reicht die Länge über den Taktstrich, setzt die App
+  einen Haltebogen in den nächsten Takt und überschreibt dort ebenso.
+- **Löschen:** Die Note wird zur Pause, nichts rückt nach.
+- **Keine Takt-Prüfung** (jeder Takt ist immer voll).
+- Rückgängig und Wiederholen.
+
+**Weitere Funktionen (Entwurf):**
 - Bis zu 5 Instrumente, jedes mit eigener Notenzeile, das Klavier mit zwei Zeilen
   (höchstens 6 Zeilen). Kurzer Assistent beim Anlegen: Instrumente wählen, Klavier nur einmal.
 - Instrumente: Flöte, Klarinette, Fagott, Saxofon, Trompete, Horn, Posaune, Tuba, Violine,
@@ -342,8 +366,7 @@ Regler, Metronom, Einzähler, Schleife, Mitscrollen; Zeilen untereinander; Speic
 - **Lautstärke pro Notenzeile** (Kernfunktion), Stumm/Solo.
 - **Swing-Achtel:** Gerade notierte Achtel klingen lang–kurz (etwa 2:1).
 - Notenwerte Ganze bis Sechzehntel, punktierte Halbe, Viertel und Achtel, Achtel- und
-  Vierteltriolen, alle auch als Pausen (siehe 3.1). Offen: Regel für „kürzer machen“, wenn
-  sich ein Wert nicht gleichmäßig teilen lässt (z. B. punktierte Viertel → Viertel).
+  Vierteltriolen, alle auch als Pausen (siehe 3.1).
 - Dur und Moll bis 4 Vorzeichen, 6/8 und 2/2, Auflösungszeichen,
   Transponieren, Liedtext, Akkordsymbole mit Begleitung, Tempoangabe im Notentext.
 - Export: Fermate-Datei, PDF, Audio, MusicXML. Abgabe mit frei wählbaren Formaten.
@@ -373,4 +396,4 @@ Echtzeit-Einspielen, MIDI-Export, Konten, Server, Mailversand.
 7. **Abgabe:** Dateinamen (mit Tests), Fermate-Datei, PDF, ZIP, Teilen.
 8. **Feinschliff auf dem iPad:** Tippflächen, Zoom, Querformat und Hochformat, Info-Seite.
 
-Nach Schritt 8 wird Modul 1 im Unterricht getestet. Danach geht es mit Modul 2 weiter.
+Nach Schritt 8 wird Modul 1 im Unterricht getestet. Danach geht es mit der Vollversion weiter (Abschnitt 5).
