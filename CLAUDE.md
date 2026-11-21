@@ -129,7 +129,8 @@ interface Duration {
 }
 
 type Event =
-  | { kind: 'note'; pitches: Pitch[]; duration: Duration; tieToNext?: boolean }
+  | { kind: 'note'; pitches: Pitch[]; duration: Duration; tieToNext?: boolean;
+      lyric?: string }  // eine Silbe Liedtext (eine Strophe)
     // pitches: von unten nach oben sortiert, ohne doppelte Töne;
     // mehr als ein Ton nur, wenn das Instrument Akkorde erlaubt (Klavier)
   | { kind: 'rest'; duration: Duration; auto: boolean }; // auto = von der App aufgefüllte Lücke
@@ -159,6 +160,16 @@ interface Score {
   tempo: number;                                       // Viertel pro Minute
   swing: boolean;                                      // nur Wiedergabe, Notenbild bleibt gerade
   parts: Part[];
+  chordSymbols: ChordSymbol[];                         // gelten für alle Instrumente
+  accompaniment: { volume: number; mute: boolean; solo: boolean }; // Begleitung im Mischpult
+}
+
+interface ChordSymbol {
+  measure: number;
+  tick: number;           // immer auf einer Zählzeit
+  root: Pitch['step'];
+  alter: -1 | 0 | 1;
+  quality: 'major' | 'minor' | '7' | 'm7' | 'maj7' | 'sus4' | 'dim';
 }
 ```
 
@@ -388,11 +399,27 @@ Datei, Teilen per Link, Abgabe zusätzlich als Audio, PWA.
   Töne, die im nächsten Akkord ebenfalls vorkommen; einzelne Töne bindet man nicht von Hand.
   Notennamen stehen untereinander, der tiefste unten.
 - **Lautstärke pro Instrument** (Kernfunktion, das Klavier hat einen Regler), Stumm/Solo.
+- **Liedtext** (beschlossen 21.11.2026): eine Strophe, bei jedem Instrument möglich, eine Silbe
+  pro Note (bei Akkorden für den ganzen Akkord). Eingabe wie in Sibelius: Note auswählen,
+  Button „Text“, Eingabefeld unter der Note; Leerzeichen springt zur nächsten Note, Bindestrich
+  ebenso und zeichnet einen Trennstrich. Pausen und die zweite Note eines Haltebogens werden
+  übersprungen. Keine Haltelinie bei Silben über mehrere Noten. Tonhöhe oder Wert ändern behält
+  die Silbe, Löschen oder Überschreiben entfernt sie. Notennamen stehen zwischen Notenzeile
+  und Liedtext.
+- **Akkordsymbole** (beschlossen 21.11.2026): gehören zum Stück (Takt + Zählzeit), nicht zu
+  einer Note, und stehen über der obersten Notenzeile; nur auf Zählzeiten (im 6/8 zwei pro
+  Takt). Grundton mit Kreuz/Be, Arten Dur, Moll, 7, m7, maj7, sus4, vermindert. Deutsche
+  Schreibweise mit H (H7, B = h-Be), Moll als „Am“. Eingabe: Button „Akkordsymbol“ öffnet eine
+  Auswahl (Grundton, Vorzeichen, Art), gesetzt an der Zählzeit der ausgewählten Note oder Pause.
+  **Begleitung:** liegende Akkorde mit Klavierklang in mittlerer Lage, ein Akkord klingt bis zum
+  nächsten Symbol, die Begleitung endet mit der letzten Note. Im Mischpult eine eigene Zeile
+  „Begleitung“ (Lautstärke, Stumm, Solo), keine eigene Notenzeile, zählt nicht zu den
+  5 Instrumenten.
 - **Swing-Achtel:** Gerade notierte Achtel klingen lang–kurz (etwa 2:1).
 - Notenwerte Ganze bis Sechzehntel, punktierte Halbe, Viertel und Achtel, Achtel- und
   Vierteltriolen, alle auch als Pausen (siehe 3.1).
 - Dur und Moll bis 4 Vorzeichen, 6/8 und 2/2, Auflösungszeichen,
-  Transponieren, Liedtext, Akkordsymbole mit Begleitung, Tempoangabe im Notentext.
+  Transponieren, Tempoangabe im Notentext.
 - Export: Fermate-Datei, PDF, Audio, MusicXML. Abgabe mit frei wählbaren Formaten.
 - Aufgaben der Lehrkraft (Melodieanfang vorgeben, Noten sperren) und Hördiktat
   (Melodie hören ohne Notenbild, mitschreiben, vergleichen).
