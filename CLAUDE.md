@@ -165,6 +165,14 @@ Regeln:
 - **Triolengruppen** bestehen nur aus einer Sorte (nie Viertel- und Achteltriolen gemischt),
   Pausen darin sind erlaubt. Eine Gruppe beginnt immer auf einer Zählzeit, nie mitten im Schlag.
   Die Klammer „3“ bestimmt die App selbst aus der Reihenfolge, das Modell speichert keine Gruppe.
+- **Taktarten** (Vollversion): 2/4, 3/4, 4/4, 6/8, 2/2. Achtelbalken pro Viertel, im 2/2
+  pro Halbe, im 6/8 in zwei Gruppen zu je drei Achteln. Im 6/8 gibt es keine Triolen, gezählt
+  werden 2 Schläge (Tempo, Metronom und Einzähler in punktierten Vierteln), Swing ist dort
+  ausgeblendet. Im 2/2 zählen Metronom und Einzähler 2 Halbe, Triolen beginnen wie im 4/4
+  auf einer Viertel.
+- **Notenwert-Leiste und Taktart:** Werte, die in der gewählten Taktart nie in einen Takt
+  passen (z. B. Ganze im 3/4, punktierte Halbe im 2/4), blendet die Leiste aus. Was nur gerade
+  nicht mehr passt, bleibt sichtbar (keine Vorschau, siehe Modul 1).
 - **Haltebögen** (`tieToNext`, ab Modul 2) verbinden eine Note mit der direkt folgenden Note
   gleicher Tonhöhe, innerhalb eines Takts und über den Taktstrich. Ändert sich die Tonhöhe
   einer verbundenen Note, wandert die andere mit. Folgt keine passende Note mehr (gelöscht,
