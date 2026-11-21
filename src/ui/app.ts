@@ -61,18 +61,22 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
   // Playback: plays a copy of the score; any change to the score stops it.
   let playing: Position | null = null;
   let playedScore: Score | null = null;
-  const player = createPlayer({
-    onNote(at) {
-      if (at && !playedScore) return; // a late marking after the stop
-      playing = at;
-      render();
+  const player = createPlayer(
+    {
+      onSounding(list) {
+        const at = list[0] ?? null;
+        if (at && !playedScore) return; // a late marking after the stop
+        playing = at;
+        render();
+      },
+      onEnd() {
+        playing = null;
+        playedScore = null;
+        render();
+      },
     },
-    onEnd() {
-      playing = null;
-      playedScore = null;
-      render();
-    },
-  });
+    { modul1: true },
+  );
   // iOS allows sound only after a touch: unlock the audio on every early touch.
   for (const type of ['pointerdown', 'pointerup', 'keydown'] as const) {
     document.addEventListener(type, () => player.unlock(), { capture: true });
@@ -91,7 +95,7 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       if (schedule.notes.length === 0) return; // nothing to play (no notes)
       playedScore = score; // while playing, only the sounding note is marked
       render();
-      void player.play(schedule);
+      void player.play(schedule, [{ instrument: 'piano', volume: 1, mute: false, solo: false }]);
     },
     selectDuration(ticks) {
       // With the cursor on a note or set rest, the button changes its value

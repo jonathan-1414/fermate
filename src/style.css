@@ -360,6 +360,9 @@ body {
   font-family: var(--font);
   fill: var(--text);
 }
+#score .vf-instrument-name.muted text {
+  fill: var(--muted);
+}
 
 /* Bottom toolbar of the full version (writing), close to the hand */
 .toolbar-bottom {
@@ -590,4 +593,37 @@ body {
 }
 .dialog.info .dialog-actions {
   margin-top: 16px;
+}
+
+/* Mixer and tempo (full version) */
+.mixer-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+.mixer-name.muted {
+  color: var(--muted);
+}
+.mixer-volume,
+.tempo-slider {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--accent);
+}
+.tempo-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  font-size: 28px;
+  margin: 8px 0;
+}
+.tempo-line .glyph.music {
+  font-family: Bravura, serif;
+  font-size: 36px;
+}
+.dialog.mixer {
+  width: min(34rem, calc(100vw - 32px));
 }

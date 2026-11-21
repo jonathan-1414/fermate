@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { setNote, setRest } from '../model/edit';
+import { plain } from '../model/duration';
+import { addPart } from '../model/instruments';
+import { setTie, writeNoteAt } from '../model/overwrite';
+import { voll } from '../modules/voll';
 import { createEmptyScore } from '../model/score';
 import type { Score } from '../model/types';
 import { modul1 } from '../modules/modul1';
-import { p } from '../test/helpers';
+import { ok, p } from '../test/helpers';
 import { buildSchedule, noteName } from './schedule';
 
 function place(notes: Array<[number, number, number, string]>): Score {
@@ -63,5 +67,36 @@ describe('noteName', () => {
     const result = setRest(createEmptyScore(modul1), { ...modul1, manualRests: true }, { staff: 0, measure: 0, tick: 0 }, 48);
     if (!result.ok) throw new Error(result.error);
     expect(buildSchedule(result.score)).toEqual({ notes: [], end: 0 });
+  });
+});
+
+describe('buildSchedule in the full version', () => {
+  const at = (staff: number, measure: number, tick: number) => ({ staff, measure, tick });
+  const H = 60 / 90 * 2; // half note at tempo 90
+
+  it('tied notes sound as one note; the tied note still gets its marking', () => {
+    let score = ok(writeNoteAt(createEmptyScore(voll), voll, at(0, 0, 96), [p('G4')], plain(192))); // half + half tied over the bar line
+    const schedule = buildSchedule(score);
+    expect(schedule.notes.map((n) => [n.note, n.time, n.duration])).toEqual([
+      ['G4', H, 2 * H],
+      [null, 2 * H, H],
+    ]);
+    score = ok(setTie(score, voll, at(0, 0, 96), false));
+    expect(buildSchedule(score).notes.map((n) => n.note)).toEqual(['G4', 'G4']);
+  });
+
+  it('a chord is one entry per pitch; every staff and part plays along', () => {
+    let score = ok(writeNoteAt(createEmptyScore(voll), voll, at(0, 0, 0), [p('C4'), p('E4')], plain(96)));
+    score = ok(writeNoteAt(score, voll, at(1, 0, 0), [p('C3')], plain(96)));
+    const added = addPart(score, voll, 'flute');
+    if (!added.ok) throw new Error();
+    score = ok(writeNoteAt(added.score, voll, at(0, 0, 0), [p('G5')], plain(96)));
+    const notes = buildSchedule(score).notes;
+    expect(notes.map((n) => [n.note, n.part, n.at.staff]).sort()).toEqual([
+      ['C3', 1, 2],
+      ['C4', 1, 1],
+      ['E4', 1, 1],
+      ['G5', 0, 0],
+    ]);
   });
 });

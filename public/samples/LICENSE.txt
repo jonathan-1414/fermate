@@ -1,0 +1,16 @@
+Instrument samples (MP3)
+
+Folders: piano, flute, clarinet, saxophone, bassoon, horn, trumpet, trombone, tuba,
+violin, cello, contrabass. Only a selection of notes of each instrument is included;
+the app computes the notes in between. The viola has no samples of its own: it uses
+cello samples for low notes and violin samples for high notes.
+
+Source: tonejs-instruments by Nicholaus P. Brosowsky
+https://github.com/nbrosowsky/tonejs-instruments
+(folder "horn" = "french-horn" there)
+Original recordings: Versilian Studios Orchestra 2 (VSO2) and others, see the source.
+
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+https://creativecommons.org/licenses/by/3.0/
+
+The files are used unchanged.

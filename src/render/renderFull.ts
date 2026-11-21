@@ -67,6 +67,8 @@ export interface FullLayout {
 export interface FullRenderOptions extends RenderOptions {
   /** In a chord, the selected tone (only it is drawn in the accent colour). */
   selectedTone: number;
+  /** All notes sounding right now during playback (in all staves). */
+  playingList: Position[];
 }
 
 /** Eighths are beamed per beat: per quarter, in 2/2 per half, in 6/8 three eighths together. */
@@ -210,7 +212,8 @@ function drawMargin(container: HTMLDivElement, score: Score, tops: number[], hei
     if (own.length > 1) new StaveConnector(own[0], own[own.length - 1]).setType('brace').setContext(ctx).draw();
     // The name in the middle of the instrument's staves.
     const middle = (own[0].getYForLine(2) + own[own.length - 1].getYForLine(2)) / 2;
-    ctx.openGroup('instrument-name');
+    // A muted instrument (mixer) has a grey name.
+    ctx.openGroup(part.mute ? 'instrument-name muted' : 'instrument-name');
     ctx.setFont('sans-serif', 13);
     ctx.fillText(names[p], 2, middle + 4);
     ctx.closeGroup();
@@ -333,7 +336,7 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
       placed.forEach(({ start, event }, j) => {
         const note = p.notes[j];
         if (same(options.preview, s, m, start)) markNote(note, 'preview');
-        if (same(options.playing, s, m, start)) markNote(note, 'playing');
+        if (options.playingList.some((at) => same(at, s, m, start))) markNote(note, 'playing');
         // A single note or rest is selected completely (a chord: see prepareStaff).
         if (same(options.selection, s, m, start) && !(event.kind === 'note' && event.pitches.length > 1)) {
           markNote(note, 'selected');

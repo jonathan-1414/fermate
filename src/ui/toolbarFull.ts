@@ -37,10 +37,15 @@ export interface FullToolbarState {
   canUndo: boolean;
   canRedo: boolean;
   playing: boolean;
+  /** Tempo as shown on its button: the beat (music font) and the number. */
+  tempoGlyph: string;
+  tempo: number;
 }
 
 export interface FullToolbarActions {
   togglePlay(): void;
+  openTempo(): void;
+  openMixer(): void;
   undo(): void;
   redo(): void;
   showNoteNames(): void;
@@ -75,6 +80,12 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   playButton.classList.add('play');
   const playLabel = playButton.querySelector('span:not(.glyph)')!;
   const playGlyph = playButton.querySelector('.glyph')!;
+  // Tempo: shows "♩ = 90" and opens a slider.
+  const tempoButton = button('', actions.openTempo, { music: '' });
+  tempoButton.setAttribute('aria-label', 'Tempo');
+  const tempoGlyph = tempoButton.querySelector('.glyph')!;
+  const tempoLabel = tempoButton.querySelector('span:not(.glyph)')!;
+  const mixerButton = button('Mischpult', actions.openMixer);
   const undoButton = button('Rückgängig', actions.undo, { svg: ICONS.undo });
   const redoButton = button('Wiederholen', actions.redo, { svg: ICONS.redo });
   const namesButton = button('Notennamen', actions.showNoteNames);
@@ -86,7 +97,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
 
   const topMain = document.createElement('div');
   topMain.className = 'toolbar-main';
-  topMain.append(group('Wiedergabe', playButton), group('Bearbeiten', undoButton, redoButton, namesButton));
+  topMain.append(group('Wiedergabe', playButton, tempoButton, mixerButton), group('Bearbeiten', undoButton, redoButton, namesButton));
   const corner = group('Partitur', iconButton('Neue Partitur', ICONS.plus, actions.newScore), iconButton('Abgeben', ICONS.share, actions.handIn));
   corner.classList.add('corner');
   top.append(topMain, corner);
@@ -150,6 +161,9 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
       playLabel.textContent = state.playing ? 'Stopp' : 'Abspielen';
       playGlyph.textContent = state.playing ? '■' : '▶';
       playButton.setAttribute('aria-pressed', String(state.playing));
+      tempoGlyph.textContent = state.tempoGlyph;
+      tempoLabel.textContent = `= ${state.tempo}`;
+      tempoButton.setAttribute('aria-label', `Tempo ${state.tempo}`);
     },
 
     setNoteNamesPhase(phase, durationMs) {

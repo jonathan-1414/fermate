@@ -33,7 +33,7 @@ Weitere Module entstehen danach durch Reduzieren oder leichtes Abändern der Vol
 | Sprache / Build | TypeScript, Vite, kein UI-Framework (reines DOM) |
 | Notendarstellung | VexFlow 5 (SVG-Ausgabe) |
 | Wiedergabe | Tone.js mit `Tone.Sampler` |
-| Klänge | Klavier-Samples aus *tonejs-instruments* (nbrosowsky), nur die benötigten MP3-Dateien nach `public/samples/piano/` kopieren. Lizenz CC BY 3.0 → Namensnennung auf einer Info-Seite |
+| Klänge | Samples aus *tonejs-instruments* (nbrosowsky), nur eine Auswahl von Tönen pro Instrument in `public/samples/<instrument>/` (Liste in `src/playback/samples.ts`, Herkunft in `public/samples/LICENSE.txt`). Modul 1 lädt nur seine 11 Klavier-Töne. Lizenz CC BY 3.0 → Namensnennung auf der Info-Seite |
 | PDF | jsPDF; das Notenbild wird mit VexFlow auf ein Canvas gezeichnet und als Bild (~300 dpi) eingebettet. svg2pdf.js entfällt, weil es die Notenschrift Bravura (nur WOFF2) nicht einbetten kann |
 | ZIP | fflate |
 | Teilen | Web Share API mit Dateien (`navigator.share({ files })`), Rückfall: Download |

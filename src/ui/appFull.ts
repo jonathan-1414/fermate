@@ -37,6 +37,7 @@ import { askForMeta, askHandIn, confirm, showInfo } from './dialogs';
 import { createTimedReveal } from './timedReveal';
 import { createScoreHeader } from './scoreHeader';
 import { createFullToolbar } from './toolbarFull';
+import { showMixer, showTempo } from './mixer';
 import { createOverview, createVerticalOverview } from './overview';
 import { deleteMeasure, insertMeasure } from '../model/measures';
 
@@ -127,15 +128,19 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   let layout: FullLayout | null = null;
   const history = new History<Snapshot>();
 
+  /** The notes sounding right now (all staves); the first one is followed by the view. */
+  let playingList: Position[] = [];
   let playing: Position | null = null;
   let playedScore: Score | null = null;
   const player = createPlayer({
-    onNote(at) {
-      if (at && !playedScore) return;
-      playing = at;
+    onSounding(list) {
+      if (list.length > 0 && !playedScore) return;
+      playingList = list;
+      playing = list[0] ?? null;
       render();
     },
     onEnd() {
+      playingList = [];
       playing = null;
       playedScore = null;
       render();
@@ -181,7 +186,28 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       if (schedule.notes.length === 0) return;
       playedScore = score;
       render();
-      void player.play(schedule);
+      void player.play(schedule, mixOf(score));
+    },
+    openTempo() {
+      const unit = tempoUnit();
+      showTempo(unit.glyph, Math.round(score.tempo / unit.factor), (beats) => {
+        score = { ...score, tempo: beats * unit.factor };
+        render();
+      });
+    },
+    openMixer() {
+      const names = partNames(score);
+      showMixer(
+        score.parts.map((part, i) => ({ name: names[i], volume: part.volume, mute: part.mute, solo: part.solo })),
+        (mix) => {
+          const wasPlaying = playedScore !== null;
+          const parts = score.parts.map((part, i) => ({ ...part, volume: mix[i].volume, mute: mix[i].mute, solo: mix[i].solo }));
+          score = { ...score, parts };
+          if (wasPlaying) playedScore = score; // the mixer works while playing, it does not stop
+          player.setMix(mixOf(score));
+          render();
+        },
+      );
     },
     undo() {
       const previous = history.undo({ score, cursor });
@@ -276,6 +302,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     render();
   }
 
+  /** How the parts sound (mixer settings). */
+  function mixOf(s: Score) {
+    return s.parts.map((part) => ({ instrument: part.instrument, volume: part.volume, mute: part.mute, solo: part.solo }));
+  }
+
   /** The selected tone of the selected note (in a chord: one of its tones). */
   function selectedPitch(): Pitch | null {
     const note = selectedNote();
@@ -327,7 +358,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       showRests: true,
       measureCheck: false,
       selectedTone: tone,
+      playingList,
     });
+    player.prepare(score.parts.map((part) => part.instrument));
     fitHeight();
     followView();
     header.update(score.meta);
@@ -348,7 +381,20 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       canUndo: history.canUndo(),
       canRedo: history.canRedo(),
       playing: playedScore !== null,
+      tempoGlyph: tempoUnit().glyph,
+      tempo: Math.round(score.tempo / tempoUnit().factor),
     });
+  }
+
+  /**
+   * The beat the tempo is counted in: quarter, in 2/2 half, in 6/8 dotted quarter.
+   * The score keeps the tempo in quarters per minute; `factor` converts.
+   */
+  function tempoUnit(): { glyph: string; factor: number } {
+    const ts = score.timeSignature;
+    if (isCompound(ts)) return { glyph: '\uE1D5\uE1E7', factor: 1.5 };
+    if (ts.beatValue === 2) return { glyph: '\uE1D3', factor: 2 };
+    return { glyph: '\uE1D5', factor: 1 };
   }
 
   function scroller(): HTMLElement | null {

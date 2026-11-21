@@ -13,7 +13,7 @@ const ERROR_TEXTS: Record<MetaError, string> = {
 };
 
 /** Creates an element with properties (e.g. textContent, type) and children. */
-function el<K extends keyof HTMLElementTagNameMap>(
+export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   props: Record<string, unknown> = {},
   ...children: (Node | string)[]
@@ -24,7 +24,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return element;
 }
 
-function textButton(label: string, className = 'tool'): HTMLButtonElement {
+export function textButton(label: string, className = 'tool'): HTMLButtonElement {
   return el('button', { type: 'button', className, textContent: label });
 }
 
@@ -33,7 +33,7 @@ function textButton(label: string, className = 'tool'): HTMLButtonElement {
  * The answer is passed on directly instead of relying on the dialog's own 'close'
  * event (that event is not delivered reliably while a page is in the background).
  */
-function showDialog(dialog: HTMLDialogElement, onEscape: (() => void) | null): () => void {
+export function showDialog(dialog: HTMLDialogElement, onEscape: (() => void) | null): () => void {
   dialog.addEventListener('cancel', (event) => {
     // The start dialog cannot be closed with Escape: name and class are required.
     event.preventDefault();
@@ -265,9 +265,9 @@ export function showInfo(): void {
       'ul',
       {},
       credit(
-        'Klavier-Samples aus tonejs-instruments',
+        'Instrumenten-Samples aus tonejs-instruments',
         'https://github.com/nbrosowsky/tonejs-instruments',
-        ' von Nicholaus P. Brosowsky, Aufnahmen: Versilian Studios (VSO2). Lizenz: ',
+        ' von Nicholaus P. Brosowsky (Klavier, Flöte, Klarinette, Saxofon, Fagott, Horn, Trompete, Posaune, Tuba, Violine, Violoncello, Kontrabass; die Viola klingt aus Cello- und Violinen-Aufnahmen), Aufnahmen u. a.: Versilian Studios (VSO2). Lizenz: ',
         externalLink('CC BY 3.0', 'https://creativecommons.org/licenses/by/3.0/deed.de'),
         '. Unverändert verwendet.',
       ),
