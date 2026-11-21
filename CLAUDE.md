@@ -410,6 +410,11 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - **Auftakt:** Länge in Vierteln (im 6/8 in Achteln), gewählt beim Anlegen und nachträglich im
   Einstellungsmenü an- und abwählbar und änderbar. Der letzte Takt wird automatisch um die
   Länge des Auftakts verkürzt, beide ergeben zusammen einen vollen Takt.
+  Nachträglich: Einschalten fügt vor Takt 1 einen leeren Auftakttakt ein (keine Note geht
+  verloren), Ausschalten entfernt ihn samt Noten. Beim Ändern der Länge bleiben die Noten am
+  Ende des Auftakts stehen (länger: vorne Pausen dazu, kürzer: vorne fällt weg, was nicht
+  passt). Der letzte Takt wird hinten gekürzt bzw. bekommt hinten Pausen. Rückgängig holt
+  Verlorenes zurück.
 - Rückgängig und Wiederholen.
 
 **Weitere Funktionen (Entwurf):**
