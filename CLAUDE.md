@@ -370,6 +370,8 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
   per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
   PWA, Aufgaben der Lehrkraft, Hördiktat.
+  Für „Takt kopieren“ später den Tipp auf eine Taktnummer (Takt auswählen) freihalten,
+  Taktnummern und Übersichtsleiste in der Beta nicht anders belegen.
 - Alle Punkte vor dem Bauen sind geklärt (21.11.2026); nächster Schritt: Arbeitsschritte der Beta.
 
 **Ansicht (beschlossen 21.11.2026):**
