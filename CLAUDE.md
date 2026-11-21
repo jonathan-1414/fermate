@@ -105,8 +105,9 @@ Es ist von Anfang an für mehrere Notenzeilen, Instrumente und Lautstärken ausg
 wenn Modul 1 nur eine Notenzeile benutzt.
 
 ```ts
-const TICKS_PER_QUARTER = 48; // Ganze 192, Halbe 96, Viertel 48, Achtel 24,
-                              // Sechzehntel 12, Triolen-Achtel 16, punktierte Viertel 72
+const TICKS_PER_QUARTER = 48; // Ganze 192, Halbe 96, Viertel 48, Achtel 24, Sechzehntel 12,
+                              // punktiert: Halbe 144, Viertel 72, Achtel 36,
+                              // Triolen: Viertel 32, Achtel 16
 
 interface Pitch {
   step: 'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B'; // wissenschaftliche Notation
@@ -114,9 +115,19 @@ interface Pitch {
   octave: number;                                 // c' = C4, f'' = F5
 }
 
+// Zielmodell (beschlossen 21.11.2026): gespeichert wird der gewählte Wert,
+// die Ticks werden daraus berechnet. Der Code von Modul 1 nutzt noch `ticks`
+// (+ `dotted?`) und wird vor Modul 2 umgestellt; alte Dateien werden beim Laden
+// umgewandelt.
+interface Duration {
+  base: 192 | 96 | 48 | 24 | 12; // Ganze, Halbe, Viertel, Achtel, Sechzehntel
+  dotted: boolean;               // nur bei Halbe, Viertel, Achtel
+  triplet: boolean;              // nur bei Viertel und Achtel, nie zusammen mit dotted
+}
+
 type Event =
-  | { kind: 'note'; pitch: Pitch; ticks: number; dotted?: boolean; tieToNext?: boolean }
-  | { kind: 'rest'; ticks: number; auto: boolean }; // auto = von der App aufgefüllte Lücke
+  | { kind: 'note'; pitch: Pitch; duration: Duration; tieToNext?: boolean }
+  | { kind: 'rest'; duration: Duration; auto: boolean }; // auto = von der App aufgefüllte Lücke
 
 interface Staff {
   id: string;
@@ -148,6 +159,12 @@ Regeln:
   Taktanfang, wie Buchstaben in einem Wort. Freier Platz (Lücke) gibt es nur am Taktende.
   So entsteht nie eine Pause, die man hört, aber nicht sieht. Gezielt gesetzte Pausen
   (`auto: false`, in Modul 1 per Link zuschaltbar) sind weitere Ereignisse in dieser Reihe.
+- **Notenwerte** (für Noten und Pausen gleich): Ganze bis Sechzehntel, punktiert nur Halbe,
+  Viertel und Achtel, Triolen nur als Achteltriolen (3 auf eine Viertel) und Vierteltriolen
+  (3 auf eine Halbe). Welche Werte erlaubt sind, legt das Modul fest.
+- **Triolengruppen** bestehen nur aus einer Sorte (nie Viertel- und Achteltriolen gemischt),
+  Pausen darin sind erlaubt. Eine Gruppe beginnt immer auf einer Zählzeit, nie mitten im Schlag.
+  Die Klammer „3“ bestimmt die App selbst aus der Reihenfolge, das Modell speichert keine Gruppe.
 - Notiert wird **immer klingend**, transponierende Instrumente gibt es im Notenbild nicht.
 - Notennamen in der Oberfläche sind **deutsch**: c d e f g a h, B = H, Be-Vorzeichen auf h
   heißt b. Oktaven: c' … h' = 4. Oktave, c'' … = 5. Oktave.
@@ -309,7 +326,10 @@ Regler, Metronom, Einzähler, Schleife, Mitscrollen; Zeilen untereinander; Speic
 - Eine Stimme pro Notenzeile, Akkorde nur beim Klavier.
 - **Lautstärke pro Notenzeile** (Kernfunktion), Stumm/Solo.
 - **Swing-Achtel:** Gerade notierte Achtel klingen lang–kurz (etwa 2:1).
-- Dur und Moll bis 4 Vorzeichen, 6/8 und 2/2, Sechzehntel, Triolen, Auflösungszeichen,
+- Notenwerte Ganze bis Sechzehntel, punktierte Halbe, Viertel und Achtel, Achtel- und
+  Vierteltriolen, alle auch als Pausen (siehe 3.1). Offen: Regel für „kürzer machen“, wenn
+  sich ein Wert nicht gleichmäßig teilen lässt (z. B. punktierte Viertel → Viertel).
+- Dur und Moll bis 4 Vorzeichen, 6/8 und 2/2, Auflösungszeichen,
   Transponieren, Liedtext, Akkordsymbole mit Begleitung, Tempoangabe im Notentext.
 - Export: Fermate-Datei, PDF, Audio, MusicXML. Abgabe mit frei wählbaren Formaten.
 - Aufgaben der Lehrkraft (Melodieanfang vorgeben, Noten sperren) und Hördiktat
