@@ -10,9 +10,6 @@ const DURATION_GLYPHS: Record<number, string> = {
   24: '',
 };
 
-/** Quarter rest symbol (SMuFL restQuarter) for the rest button. */
-const REST_GLYPH = '\uE4E5';
-
 export interface ToolbarState {
   duration: number;
   canUndo: boolean;
@@ -95,8 +92,8 @@ export function createToolbar(
   });
 
   // Rest: uses the chosen note value, so it sits right next to the values
-  // (only if the link switches rests on).
-  const restButton = button('Pause', actions.setRest, { music: REST_GLYPH });
+  // (only if the link switches rests on). No symbol: it sets rests of any value.
+  const restButton = button('Pause', actions.setRest);
   restButton.classList.add('duration', 'rest');
   if (restsAllowed) {
     durationGroup.append(restButton);
