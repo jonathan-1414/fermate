@@ -220,6 +220,8 @@ function pickupField(timeSignature: string, pickup: number, onChange: (ticks: nu
 
 export interface SettingsActions {
   score(): Score;
+  /** "Info und Lizenzen" (in the full version only here, to save room on the screen). */
+  showInfo(): void;
   addInstrument(id: string): void;
   removeInstrument(index: number): Promise<void>;
   setKey(key: number): void;
@@ -235,7 +237,13 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
   const dialog = el('dialog', { className: 'dialog wide' });
   const body = el('div', {});
   const done = textButton('Fertig', 'tool primary');
-  dialog.append(el('h2', { textContent: 'Einstellungen' }), body, el('div', { className: 'dialog-actions' }, done));
+  const info = el('button', { type: 'button', className: 'link-button', textContent: 'Info und Lizenzen' });
+  info.addEventListener('click', () => actions.showInfo());
+  dialog.append(
+    el('h2', { textContent: 'Einstellungen' }),
+    body,
+    el('div', { className: 'dialog-actions settings-actions' }, info, done),
+  );
 
   function draw(): void {
     const score = actions.score();

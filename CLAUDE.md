@@ -406,6 +406,8 @@ gleich, aus fis in G-Dur wird in C-Dur fis mit Kreuz; Transponieren erst nach de
 Auftakt. Die **Taktart** lässt sich nur ändern, solange die Partitur leer ist, sonst steht dort
 ein kurzer Hinweis. Das Tempo steht nicht im Menü, sondern als Regler bei der Wiedergabe.
 Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für die Angaben.
+Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeile wie in Modul 1
+gibt es in der Vollversion nicht (mehr Platz für die Noten, geändert 21.11.2026).
 
 **Leisten (beschlossen 21.11.2026):**
 - **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Rückgängig,

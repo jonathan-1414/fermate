@@ -709,3 +709,9 @@ body {
   right: 0;
   bottom: auto;
 }
+
+/* Settings: "Info und Lizenzen" on the left, "Fertig" on the right */
+.dialog-actions.settings-actions {
+  justify-content: space-between;
+  align-items: center;
+}

@@ -69,9 +69,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     <header class="toolbar"></header>
     <main class="score-area"><div class="sheet"><div class="score-frame"><div id="score"></div><div></div></div></div></main>
     <div class="toolbar toolbar-bottom"></div>
-    <footer class="app-footer"><button type="button" class="link-button">Info und Lizenzen</button></footer>
   `;
-  root.querySelector('.app-footer button')!.addEventListener('click', showInfo);
   const scoreElement = root.querySelector<HTMLDivElement>('#score')!;
   const header = createScoreHeader(root.querySelector('.sheet')!, () => void askForDetails('edit'));
   /** How far the music is scrolled to the right (screen pixels). Only the overview bar scrolls it. */
@@ -239,6 +237,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     openSettings() {
       showSettings(module, {
         score: () => score,
+        showInfo,
         addInstrument(id) {
           if (commit(addPart(score, module, id))) render();
         },
