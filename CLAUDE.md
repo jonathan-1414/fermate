@@ -119,7 +119,8 @@ interface Pitch {
 
 // Zielmodell der Vollversion (beschlossen 21.11.2026). Der Code von Modul 1 nutzt noch
 // `ticks` (+ `dotted?`), `pitch` statt `pitches` und `staves` ohne `Part`; er wird mit der
-// Vollversion umgestellt, alte Dateien werden beim Laden umgewandelt.
+// Vollversion umgestellt. Es gibt noch keine gespeicherten Dateien oder Stände aus dem
+// Unterricht, eine Umwandlung alter Daten ist daher nicht nötig.
 
 // Gespeichert wird der gewählte Wert, die Ticks werden daraus berechnet.
 interface Duration {
@@ -357,6 +358,19 @@ Reduzieren der Vollversion. Aus dem früheren Modul-2-Entwurf gehören in die Vo
 Auftakt, Taktnummern, Bildschirmklaviatur, Takt auswählen und kopieren, Wiedergabe ab einer
 Stelle, Tempo-Regler, Metronom, Einzähler, Schleife, Mitscrollen, Speichern und Öffnen als
 Datei, Teilen per Link, Abgabe zusätzlich als Audio, PWA.
+
+**Beta-Test (beschlossen 21.11.2026):** Zuerst wird ein Kern der Vollversion gebaut und getestet.
+Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
+- *In der Beta:* neues Datenmodell, Eingabe mit sichtbaren Pausen und Überschreiben, alle
+  Notenwerte, Punktierungen, Triolen, Haltebögen, Taktarten, Tonarten, Kreuz und Be, mehrere
+  Instrumente, Klavier mit zwei Zeilen und Akkorden, Wiedergabe mit Tempo-Regler, Mischpult
+  (Lautstärke, Stumm, Solo), Rückgängig und Wiederholen, Speichern im Browser, Speichern und
+  Öffnen als Datei, Abgabe (Fermate-Datei, PDF).
+- *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
+  per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
+  PWA, Aufgaben der Lehrkraft, Hördiktat.
+- *Vor dem Bauen noch zu klären:* Vorzeichen eingeben, Anzahl der Takte, Ansicht (endlos
+  waagrecht oder Zeilen untereinander), Startassistent, Anordnung der Leiste.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
 - **Immer Eingabemodus**, kein Umschalten in einen eigenen Auswahlmodus (wie in Modul 1).
