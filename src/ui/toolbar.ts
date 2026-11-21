@@ -3,7 +3,7 @@ import { ICONS } from './icons';
 import type { RevealPhase } from './timedReveal';
 
 /** Music font symbols (SMuFL code points in Bravura) for the note value buttons. */
-const DURATION_GLYPHS: Record<number, string> = {
+export const DURATION_GLYPHS: Record<number, string> = {
   192: '',
   96: '',
   48: '',
@@ -41,9 +41,9 @@ export interface ToolbarActions {
  * A button with a short label. `glyph` is a symbol in front of it: a note from the
  * music font, a drawn SVG symbol (see icons.ts) or an ordinary character.
  */
-type Glyph = { music: string } | { svg: string } | { text: string };
+export type Glyph = { music: string } | { svg: string } | { text: string };
 
-function button(label: string, onClick: () => void, glyph?: Glyph): HTMLButtonElement {
+export function button(label: string, onClick: () => void, glyph?: Glyph): HTMLButtonElement {
   const b = document.createElement('button');
   b.type = 'button';
   b.className = 'tool';
@@ -63,7 +63,7 @@ function button(label: string, onClick: () => void, glyph?: Glyph): HTMLButtonEl
 }
 
 /** A button that shows only a symbol; the name is given for screen readers and as a tooltip. */
-function iconButton(name: string, icon: string, onClick: () => void): HTMLButtonElement {
+export function iconButton(name: string, icon: string, onClick: () => void): HTMLButtonElement {
   const b = document.createElement('button');
   b.type = 'button';
   b.className = 'tool icon';

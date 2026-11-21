@@ -249,6 +249,16 @@ body {
   fill: var(--text);
 }
 
+/* Bottom toolbar of the full version (writing), close to the hand */
+.toolbar-bottom {
+  border-top: 1px solid var(--accent-soft);
+}
+/* Selected rest in the full version: in the accent colour like a selected note */
+#score .selected .vf-rest text,
+#score .vf-rest.selected text {
+  fill: var(--accent);
+}
+
 /* Note names below the staff */
 #score .vf-note-names text {
   font-family: var(--font);

@@ -50,6 +50,8 @@ export interface RenderOptions {
   measureCheck: boolean;
 }
 
+const dotsOf = (event: ScoreEvent) => (event.duration.dotted ? 1 : 0);
+
 function durationCode(ticks: number): string {
   const code = DURATION_CODES[ticks];
   if (!code) throw new Error(`No note value for ${ticks} ticks`);
@@ -59,9 +61,8 @@ function durationCode(ticks: number): string {
 function toStaveNote(event: ScoreEvent, staff: Staff, wholeMeasure: boolean, showRests: boolean): StaveNote {
   if (event.kind === 'rest') {
     // A whole rest hangs from the 4th line; a rest filling the whole measure sits in the middle.
-    const ticks = eventTicks(event);
-    const key = ticks === 192 ? 'd/5' : 'b/4';
-    const rest = new StaveNote({ keys: [key], duration: durationCode(ticks) + 'r', clef: staff.clef });
+    const key = event.duration.base === 192 ? 'd/5' : 'b/4';
+    const rest = new StaveNote({ keys: [key], duration: durationCode(event.duration.base) + 'r', dots: dotsOf(event), clef: staff.clef });
     if (wholeMeasure) rest.setCenterAlignment(true);
     // In Modul 1, gaps (automatic rests) are not shown: they keep their space, but stay
     // empty. Written into the drawing itself, so it also holds when drawn for the PDF.
@@ -70,7 +71,8 @@ function toStaveNote(event: ScoreEvent, staff: Staff, wholeMeasure: boolean, sho
   }
   return new StaveNote({
     keys: event.pitches.map(({ step, octave }) => `${step.toLowerCase()}/${octave}`),
-    duration: durationCode(eventTicks(event)),
+    duration: durationCode(event.duration.base),
+    dots: dotsOf(event),
     clef: staff.clef,
     autoStem: true,
   });
@@ -199,7 +201,8 @@ function drawMusic(
 
     const placed = placeEvents(measure);
     const notes = measure.map((event) => toStaveNote(event, staff, eventTicks(event) === length, options.showRests));
-    const voice = new Voice({ numBeats: beats, beatValue }).addTickables(notes);
+    // Soft: the PDF of the full version is drawn here too until it gets its own (beta step 9).
+    const voice = new Voice({ numBeats: beats, beatValue }).setMode(Voice.Mode.SOFT).addTickables(notes);
     notes.forEach((note) => note.setStave(stave)); // needed before reading note positions
     // Eighths are beamed per beat.
     const beams = Beam.generateBeams(notes, { groups: [new Fraction(1, beatValue)] });

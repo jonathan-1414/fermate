@@ -3,7 +3,7 @@ import { durationTicks, isValidDuration } from './duration';
 import type { EditResult } from './edit';
 import { clearSpan, fromItems, groupAt, type Item, type NoteEvent, toItems } from './items';
 import { beatLength, fullMeasureLength, isCompound, measureLengths, splitIntoValues } from './meter';
-import { isInRange } from './pitch';
+import { isInRange, parsePitch } from './pitch';
 import { cleanTies, indexAt, samePitch, staffEvents, tieChain } from './sequence';
 import { allStaves } from './staves';
 import type { Duration, Pitch, Position, Score, Staff, TimeSignature } from './types';
@@ -266,4 +266,48 @@ export function setTie(score: Score, module: ModuleConfig, at: Position, on: boo
   }
   event.tieToNext = true;
   return done(ctx);
+}
+
+/**
+ * Is the cursor on a rest (at its start or inside it, see writeNoteAt)? Then a value
+ * chosen in the toolbar only shows how the rest is split (see restPreview).
+ */
+export function isOnRest(score: Score, at: Position): boolean {
+  const staff = allStaves(score)[at.staff];
+  if (!staff?.measures[at.measure] || !isWritable(staff, at)) return false;
+  return noteAtPosition(staff, at) === null;
+}
+
+function noteAtPosition(staff: Staff, at: Position): NoteEvent | null {
+  const events = staffEvents(staff);
+  const event = events[indexAt(events, at)]?.event;
+  return event?.kind === 'note' ? event : null;
+}
+
+/**
+ * How a rest looks when a value is chosen on it (only for drawing, never saved):
+ * a whole-measure rest with "quarter" chosen becomes quarter, quarter, half rest,
+ * with the chosen part starting at the cursor. Only if the value fits into the rests
+ * up to the next note; otherwise null (the note will overwrite when it is set).
+ */
+export function restPreview(score: Score, module: ModuleConfig, at: Position, duration: Duration): Score | null {
+  if (!isOnRest(score, at)) return null;
+  const staff = allStaves(score)[at.staff];
+  const ticks = durationTicks(duration);
+  const items = readItems(staff, at.measure);
+  const group = groupAt(items, at.tick);
+  if (group) return group.unit === ticks ? score : null; // the slot already has this value
+  const nextNote = items.map((item) => item.start).filter((start) => start > at.tick);
+  const gapEnd = Math.min(measureLengths(score.timeSignature, score.pickup, staff.measures.length)[at.measure], ...nextNote);
+  if (at.tick + (duration.triplet ? 3 * ticks : ticks) > gapEnd) return null;
+  const written = writeNoteAt(score, module, at, [parsePitch(module.range.low)], duration);
+  if (!written.ok) return null;
+  const measure = allStaves(written.score)[at.staff].measures[at.measure];
+  let start = 0;
+  allStaves(written.score)[at.staff].measures[at.measure] = measure.map((event) => {
+    const here = start === at.tick;
+    start += durationTicks(event.duration);
+    return here && event.kind === 'note' ? { kind: 'rest', duration: event.duration, auto: true } : event;
+  });
+  return written.score;
 }

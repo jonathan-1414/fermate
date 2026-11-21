@@ -10,6 +10,8 @@ import {
   deleteNoteAt,
   fitsTimeSignature,
   isAllowedDuration,
+  isOnRest,
+  restPreview,
   setAccidental,
   setTie,
   writeNoteAt,
@@ -266,5 +268,32 @@ group('pickup and the last measure', () => {
     const score = ok(setPickup(empty(), voll, 48));
     expect(m(note(score, 0, 0, 'G4', Q), 0)).toEqual(['n48@0 G4']);
     expect(m(score, 8)).toEqual(['r96@0', 'r48@96']);
+  });
+});
+
+group('choosing a value on a rest (only shown)', () => {
+  it('a whole-measure rest with a quarter chosen: quarter, quarter, half', () => {
+    expect(m(restPreview(empty(), voll, at(0, 0), Q)!)).toEqual(['r48@0', 'r48@48', 'r96@96']);
+  });
+
+  it('the chosen part starts at the cursor, also inside a rest', () => {
+    expect(m(restPreview(empty(), voll, at(0, 96), E)!)).toEqual(['r96@0', 'r24@96', 'r24@120', 'r48@144']);
+  });
+
+  it('triplets show their group', () => {
+    expect(m(restPreview(empty(), voll, at(0, 48), triplet(24))!)).toEqual(['r48@0', 'r16@48', 'r16@64', 'r16@80', 'r96@96']);
+  });
+
+  it('nothing to show when the value is longer than the rests up to the next note', () => {
+    const score = note(empty(), 0, 96, 'C4', Q);
+    expect(restPreview(score, voll, at(0, 0), W)).toBeNull();
+    expect(m(restPreview(score, voll, at(0, 0), H)!)).toEqual(['r96@0', 'n48@96 C4', 'r48@144']);
+  });
+
+  it('knows whether the cursor is on a rest', () => {
+    const score = note(empty(), 0, 0, 'C4', H);
+    expect([isOnRest(score, at(0, 0)), isOnRest(score, at(0, 96)), isOnRest(score, at(0, 144)), isOnRest(score, at(0, 48))]).toEqual([
+      false, true, true, false,
+    ]);
   });
 });

@@ -29,4 +29,23 @@ describe('History', () => {
     expect(history.undo()).toBe(2);
     expect(history.canUndo()).toBe(false);
   });
+
+  it('redo restores what was undone, until something new happens', () => {
+    const history = new History<number>();
+    history.push(1);
+    history.push(2);
+    expect(history.undo(3)).toBe(2);
+    expect(history.canRedo()).toBe(true);
+    expect(history.redo(2)).toBe(3);
+    expect(history.undo(3)).toBe(2);
+    history.push(2);
+    expect(history.canRedo()).toBe(false);
+  });
+
+  it('undo without the current state keeps no redo (Modul 1)', () => {
+    const history = new History<number>();
+    history.push(1);
+    history.undo();
+    expect(history.canRedo()).toBe(false);
+  });
 });
