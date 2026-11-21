@@ -1,10 +1,11 @@
 import { advanceCursor, initialCursor, positionForTap } from '../model/cursor';
 import { isMetaComplete } from '../model/meta';
-import { canPlace, changeDuration, changePitch, deleteNote, setNote } from '../model/edit';
+import { canPlace, changeDuration, changePitch, deleteEvent, setNote, setRest } from '../model/edit';
 import { History } from '../model/history';
 import { isInRange, pitchAtStaffPosition } from '../model/pitch';
 import { createEmptyScore } from '../model/score';
-import type { Pitch, Position, Score } from '../model/types';
+import { isOccupant } from '../model/measure';
+import type { Pitch, Position, Score, ScoreEvent } from '../model/types';
 import type { ModuleConfig } from '../modules/types';
 import { hitTest, staffPositionAt } from '../input/hitTest';
 import { attachScoreInput } from '../input/scoreInput';
@@ -73,7 +74,7 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
   }
 
 
-  const toolbar = createToolbar(root.querySelector('.toolbar')!, module.durations, {
+  const toolbar = createToolbar(root.querySelector('.toolbar')!, module.durations, module.manualRests, {
     togglePlay() {
       if (player.isPlaying() || playedScore) {
         player.stop();
@@ -82,15 +83,15 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
         return;
       }
       const schedule = buildSchedule(score);
-      if (schedule.notes.length === 0) return; // nothing to play
+      if (schedule.notes.length === 0) return; // nothing to play (no notes)
       playedScore = score; // while playing, only the sounding note is marked
       render();
       void player.play(schedule);
     },
     selectDuration(ticks) {
-      // With the cursor on a note, the button changes that note's value
+      // With the cursor on a note or set rest, the button changes its value
       // (if the new value fits; otherwise nothing changes).
-      const selection = selectedNote();
+      const selection = selectedEvent();
       if (selection) {
         const result = changeDuration(score, module, selection, ticks);
         if (!result.ok) return;
@@ -100,19 +101,31 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       duration = ticks;
       render();
     },
+    setRest() {
+      // On a note: it becomes a rest of the same value. In the free space: a rest of the
+      // chosen value is appended (if it fits). On a set rest: nothing to do.
+      const ticks = eventTicksAt(cursor);
+      if (ticks !== null && restAt(cursor)) return;
+      const result = setRest(score, module, cursor, ticks ?? duration);
+      if (!result.ok) return;
+      history.push({ score, cursor });
+      score = result.score;
+      if (ticks === null) cursor = advanceCursor(score, cursor);
+      render();
+    },
     undo() {
       const previous = history.undo();
       if (!previous) return;
       // Undo is for notes only: the details (names, class, title) stay as they are.
       score = { ...previous.score, meta: score.meta };
       cursor = previous.cursor;
-      duration = noteTicksAt(cursor) ?? duration; // on a note, the toolbar shows its value
+      duration = eventTicksAt(cursor) ?? duration; // on a note or rest, the toolbar shows its value
       render();
     },
     deleteSelection() {
-      const selection = selectedNote();
+      const selection = selectedEvent();
       if (!selection) return;
-      const result = deleteNote(score, selection);
+      const result = deleteEvent(score, selection);
       if (!result.ok) return;
       history.push({ score, cursor });
       score = result.score;
@@ -183,42 +196,59 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
     layout = renderScore(scoreElement, shown, {
       showNoteNames,
       cursor: preview || playedScore ? null : cursor,
-      selection: preview || playedScore ? null : selectedNote(),
+      selection: preview || playedScore ? null : selectedEvent(),
       preview: preview?.at ?? null,
       playing,
     });
     toolbar.update({
       duration,
       canUndo: history.canUndo(),
-      canDelete: selectedNote() !== null,
+      canDelete: selectedEvent() !== null,
+      onRest: restAt(cursor),
       playing: playedScore !== null,
     });
   }
 
-  /** Note value of the note that starts at this position, if there is one. */
-  function noteTicksAt(at: Position): number | null {
+  /** The note or set rest that starts at this position, if there is one (not a gap). */
+  function eventAt(at: Position): ScoreEvent | null {
     let start = 0;
     for (const event of score.staves[at.staff].measures[at.measure]) {
-      if (start === at.tick && event.kind === 'note') return event.ticks;
+      if (start === at.tick && isOccupant(event)) return event;
       start += event.ticks;
     }
     return null;
   }
 
-  /** The note the cursor stands on (it is shown as selected), or null in free space. */
-  function selectedNote(): Position | null {
-    return noteTicksAt(cursor) !== null ? cursor : null;
+  /** Value of the note or set rest that starts at this position, if there is one. */
+  function eventTicksAt(at: Position): number | null {
+    return eventAt(at)?.ticks ?? null;
+  }
+
+  function restAt(at: Position): boolean {
+    return eventAt(at)?.kind === 'rest';
+  }
+
+  /** The note or rest the cursor stands on (it is shown as selected), or null in free space. */
+  function selectedEvent(): Position | null {
+    return eventAt(cursor) !== null ? cursor : null;
   }
 
   function samePosition(a: Position, b: Position): boolean {
     return a.staff === b.staff && a.measure === b.measure && a.tick === b.tick;
   }
 
-  /** Moves the dragged note to the pitch under the finger. Returns whether anything changed. */
+  /**
+   * Moves the dragged note to the pitch under the finger; a set rest becomes a note
+   * of the same value there. Returns whether anything changed.
+   */
   function changePitchTo(drag: Extract<Gesture, { kind: 'drag' }>, y: number): boolean {
     const pitch = pitchAt(y);
     if (!pitch) return false;
-    const result = changePitch(score, module, drag.at, pitch);
+    const event = eventAt(drag.at);
+    const result =
+      event?.kind === 'rest'
+        ? setNote(score, module, drag.at, pitch, event.ticks)
+        : changePitch(score, module, drag.at, pitch);
     if (!result.ok || JSON.stringify(result.score) === JSON.stringify(score)) return false;
     score = result.score;
     drag.changed = true;
@@ -239,21 +269,22 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       const hit = hitTest(layout, x, y);
       if (!hit) return;
       const before = { score, cursor };
-      // The spot under the finger: a note (its head or its column), or else the free
-      // space behind the last note of the measure.
+      // The spot under the finger: a note or set rest (its head or its column), or else
+      // the free space behind the last note of the measure.
       const spot = positionForTap(score, cursor.staff, hit.measure, hit.noteTick ?? hit.columnTick);
 
       // Notes are only placed or changed where the cursor is. Touching another spot
       // only moves the cursor there. On a note, the toolbar shows that note's value.
       if (!samePosition(spot, cursor)) {
         cursor = spot;
-        duration = noteTicksAt(cursor) ?? duration;
+        duration = eventTicksAt(cursor) ?? duration;
         render();
         return;
       }
 
       // The cursor is on a note: it follows the finger up and down (changing its pitch).
-      if (noteTicksAt(cursor) !== null) {
+      // On a set rest: it becomes a note at the finger, which then follows the finger.
+      if (eventAt(cursor) !== null) {
         gesture = { kind: 'drag', at: cursor, before, changed: false };
         changePitchTo(gesture, y);
         render();

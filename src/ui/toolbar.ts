@@ -10,10 +10,15 @@ const DURATION_GLYPHS: Record<number, string> = {
   24: '',
 };
 
+/** Quarter rest symbol (SMuFL restQuarter) for the rest button. */
+const REST_GLYPH = '\uE4E5';
+
 export interface ToolbarState {
   duration: number;
   canUndo: boolean;
   canDelete: boolean;
+  /** The cursor stands on a set rest (the rest button shows as pressed). */
+  onRest: boolean;
   playing: boolean;
 }
 
@@ -25,6 +30,7 @@ export interface Toolbar {
 
 export interface ToolbarActions {
   selectDuration(ticks: number): void;
+  setRest(): void;
   togglePlay(): void;
   undo(): void;
   deleteSelection(): void;
@@ -74,6 +80,7 @@ function iconButton(name: string, icon: string, onClick: () => void): HTMLButton
 export function createToolbar(
   container: HTMLElement,
   durations: number[],
+  restsAllowed: boolean,
   actions: ToolbarActions,
 ): Toolbar {
   const durationGroup = document.createElement('div');
@@ -86,6 +93,15 @@ export function createToolbar(
     durationGroup.append(b);
     return { ticks, b };
   });
+
+  // Rest: uses the chosen note value, so it sits right next to the values
+  // (only if the link switches rests on).
+  const restButton = button('Pause', actions.setRest, { music: REST_GLYPH });
+  restButton.classList.add('duration', 'rest');
+  if (restsAllowed) {
+    durationGroup.append(restButton);
+    durationGroup.setAttribute('aria-label', 'Notenwert und Pause');
+  }
 
   const playGroup = document.createElement('div');
   playGroup.className = 'tool-group';
@@ -130,6 +146,7 @@ export function createToolbar(
       for (const { ticks, b } of durationButtons) {
         b.setAttribute('aria-pressed', String(ticks === state.duration));
       }
+      restButton.setAttribute('aria-pressed', String(state.onRest));
       undoButton.disabled = !state.canUndo;
       deleteButton.disabled = !state.canDelete;
       playLabel.textContent = state.playing ? 'Stopp' : 'Abspielen';

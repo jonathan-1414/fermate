@@ -1,12 +1,13 @@
 import { describe as group, expect, it } from 'vitest';
 import { modul1 } from '../modules/modul1';
 import { describe, p } from '../test/helpers';
-import { canPlace, changeDuration, changePitch, deleteNote, setNote, type EditResult } from './edit';
+import { canPlace, changeDuration, changePitch, deleteEvent, setNote, setRest, type EditResult } from './edit';
 import { firstFreeTick } from './measure';
 import { createEmptyScore } from './score';
 import type { Pitch, Score } from './types';
 
 const at = (tick: number, measure = 0) => ({ staff: 0, measure, tick });
+const withRests = { ...modul1, manualRests: true };
 
 function ok(result: EditResult): Score {
   if (!result.ok) throw new Error(`Edit failed: ${result.error}`);
@@ -162,21 +163,21 @@ group('canPlace', () => {
   });
 });
 
-group('deleteNote', () => {
+group('deleteEvent', () => {
   it('removes the note; the following notes move left', () => {
     const score = place([
       [0, 48, 'C4'],
       [48, 48, 'D4'],
     ]);
-    const one = ok(deleteNote(score, at(0)));
+    const one = ok(deleteEvent(score, at(0)));
     expect(m(one)).toEqual(['n48@0 D4', 'r48@48', 'r96@96']);
-    const both = ok(deleteNote(one, at(0)));
+    const both = ok(deleteEvent(one, at(0)));
     expect(m(both)).toEqual(['r192@0']);
   });
 
   it('fails if there is no note', () => {
-    expect(deleteNote(createEmptyScore(modul1), at(0))).toEqual({ ok: false, error: 'no-note' });
-    expect(deleteNote(place([[0, 96, 'C4']]), at(48))).toEqual({ ok: false, error: 'no-note' });
+    expect(deleteEvent(createEmptyScore(modul1), at(0))).toEqual({ ok: false, error: 'no-event' });
+    expect(deleteEvent(place([[0, 96, 'C4']]), at(48))).toEqual({ ok: false, error: 'no-event' });
   });
 });
 
@@ -251,7 +252,7 @@ group('changeDuration', () => {
   });
 
   it('fails if there is no note', () => {
-    expect(changeDuration(createEmptyScore(modul1), modul1, at(0), 48)).toEqual({ ok: false, error: 'no-note' });
+    expect(changeDuration(createEmptyScore(modul1), modul1, at(0), 48)).toEqual({ ok: false, error: 'no-event' });
   });
 });
 
@@ -259,5 +260,64 @@ group('firstFreeTick', () => {
   it('is where the cursor goes when tapping a measure', () => {
     expect(firstFreeTick(place([[0, 48, 'C4']]).staves[0].measures[0])).toBe(48);
     expect(firstFreeTick(place([[0, 192, 'C4']]).staves[0].measures[0])).toBeNull();
+  });
+});
+
+group('setRest', () => {
+  const rest = (score: Score, tick: number, ticks: number, measure = 0) =>
+    ok(setRest(score, withRests, at(tick, measure), ticks));
+
+  it('is only allowed when the link switches rests on', () => {
+    expect(setRest(createEmptyScore(modul1), modul1, at(0), 48)).toEqual({ ok: false, error: 'rests-not-allowed' });
+  });
+
+  it('appends a set rest behind the last note, like a note', () => {
+    const score = rest(place([[0, 48, 'C4']]), 48, 48);
+    expect(m(score)).toEqual(['n48@0 C4', 'R48@48', 'r96@96']);
+  });
+
+  it('turns a note into a rest of the same value; the following notes stay', () => {
+    const score = rest(place([[0, 48, 'C4'], [48, 48, 'D4']]), 0, 48);
+    expect(m(score)).toEqual(['R48@0', 'n48@48 D4', 'r96@96']);
+  });
+
+  it('a note can replace a set rest (rest becomes note)', () => {
+    const score = ok(setNote(rest(createEmptyScore(modul1), 0, 96), modul1, at(0), p('G4'), 96));
+    expect(m(score)).toEqual(['n96@0 G4', 'r96@96']);
+  });
+
+  it('a set rest makes the measure full like a note', () => {
+    const score = rest(place([[0, 48, 'C4'], [48, 48, 'D4'], [96, 48, 'E4']]), 144, 48);
+    expect(firstFreeTick(score.staves[0].measures[0])).toBeNull();
+  });
+
+  it('rejects rests that do not fit or values the module does not have', () => {
+    const full = place([[0, 192, 'C4']]);
+    expect(setRest(full, withRests, at(192), 48)).toEqual({ ok: false, error: 'does-not-fit' });
+    expect(setRest(createEmptyScore(modul1), withRests, at(0), 12)).toEqual({ ok: false, error: 'duration-not-allowed' });
+  });
+
+  it('can be deleted; the following notes move left', () => {
+    const score = rest(place([[0, 48, 'C4'], [48, 48, 'D4']]), 0, 48);
+    expect(m(ok(deleteEvent(score, at(0))))).toEqual(['n48@0 D4', 'r48@48', 'r96@96']);
+  });
+
+  it('shorter: a half rest is split into two quarter rests', () => {
+    const score = ok(changeDuration(rest(place([[0, 48, 'C4']]), 48, 96), modul1, at(48), 48));
+    expect(m(score)).toEqual(['n48@0 C4', 'R48@48', 'R48@96', 'r48@144']);
+  });
+
+  it('longer: the following notes move right, or nothing changes if it does not fit', () => {
+    const score = rest(createEmptyScore(modul1), 0, 48);
+    const withNote = ok(setNote(score, modul1, at(48), p('D4'), 48));
+    expect(m(ok(changeDuration(withNote, modul1, at(0), 96)))).toEqual(['R96@0', 'n48@96 D4', 'r48@144']);
+    expect(changeDuration(withNote, modul1, at(0), 192)).toEqual({ ok: false, error: 'does-not-fit' });
+  });
+
+  it('changing the pitch of a rest is not possible', () => {
+    expect(changePitch(rest(createEmptyScore(modul1), 0, 48), modul1, at(0), p('C4'))).toEqual({
+      ok: false,
+      error: 'no-note',
+    });
   });
 });

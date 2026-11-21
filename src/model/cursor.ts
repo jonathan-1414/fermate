@@ -1,4 +1,4 @@
-import { firstFreeTick, measureLength, placeEvents } from './measure';
+import { firstFreeTick, isOccupant, measureLength, placeEvents } from './measure';
 import type { Position, Score } from './types';
 
 /**
@@ -17,13 +17,13 @@ export function advanceCursor(score: Score, at: Position): Position {
 
 /**
  * Where a note goes when the finger touches the column of the event that starts at `tick`.
- * On a note: at that note (it gets replaced). Anywhere else: behind the last note,
- * because the notes of a measure always stand together from the start.
+ * On a note or set rest: there (it gets replaced). In a gap: behind the last event,
+ * because the events of a measure always stand together from the start.
  */
 export function positionForTap(score: Score, staff: number, measure: number, tick: number): Position {
   const events = score.staves[staff].measures[measure];
-  const onNote = placeEvents(events).some((p) => p.start === tick && p.event.kind === 'note');
-  if (onNote) return { staff, measure, tick };
+  const onEvent = placeEvents(events).some((p) => p.start === tick && isOccupant(p.event));
+  if (onEvent) return { staff, measure, tick };
   return { staff, measure, tick: firstFreeTick(events) ?? measureLength(score.timeSignature) };
 }
 

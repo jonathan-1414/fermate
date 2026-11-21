@@ -15,4 +15,16 @@ describe('moduleFromSearch', () => {
     expect(moduleFromSearch('?modul=99')).toBe(modul1);
     expect(moduleFromSearch('?modul=')).toBe(modul1);
   });
+
+  it('switches on setting rests with &pausen=ja', () => {
+    expect(moduleFromSearch('?modul=1&pausen=ja')).toEqual({ ...modul1, manualRests: true });
+    expect(moduleFromSearch('?pausen=ja').manualRests).toBe(true);
+  });
+
+  it('leaves rests off without pausen=ja, and does not change Modul 1 itself', () => {
+    expect(moduleFromSearch('?modul=1&pausen=nein').manualRests).toBe(false);
+    expect(moduleFromSearch('?modul=1').manualRests).toBe(false);
+    moduleFromSearch('?pausen=ja');
+    expect(modul1.manualRests).toBe(false);
+  });
 });

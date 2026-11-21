@@ -47,7 +47,7 @@ export function emptyMeasure(length: number): ScoreEvent[] {
   return autoRests(0, length);
 }
 
-/** Events that the user placed (notes, later also manual rests). */
+/** Events that the user placed (notes and set rests), as opposed to gaps. */
 export function isOccupant(event: ScoreEvent): boolean {
   return event.kind === 'note' || !event.auto;
 }

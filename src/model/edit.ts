@@ -12,7 +12,9 @@ export type EditError =
   | 'duration-not-allowed' // note value not in this module
   | 'out-of-range' // pitch outside the module's range
   | 'does-not-fit' // note would go past the end of the measure
-  | 'no-note'; // there is no note at this position
+  | 'no-note' // there is no note at this position
+  | 'no-event' // there is no note or set rest at this position
+  | 'rests-not-allowed'; // this module (or link) does not allow setting rests
 
 export type EditResult = { ok: true; score: Score } | { ok: false; error: EditError };
 
@@ -30,7 +32,7 @@ function withMeasure(score: Score, at: Position, measure: ScoreEvent[]): Score {
   return copy;
 }
 
-/** The user's events of a measure (notes, later also manual rests), in order, without gaps. */
+/** The user's events of a measure (notes and set rests), in order, without gaps. */
 function occupantsOf(measure: ScoreEvent[]): ScoreEvent[] {
   return measure.filter(isOccupant);
 }
@@ -82,10 +84,26 @@ export function canPlace(score: Score, module: ModuleConfig, at: Position, ticks
 }
 
 /**
+ * Places an event (note or set rest) at a spot: on an event, it replaces it and the
+ * following events move along (left if shorter, right if longer); in the free space,
+ * it is appended. If the events would no longer fit into the measure, nothing changes.
+ */
+function placeEvent(score: Score, module: ModuleConfig, at: Position, event: ScoreEvent): EditResult {
+  const measure = getMeasure(score, at);
+  if (!measure) return fail('invalid-position');
+  if (!module.durations.includes(event.ticks)) return fail('duration-not-allowed');
+  const events = withEventAt(occupantsOf(measure), at.tick, event);
+  if (!events) return fail('invalid-position');
+  const length = measureLength(score.timeSignature);
+  if (totalTicks(events) > length) return fail('does-not-fit');
+  return { ok: true, score: withMeasure(score, at, packed(events, length)) };
+}
+
+/**
  * Places a note. Notes in a measure always stand together from the start, like letters
- * in a word; free space is only at the end. On a note, the new note replaces it and
- * the following notes move along (left if shorter, right if longer). In the free space,
- * the note is appended. If the notes would no longer fit into the measure, nothing changes.
+ * in a word; free space is only at the end. On a note (or set rest), the new note replaces
+ * it and the following events move along (left if shorter, right if longer). In the free
+ * space, the note is appended. If everything would no longer fit, nothing changes.
  */
 export function setNote(
   score: Score,
@@ -94,24 +112,29 @@ export function setNote(
   pitch: Pitch,
   ticks: number,
 ): EditResult {
-  const measure = getMeasure(score, at);
-  if (!measure) return fail('invalid-position');
+  if (!getMeasure(score, at)) return fail('invalid-position');
   if (!module.durations.includes(ticks)) return fail('duration-not-allowed');
   if (!isInRange(pitch, module.range)) return fail('out-of-range');
-  const events = withEventAt(occupantsOf(measure), at.tick, { kind: 'note', pitch: { ...pitch }, ticks });
-  if (!events) return fail('invalid-position');
-  const length = measureLength(score.timeSignature);
-  if (totalTicks(events) > length) return fail('does-not-fit');
-  return { ok: true, score: withMeasure(score, at, packed(events, length)) };
+  return placeEvent(score, module, at, { kind: 'note', pitch: { ...pitch }, ticks });
 }
 
-/** Deletes the note that starts at this position; the following notes move left. */
-export function deleteNote(score: Score, at: Position): EditResult {
+/**
+ * Places a rest that the user chose (shown, unlike a gap), following the same rules
+ * as a note: on a note it replaces it, in the free space it is appended.
+ * Only if the module (or the link) allows setting rests.
+ */
+export function setRest(score: Score, module: ModuleConfig, at: Position, ticks: number): EditResult {
+  if (!module.manualRests) return fail('rests-not-allowed');
+  return placeEvent(score, module, at, { kind: 'rest', ticks, auto: false });
+}
+
+/** Deletes the note or set rest that starts at this position; the following events move left. */
+export function deleteEvent(score: Score, at: Position): EditResult {
   const measure = getMeasure(score, at);
   if (!measure) return fail('invalid-position');
   const events = occupantsOf(measure);
   const slot = slotAt(events, at.tick);
-  if (!slot?.replace || events[slot.index].kind !== 'note') return fail('no-note');
+  if (!slot?.replace) return fail('no-event');
   events.splice(slot.index, 1);
   return { ok: true, score: withMeasure(score, at, packed(events, measureLength(score.timeSignature))) };
 }
@@ -129,27 +152,24 @@ export function changePitch(score: Score, module: ModuleConfig, at: Position, pi
 }
 
 /**
- * Changes the note value of the note that starts at this position; the pitch stays.
- * Shorter: the note is split into notes of the new value with the same pitch, so it
- * keeps its place and the following notes stay where they are (a quarter becomes two
- * eighths, a whole note eight eighths). Longer: the following notes move right; it
+ * Changes the value of the note or set rest that starts at this position; the pitch stays.
+ * Shorter: it is split into events of the new value (notes with the same pitch, or rests),
+ * so it keeps its place and the following events stay where they are (a quarter becomes
+ * two eighths, a whole note eight eighths). Longer: the following events move right; it
  * fails if they would no longer fit into the measure.
  */
 export function changeDuration(score: Score, module: ModuleConfig, at: Position, ticks: number): EditResult {
   const measure = getMeasure(score, at);
   if (!measure) return fail('invalid-position');
-  const note = placeEvents(measure).find((p) => p.start === at.tick && p.event.kind === 'note')?.event;
-  if (!note || note.kind !== 'note') return fail('no-note');
-  if (!module.durations.includes(ticks)) return fail('duration-not-allowed');
-  if (ticks >= note.ticks || note.ticks % ticks !== 0) return setNote(score, module, at, note.pitch, ticks);
-
   const events = occupantsOf(measure);
-  const slot = slotAt(events, at.tick)!; // the note starts here, so this is its slot
-  const parts: ScoreEvent[] = Array.from({ length: note.ticks / ticks }, () => ({
-    kind: 'note',
-    pitch: { ...note.pitch },
-    ticks,
-  }));
+  const slot = slotAt(events, at.tick);
+  if (!slot?.replace) return fail('no-event');
+  const old = events[slot.index];
+  if (!module.durations.includes(ticks)) return fail('duration-not-allowed');
+  const withTicks = (n: number): ScoreEvent =>
+    old.kind === 'note' ? { kind: 'note', pitch: { ...old.pitch }, ticks: n } : { kind: 'rest', ticks: n, auto: false };
+  if (ticks >= old.ticks || old.ticks % ticks !== 0) return placeEvent(score, module, at, withTicks(ticks));
+  const parts = Array.from({ length: old.ticks / ticks }, () => withTicks(ticks));
   events.splice(slot.index, 1, ...parts);
   return { ok: true, score: withMeasure(score, at, packed(events, measureLength(score.timeSignature))) };
 }

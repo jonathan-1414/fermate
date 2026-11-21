@@ -42,6 +42,28 @@ describe('parseScore', () => {
     expect(parseScore(missingMeasure, modul1)).toBeNull();
   });
 
+  it('keeps set rests, also when the link does not allow setting new ones', () => {
+    const score = sample();
+    score.staves[0].measures[1] = [
+      { kind: 'rest', ticks: 48, auto: false },
+      { kind: 'rest', ticks: 48, auto: true },
+      { kind: 'rest', ticks: 96, auto: true },
+    ];
+    expect(parseScore(JSON.parse(JSON.stringify(score)), modul1)).toEqual(score);
+  });
+
+  it('rejects set rests with a value the module does not have', () => {
+    const score = sample();
+    score.staves[0].measures[1] = [
+      { kind: 'rest', ticks: 12, auto: false },
+      { kind: 'rest', ticks: 12, auto: true },
+      { kind: 'rest', ticks: 24, auto: true },
+      { kind: 'rest', ticks: 48, auto: true },
+      { kind: 'rest', ticks: 96, auto: true },
+    ];
+    expect(parseScore(score, modul1)).toBeNull();
+  });
+
   it('rejects broken names', () => {
     const score = sample() as unknown as { meta: { names: unknown } };
     score.meta.names = 'Mia';

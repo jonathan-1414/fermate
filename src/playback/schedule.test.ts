@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { setNote } from '../model/edit';
+import { setNote, setRest } from '../model/edit';
 import { createEmptyScore } from '../model/score';
 import type { Score } from '../model/types';
 import { modul1 } from '../modules/modul1';
@@ -45,5 +45,23 @@ describe('noteName', () => {
     expect(noteName(p('C4'))).toBe('C4');
     expect(noteName(p('F#5'))).toBe('F#5');
     expect(noteName(p('Bb4'))).toBe('Bb4');
+  });
+
+  it('includes set rests silently (for the marking) and plays up to their end', () => {
+    const withRests = { ...modul1, manualRests: true };
+    const result = setRest(place([[0, 0, 48, 'C4']]), withRests, { staff: 0, measure: 0, tick: 48 }, 96);
+    if (!result.ok) throw new Error(result.error);
+    const schedule = buildSchedule(result.score);
+    expect(schedule.notes.map((n) => [n.note, n.time, n.duration])).toEqual([
+      ['C4', 0, Q],
+      [null, Q, 2 * Q],
+    ]);
+    expect(schedule.end).toBeCloseTo(3 * Q);
+  });
+
+  it('has nothing to play with only set rests', () => {
+    const result = setRest(createEmptyScore(modul1), { ...modul1, manualRests: true }, { staff: 0, measure: 0, tick: 0 }, 48);
+    if (!result.ok) throw new Error(result.error);
+    expect(buildSchedule(result.score)).toEqual({ notes: [], end: 0 });
   });
 });

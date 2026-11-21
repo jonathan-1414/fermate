@@ -214,9 +214,9 @@ function drawMusic(
     beams.forEach((beam) => beam.setContext(ctx).draw());
 
     placed.forEach(({ start, event }, j) => {
-      if (event.kind !== 'note') return;
+      if (event.kind === 'rest' && event.auto) return; // gaps are never marked
       if (same(options.preview, staffIndex, i, start)) markNote(notes[j], 'preview');
-      // Selected note: drawn in the accent colour, the staff lines stay visible.
+      // Selected note or rest: drawn in the accent colour, the staff lines stay visible.
       if (same(options.selection, staffIndex, i, start)) markNote(notes[j], 'selected');
       if (same(options.playing, staffIndex, i, start)) markNote(notes[j], 'playing');
     });
@@ -224,8 +224,8 @@ function drawMusic(
     // Cursor: a line just before the spot where the next note will go.
     if (options.cursor && options.cursor.staff === staffIndex && options.cursor.measure === i) {
       const target = measureLayout.events.find((e) => e.tick === options.cursor!.tick);
-      // An empty measure has one centred rest; the cursor still goes to the start.
-      const emptyMeasure = measure.length === 1 && target?.kind === 'rest';
+      // An empty measure has one centred gap; the cursor still goes to the start.
+      const emptyMeasure = measure.length === 1 && measure[0].kind === 'rest' && measure[0].auto;
       const cursorX = emptyMeasure ? stave.getNoteStartX() + 4 : target ? target.headLeft - 6 : x + width - 6;
       ctx.openGroup('cursor');
       ctx.beginPath();

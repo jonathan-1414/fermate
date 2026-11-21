@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { modul1 } from '../modules/modul1';
 import { p } from '../test/helpers';
 import { advanceCursor, initialCursor, positionForTap } from './cursor';
-import { setNote } from './edit';
+import { setNote, setRest } from './edit';
 import { createEmptyScore } from './score';
 import type { Score } from './types';
 
@@ -82,5 +82,14 @@ describe('initialCursor', () => {
       score = result.score;
     }
     expect(initialCursor(score)).toEqual(at(1, 96));
+  });
+});
+
+describe('positionForTap with set rests', () => {
+  it('goes to a set rest (like to a note), not behind it', () => {
+    const result = setRest(createEmptyScore(modul1), { ...modul1, manualRests: true }, at(0, 0), 48);
+    if (!result.ok) throw new Error(result.error);
+    expect(positionForTap(result.score, 0, 0, 0)).toEqual(at(0, 0));
+    expect(positionForTap(result.score, 0, 0, 96)).toEqual(at(0, 48));
   });
 });

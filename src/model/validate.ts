@@ -40,7 +40,8 @@ export function parseScore(data: unknown, module: ModuleConfig): Score | null {
 
 function isValidEvent(e: unknown, module: ModuleConfig): boolean {
   if (!isObject(e) || typeof e.ticks !== 'number' || e.ticks <= 0) return false;
-  if (e.kind === 'rest') return typeof e.auto === 'boolean';
+  // Set rests are kept even if the link does not allow setting new ones (nothing gets lost).
+  if (e.kind === 'rest') return e.auto === true || (e.auto === false && module.durations.includes(e.ticks));
   if (e.kind !== 'note' || !module.durations.includes(e.ticks)) return false;
   const p = e.pitch;
   if (!isObject(p) || !['C', 'D', 'E', 'F', 'G', 'A', 'B'].includes(p.step as string)) return false;

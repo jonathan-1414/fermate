@@ -76,7 +76,7 @@ export function createPlayer(events: PlayerEvents): Player {
       const starts = new Set(schedule.notes.map((n) => n.time.toFixed(4)));
       for (const n of schedule.notes) {
         transport.schedule((time) => {
-          piano.triggerAttackRelease(n.note, n.duration, time);
+          if (n.note) piano.triggerAttackRelease(n.note, n.duration, time); // a set rest stays silent
           draw.schedule(() => events.onNote(n.at), time);
         }, n.time);
         // Switch the marking off when silence follows (not when the next note starts right away).

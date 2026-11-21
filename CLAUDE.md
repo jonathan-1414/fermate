@@ -147,7 +147,7 @@ Regeln:
 - **Noten rücken zusammen:** Die Ereignisse eines Takts stehen immer lückenlos ab dem
   Taktanfang, wie Buchstaben in einem Wort. Freier Platz (Lücke) gibt es nur am Taktende.
   So entsteht nie eine Pause, die man hört, aber nicht sieht. Gezielt gesetzte Pausen
-  (ab Modul 2) sind weitere Ereignisse in dieser Reihe.
+  (`auto: false`, in Modul 1 per Link zuschaltbar) sind weitere Ereignisse in dieser Reihe.
 - Notiert wird **immer klingend**, transponierende Instrumente gibt es im Notenbild nicht.
 - Notennamen in der Oberfläche sind **deutsch**: c d e f g a h, B = H, Be-Vorzeichen auf h
   heißt b. Oktaven: c' … h' = 4. Oktave, c'' … = 5. Oktave.
@@ -158,7 +158,8 @@ Regeln:
 
 Ein Modul ist eine Konfiguration. Die App blendet aus, was das Modul nicht erlaubt, und das
 Modell lehnt unerlaubte Eingaben ab. Das Modul wird per Link gewählt
-(`…/?modul=1`). Ohne Angabe gilt Modul 1.
+(`…/?modul=1`). Ohne Angabe gilt Modul 1. Mit `&pausen=ja` schaltet die Lehrkraft das
+Setzen von Pausen zu (`manualRests: true`); in der App selbst gibt es dafür keinen Schalter.
 
 ```ts
 const modul1: ModuleConfig = {
@@ -171,7 +172,7 @@ const modul1: ModuleConfig = {
   durations: [192, 96, 48, 24],   // Ganze, Halbe, Viertel, Achtel
   dotted: false,
   ties: false,
-  manualRests: false,
+  manualRests: false,             // per Link mit &pausen=ja einschaltbar
   accidentals: [],
   range: { low: 'C4', high: 'F5' }, // c' bis f''
   tempoFixed: 90,
@@ -222,7 +223,17 @@ const modul1: ModuleConfig = {
 - Kommt der Cursor auf eine Note, springt die Notenwert-Leiste auf den Wert der Note. Ein
   anderer Wert in der Leiste ändert die ausgewählte Note (kürzer: teilen, länger: die
   folgenden Noten rücken nach rechts, siehe „Wert ändern“). Das gilt auch nach „Rückgängig“.
-- Achtel werden automatisch nach Zählzeiten mit Balken verbunden.
+- **Pausen** (nur mit `&pausen=ja` im Link, sonst fehlt der Button): Button „Pause“ direkt
+  neben den Notenwerten. Er benutzt den gewählten Notenwert: im freien Platz wird eine Pause
+  dieses Werts angehängt (Cursor dahinter), steht der Cursor auf einer Note, wird sie zur Pause
+  mit demselben Wert. Gesetzte Pausen werden gezeichnet und verhalten sich wie Noten:
+  auswählen (orange, „Pause“ erscheint gedrückt), Wert ändern (kürzer: teilen, länger: rücken),
+  löschen, Rückgängig. Ein Tipp auf eine ausgewählte Pause macht sie zur Note in Fingerhöhe.
+  Gesetzte Pausen füllen den Takt (Takt-Prüfung). Ohne `&pausen=ja` bleiben vorhandene Pausen
+  stehen und lassen sich bearbeiten, nur neue gibt es nicht. Unter Pausen stehen keine
+  Notennamen.
+- Achtel werden automatisch nach Zählzeiten mit Balken verbunden. Eine Achtelpause unterbricht
+  den Balken.
 - **Takt-Prüfung** mit nur zwei Zuständen, damit Schüler.innen selbst überlegen, was noch
   passt: Unter einem vollen Takt steht ein Häkchen (ohne Text), unter einem nicht vollen Takt
   ein leerer, gestrichelter Kreis. Ein leerer Takt ist ganz leer (keine Ganztaktpause).
@@ -235,8 +246,10 @@ const modul1: ModuleConfig = {
 **Wiedergabe**
 - Play/Stop-Button, Tempo fest ♩ = 90, Klavierklang.
 - Die klingende Note leuchtet auf (mitlaufende Markierung, `Tone.Draw`).
-- Lücken klingen als Pausen (Stille).
-- Die Wiedergabe endet nach der letzten Note (leere Takte danach werden nicht abgewartet).
+- Lücken klingen als Pausen (Stille). Gesetzte Pausen sind ebenfalls still, die mitlaufende
+  Markierung läuft aber über sie.
+- Die Wiedergabe endet nach der letzten Note oder gesetzten Pause (leere Takte danach werden
+  nicht abgewartet).
   Eine Änderung am Notenbild hält sie an.
 - Klavier-Samples: nur c' bis f'' (11 MP3-Dateien) in `public/samples/piano/`, Herkunft und
   Lizenz in `LICENSE.txt` daneben.
@@ -273,7 +286,7 @@ const modul1: ModuleConfig = {
 ## 5. Ausblick (nicht bauen, aber im Aufbau berücksichtigen)
 
 **Modul 2 (Entwurf):** 8 Takte, 4/4, 3/4, 2/4, Auftakt; C-, G- und F-Dur; zusätzlich
-punktierte Noten, Haltebögen, Pausen gezielt setzen; Kreuz und Be; Tonumfang c'–a'';
+punktierte Noten, Haltebögen, Pausen gezielt setzen (immer an); Kreuz und Be; Tonumfang c'–a'';
 Taktnummern; Bildschirmklaviatur; Takt auswählen und kopieren; Wiedergabe ab Takt, Tempo-
 Regler, Metronom, Einzähler, Schleife, Mitscrollen; Zeilen untereinander; Speichern und
 Öffnen als Datei; Teilen per Link; Abgabe zusätzlich als Audio; PWA.
