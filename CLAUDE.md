@@ -158,6 +158,7 @@ interface Score {
   moduleId: string;
   timeSignature: { beats: number; beatValue: number }; // Modul 1: 4/4
   keySignature: number;                                // Vorzeichen: -4..4, Modul 1: 0
+  pickup: number;                                      // Auftakt in Ticks, 0 = kein Auftakt
   tempo: number;                                       // Viertel pro Minute
   swing: boolean;                                      // nur Wiedergabe, Notenbild bleibt gerade
   parts: Part[];
@@ -369,7 +370,7 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
   per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
   PWA, Aufgaben der Lehrkraft, Hördiktat.
-- *Vor dem Bauen noch zu klären:* Anzahl der Takte, Ansicht (endlos
+- *Vor dem Bauen noch zu klären:* Ansicht (endlos
   waagrecht oder Zeilen untereinander), Startassistent, Anordnung der Leiste.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
@@ -401,6 +402,14 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
   Note folgt wieder der Tonart. Die Zeichen im Notenbild setzt die App selbst: ein Vorzeichen
   gilt bis zum Taktende, danach nötige Auflösungszeichen kommen automatisch, keine
   Hinweis-Vorzeichen im nächsten Takt. Enharmonische Verwechslung erst nach der Beta.
+- **Takte:** Eine neue Partitur hat 8 leere Takte, erlaubt sind 1 bis 32. Button „+ Takt“ fügt
+  hinter dem Takt mit der Auswahl einen leeren Takt ein (im letzten Takt: anhängen), Button
+  „Takt löschen“ entfernt den Takt mit der Auswahl samt Noten (Rückgängig holt ihn zurück).
+  Beides gilt für alle Instrumente. Neue Takte entstehen nie automatisch, auch nicht beim
+  Verlängern über den letzten Taktstrich (dann ändert sich nichts).
+- **Auftakt:** Länge in Vierteln (im 6/8 in Achteln), gewählt beim Anlegen und nachträglich im
+  Einstellungsmenü an- und abwählbar und änderbar. Der letzte Takt wird automatisch um die
+  Länge des Auftakts verkürzt, beide ergeben zusammen einen vollen Takt.
 - Rückgängig und Wiederholen.
 
 **Weitere Funktionen (Entwurf):**
