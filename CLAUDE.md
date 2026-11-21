@@ -370,7 +370,7 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
   per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
   PWA, Aufgaben der Lehrkraft, Hördiktat.
-- *Vor dem Bauen noch zu klären:* Anordnung der Leiste.
+- *Vor dem Bauen noch zu klären:* Form des Mischpults.
 
 **Ansicht (beschlossen 21.11.2026):**
 - Auf dem Bildschirm **endlos nach rechts**: jedes Instrument eine durchgehende Notenzeile,
@@ -403,6 +403,15 @@ gleich, aus fis in G-Dur wird in C-Dur fis mit Kreuz; Transponieren erst nach de
 Auftakt. Die **Taktart** lässt sich nur ändern, solange die Partitur leer ist, sonst steht dort
 ein kurzer Hinweis. Das Tempo steht nicht im Menü, sondern als Regler bei der Wiedergabe.
 Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für die Angaben.
+
+**Leisten (beschlossen 21.11.2026):**
+- **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Rückgängig,
+  Wiederholen, Notennamen | ganz rechts Neu, Abgeben, Einstellungen (nur Symbole).
+- **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
+  Triole | Kreuz, Be, Auflösung | Haltebogen, Akkord (nur Klavier), Löschen.
+- **„+ Takt“ und „Takt löschen“** am rechten Ende der Übersichtsleiste.
+- **Tempo:** Button „♩ = 90“ öffnet einen Regler (40 bis 200).
+- Im Hochformat dürfen die Leisten in zwei Zeilen umbrechen.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
 - **Immer Eingabemodus**, kein Umschalten in einen eigenen Auswahlmodus (wie in Modul 1).
