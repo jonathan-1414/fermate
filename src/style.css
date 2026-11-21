@@ -225,6 +225,30 @@ body {
   height: auto;
 }
 
+/* Full version: the music runs on to the right; the margin with clef and key stays.
+   (Until the overview bar comes, the music can be scrolled sideways.) */
+#score.full-score {
+  display: flex;
+  align-items: flex-start;
+}
+.score-margin {
+  flex: none;
+}
+.score-scroller {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+#score.full-score svg {
+  width: auto;
+  max-width: none;
+}
+#score .vf-measure-number text,
+#score .vf-instrument-name text {
+  font-family: var(--font);
+  fill: var(--text);
+}
+
 /* Note names below the staff */
 #score .vf-note-names text {
   font-family: var(--font);

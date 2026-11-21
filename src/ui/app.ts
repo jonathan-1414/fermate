@@ -12,6 +12,7 @@ import type { ModuleConfig } from '../modules/types';
 import { hitTest, staffPositionAt } from '../input/hitTest';
 import { attachScoreInput } from '../input/scoreInput';
 import type { ScoreLayout } from '../render/layout';
+import { renderFullScore } from '../render/renderFull';
 import { renderScore } from '../render/renderScore';
 import { createPlayer } from '../playback/player';
 import { buildSchedule } from '../playback/schedule';
@@ -195,7 +196,8 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       const result = setNote(score, module, preview.at, preview.pitch, duration);
       if (result.ok) shown = result.score;
     }
-    layout = renderScore(scoreElement, shown, {
+    // The full version draws its own way (endless to the right, rests, triplets, ties).
+    layout = (module.overwrite ? renderFullScore : renderScore)(scoreElement, shown, {
       showNoteNames,
       cursor: preview || playedScore ? null : cursor,
       selection: preview || playedScore ? null : selectedEvent(),
