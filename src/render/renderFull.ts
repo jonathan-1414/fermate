@@ -42,10 +42,10 @@ export const ZOOM = 1.4;
  * room below for ledger lines and note names. The top line lies STAVE_OFFSET below the
  * band's top (VexFlow's own room above the staff is switched off, see STAVE_OPTIONS).
  */
-const ROW = 124;
+const ROW = 100;
 /** Extra room between two instruments (the two piano staves stay closer). */
-const PART_GAP = 16;
-const STAVE_OFFSET = 38;
+const PART_GAP = 8;
+const STAVE_OFFSET = 30;
 const STAVE_OPTIONS = { spaceAboveStaffLn: 0, spaceBelowStaffLn: 0 };
 const NUMBERS_HEIGHT = 18;
 const MIN_MEASURE_WIDTH = 90;
@@ -433,7 +433,7 @@ function drawNoteNames(ctx: RenderContext, staff: Staff, prepared: PreparedStaff
     if (prev?.kind === 'note' && prev.tieToNext && shareAPitch(prev, event)) return;
     const center = (notes[i].getNoteHeadBeginX() + notes[i].getNoteHeadEndX()) / 2;
     const names = [...event.pitches].reverse().map(germanNoteName);
-    names.forEach((name, k) => ctx.fillText(name, center, bottomLineY + 34 + k * 14));
+    names.forEach((name, k) => ctx.fillText(name, center, bottomLineY + 26 + k * 14));
   });
   ctx.closeGroup();
 }
