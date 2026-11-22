@@ -235,7 +235,10 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     openSettings() {
       showSettings(module, {
         score: () => score,
-        editDetails: () => void askForDetails('edit'),
+        setMeta(meta) {
+          score = { ...score, meta };
+          render();
+        },
         showInfo,
         addInstrument(id) {
           if (commit(addPart(score, module, id))) render();
@@ -356,7 +359,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     let page = 1;
     for (;;) {
       if (page === 1) {
-        meta = (await askForMeta('start', meta)) ?? meta;
+        meta = await askForMeta(meta);
         page = 2;
       } else if (page === 2) {
         const chosen = await askInstruments(instruments, module.maxParts);
@@ -384,13 +387,6 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
         return;
       }
     }
-  }
-
-  async function askForDetails(mode: 'start' | 'edit'): Promise<void> {
-    const meta = await askForMeta(mode, score.meta);
-    if (!meta) return;
-    score = { ...score, meta };
-    render();
   }
 
   /** How the parts sound (mixer settings). */

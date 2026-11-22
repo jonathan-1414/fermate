@@ -3,7 +3,8 @@ import { fullMeasureLength, isCompound, pickupUnit } from '../model/meter';
 import { parseTimeSignature } from '../model/score';
 import type { Score } from '../model/types';
 import type { ModuleConfig } from '../modules/types';
-import { el, showDialog, textButton } from './dialogs';
+import { el, metaFields, showDialog, textButton } from './dialogs';
+import type { Meta } from '../model/meta';
 
 /**
  * The start wizard of the full version (pages 2 and 3; page 1 is the details dialog)
@@ -220,8 +221,8 @@ function pickupField(timeSignature: string, pickup: number, onChange: (ticks: nu
 
 export interface SettingsActions {
   score(): Score;
-  /** "Angaben ändern": closes the settings and opens the details dialog. */
-  editDetails(): void;
+  /** Name(s), class and title changed (only complete details arrive here). */
+  setMeta(meta: Meta): void;
   /** "Info und Lizenzen" (only here, to save room on the screen). */
   showInfo(): void;
   addInstrument(id: string): void;
@@ -232,7 +233,7 @@ export interface SettingsActions {
 }
 
 /**
- * The settings menu (gear): details, instruments, key, time signature (only while the score is
+ * The settings menu (gear): details (name(s), class, title), instruments, key, time signature (only while the score is
  * empty), pickup. Every change applies at once and can be undone.
  */
 export function showSettings(module: ModuleConfig, actions: SettingsActions): void {
@@ -241,10 +242,10 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
   const done = textButton('Fertig', 'tool primary');
   const info = el('button', { type: 'button', className: 'link-button', textContent: 'Info und Lizenzen' });
   info.addEventListener('click', () => actions.showInfo());
-  const details = detailsButton();
+  const details = detailsSection(actions.score().meta, actions);
   dialog.append(
     el('h2', { textContent: 'Einstellungen' }),
-    details,
+    ...details.elements,
     body,
     el('div', { className: 'dialog-actions settings-actions' }, info, done),
   );
@@ -320,44 +321,48 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
   }
   draw();
 
-  const close = showDialog(dialog, () => close());
-  done.addEventListener('click', () => close());
-  details.addEventListener('click', () => {
-    close();
-    actions.editDetails();
-  });
+  const finish = () => {
+    if (details.read()) close();
+  };
+  const close = showDialog(dialog, finish);
+  done.addEventListener('click', finish);
   dialog.focus();
 }
 
-/** "Angaben ändern": names, class and title (shown only here since the header is gone). */
-function detailsButton(): HTMLButtonElement {
-  const b = textButton('Angaben ändern');
-  b.classList.add('settings-details');
-  return b;
+/**
+ * "Angaben" at the top of the settings: name(s), class and title, changed right in place.
+ * Every complete change applies at once; with a name or the class missing, the menu
+ * cannot be closed (the error is shown instead).
+ */
+function detailsSection(current: Meta, actions: { setMeta(meta: Meta): void }) {
+  const fields = metaFields(current, 'settings', () => {
+    const meta = fields.peek();
+    if (meta) actions.setMeta(meta);
+  });
+  return { elements: [el('h3', { textContent: 'Angaben' }), ...fields.elements], read: fields.read };
 }
 
 export interface BasicSettingsActions {
-  editDetails(): void;
+  setMeta(meta: Meta): void;
   showInfo(): void;
 }
 
 /** The settings menu of module 1 (gear): only the details and "Info und Lizenzen". */
-export function showBasicSettings(actions: BasicSettingsActions): void {
+export function showBasicSettings(current: Meta, actions: BasicSettingsActions): void {
   const dialog = el('dialog', { className: 'dialog' });
   const done = textButton('Fertig', 'tool primary');
   const info = el('button', { type: 'button', className: 'link-button', textContent: 'Info und Lizenzen' });
   info.addEventListener('click', () => actions.showInfo());
-  const details = detailsButton();
+  const details = detailsSection(current, actions);
   dialog.append(
     el('h2', { textContent: 'Einstellungen' }),
-    details,
+    ...details.elements,
     el('div', { className: 'dialog-actions settings-actions' }, info, done),
   );
-  const close = showDialog(dialog, () => close());
-  done.addEventListener('click', () => close());
-  details.addEventListener('click', () => {
-    close();
-    actions.editDetails();
-  });
+  const finish = () => {
+    if (details.read()) close();
+  };
+  const close = showDialog(dialog, finish);
+  done.addEventListener('click', finish);
   dialog.focus();
 }

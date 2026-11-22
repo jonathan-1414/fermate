@@ -251,9 +251,11 @@ const modul1: ModuleConfig = {
   `meta`. Der Startdialog lässt sich nicht wegklicken. „Rückgängig“ betrifft nur Noten, nicht
   die Angaben.
 - **Keine Kopfzeile** über den Noten (geändert 22.11.2026, mehr Platz für die Noten). Titel,
-  Name(n) und Klasse stehen nur im PDF. Geändert werden sie im **Einstellungsmenü**
-  (Zahnrad oben rechts) über den Button „Angaben ändern“, der den Dialog „Angaben“ öffnet.
-- **Einstellungsmenü** in Modul 1: nur „Angaben ändern“ und unten der Link „Info und
+  Name(n) und Klasse stehen nur im PDF. Geändert werden sie direkt im **Einstellungsmenü**
+  (Zahnrad oben rechts): dort stehen die Felder Name(n), Klasse und Titel wie im Startdialog.
+  Jede Änderung gilt sofort; fehlen Name oder Klasse, lässt sich das Menü nicht schließen,
+  stattdessen erscheint der Hinweis wie im Startdialog.
+- **Einstellungsmenü** in Modul 1: nur die Angaben und unten der Link „Info und
   Lizenzen“, geschlossen mit „Fertig“.
 - Eine Notenzeile, Violinschlüssel, C-Dur, 4/4-Takt, genau 4 Takte in einer Zeile,
   Schlussstrich automatisch, keine Taktnummern.
@@ -407,7 +409,7 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 
 **Einstellungsmenü (beschlossen 21.11.2026):** nur ein Zahnrad-Symbol oben rechts neben „Neu“
 und „Abgeben“ (Name „Einstellungen“ als Tooltip und für Screenreader). Inhalt: oben der Button
-„Angaben ändern“ (öffnet den Dialog „Angaben“, geändert 22.11.2026), Instrumente
+die Angaben (Name(n), Klasse, Titel, direkt änderbar wie in Modul 1, geändert 22.11.2026), Instrumente
 hinzufügen und entfernen (Rückfrage, wenn das Instrument Noten hat), Tonart (die Töne bleiben
 gleich, aus fis in G-Dur wird in C-Dur fis mit Kreuz; Transponieren erst nach der Beta),
 Auftakt. Die **Taktart** lässt sich nur ändern, solange die Partitur leer ist, sonst steht dort

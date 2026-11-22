@@ -673,8 +673,3 @@ body {
 .overview .tool {
   min-height: 36px;
 }
-
-/* Settings: "Angaben ändern" at the top, with room below */
-.settings-details {
-  margin-bottom: 16px;
-}

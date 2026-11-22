@@ -47,88 +47,110 @@ export function showDialog(dialog: HTMLDialogElement, onEscape: (() => void) | n
   };
 }
 
+export interface MetaFields {
+  /** The fields (names, class, title) and the error line. */
+  elements: HTMLElement[];
+  /** Checks what was typed: the cleaned details, or null (then the error is shown). */
+  read(): Meta | null;
+  /** The same without showing an error (while typing). */
+  peek(): Meta | null;
+}
+
 /**
- * Asks for name(s), class and title. In 'start' mode it cannot be cancelled.
- * Resolves with the cleaned details, or null if cancelled ('edit' mode only).
+ * The fields for name(s), class and title, used in the start dialog and in the
+ * settings menu. `onInput` runs after every change.
  */
-export function askForMeta(mode: 'start' | 'edit', current: Meta): Promise<Meta | null> {
+export function metaFields(current: Meta, idPrefix: string, onInput: () => void = () => {}): MetaFields {
+  // Names: one field per person, more can be added.
+  const nameList = el('div', { className: 'name-list' });
+  const addButton = textButton('+ Weitere Person', 'tool small');
+  const nameInputs = () => [...nameList.querySelectorAll('input')];
+  function addName(value: string): void {
+    const index = nameInputs().length + 1;
+    const input = el('input', { type: 'text', value, maxLength: 40, autocomplete: 'off', name: `name-${index}` });
+    input.setAttribute('aria-label', `Name ${index}`);
+    const row = el('div', { className: 'name-row' }, input);
+    if (index > 1) {
+      const remove = textButton('✕', 'tool small');
+      remove.setAttribute('aria-label', 'Name entfernen');
+      remove.addEventListener('click', () => {
+        row.remove();
+        addButton.hidden = false;
+        changed();
+      });
+      row.append(remove);
+    }
+    nameList.append(row);
+    addButton.hidden = nameInputs().length >= MAX_NAMES;
+  }
+  (current.names.length ? current.names : ['']).forEach(addName);
+  addButton.addEventListener('click', () => {
+    addName('');
+    nameInputs().at(-1)?.focus();
+  });
+
+  const classId = `${idPrefix}-class`;
+  const titleId = `${idPrefix}-title`;
+  const classInput = el('input', { type: 'text', value: current.className, maxLength: 10, autocomplete: 'off', id: classId });
+  const titleInput = el('input', { type: 'text', value: current.title, maxLength: 60, autocomplete: 'off', id: titleId });
+  const error = el('p', { className: 'dialog-error' });
+  error.setAttribute('role', 'alert');
+
+  const names = el('fieldset', { className: 'field' }, el('legend', { textContent: 'Name(n)' }), nameList, addButton);
+  function changed(): void {
+    error.textContent = '';
+    onInput();
+  }
+  for (const part of [names, classInput, titleInput]) part.addEventListener('input', changed);
+
+  const clean = () =>
+    cleanMeta({ title: titleInput.value, names: nameInputs().map((i) => i.value), className: classInput.value });
+
+  return {
+    elements: [
+      names,
+      el('div', { className: 'field' }, el('label', { htmlFor: classId, textContent: 'Klasse' }), classInput),
+      el('div', { className: 'field' }, el('label', { htmlFor: titleId, textContent: 'Titel (freiwillig)' }), titleInput),
+      error,
+    ],
+    peek() {
+      const cleaned = clean();
+      return cleaned.ok ? cleaned.meta : null;
+    },
+    read() {
+      const cleaned = clean();
+      if (cleaned.ok) return cleaned.meta;
+      error.textContent = cleaned.errors.map((e) => ERROR_TEXTS[e]).join(' ');
+      (cleaned.errors[0] === 'names-missing' ? nameInputs()[0] : classInput).focus();
+      return null;
+    },
+  };
+}
+
+/**
+ * The start dialog: asks for name(s), class and title. It cannot be cancelled.
+ */
+export function askForMeta(current: Meta): Promise<Meta> {
   return new Promise((resolve) => {
     const dialog = el('dialog', { className: 'dialog' });
     const form = el('form', { noValidate: true });
-
-    const heading = el('h2', { textContent: mode === 'start' ? 'Neue Partitur' : 'Angaben ändern' });
-    const intro = el('p', { className: 'dialog-text', textContent: 'Trag ein, wer an dieser Partitur schreibt.' });
-
-    // Names: one field per person, more can be added.
-    const nameList = el('div', { className: 'name-list' });
-    const addButton = textButton('+ Weitere Person', 'tool small');
-    const nameInputs = () => [...nameList.querySelectorAll('input')];
-    function addName(value: string): void {
-      const index = nameInputs().length + 1;
-      const input = el('input', { type: 'text', value, maxLength: 40, autocomplete: 'off', name: `name-${index}` });
-      input.setAttribute('aria-label', `Name ${index}`);
-      const row = el('div', { className: 'name-row' }, input);
-      if (index > 1) {
-        const remove = textButton('✕', 'tool small');
-        remove.setAttribute('aria-label', 'Name entfernen');
-        remove.addEventListener('click', () => {
-          row.remove();
-          addButton.hidden = false;
-        });
-        row.append(remove);
-      }
-      nameList.append(row);
-      addButton.hidden = nameInputs().length >= MAX_NAMES;
-    }
-    (current.names.length ? current.names : ['']).forEach(addName);
-    addButton.addEventListener('click', () => {
-      addName('');
-      nameInputs().at(-1)?.focus();
-    });
-
-    const classInput = el('input', { type: 'text', value: current.className, maxLength: 10, autocomplete: 'off', id: 'meta-class' });
-    const titleInput = el('input', { type: 'text', value: current.title, maxLength: 60, autocomplete: 'off', id: 'meta-title' });
-    const error = el('p', { className: 'dialog-error' });
-    error.setAttribute('role', 'alert');
-
-    const submit = el('button', { type: 'submit', className: 'tool primary', textContent: mode === 'start' ? 'Los geht’s' : 'Speichern' });
-    const actions = el('div', { className: 'dialog-actions' });
-    const cancel = textButton('Abbrechen');
-    if (mode === 'edit') actions.append(cancel);
-    actions.append(submit);
-
+    const fields = metaFields(current, 'meta');
+    const submit = el('button', { type: 'submit', className: 'tool primary', textContent: 'Los geht’s' });
     form.append(
-      heading,
-      intro,
-      el('fieldset', { className: 'field' }, el('legend', { textContent: 'Name(n)' }), nameList, addButton),
-      el('div', { className: 'field' }, el('label', { htmlFor: 'meta-class', textContent: 'Klasse' }), classInput),
-      el('div', { className: 'field' }, el('label', { htmlFor: 'meta-title', textContent: 'Titel (freiwillig)' }), titleInput),
-      error,
-      actions,
+      el('h2', { textContent: 'Neue Partitur' }),
+      el('p', { className: 'dialog-text', textContent: 'Trag ein, wer an dieser Partitur schreibt.' }),
+      ...fields.elements,
+      el('div', { className: 'dialog-actions' }, submit),
     );
     dialog.append(form);
-
     form.addEventListener('submit', (event) => {
       event.preventDefault();
-      const cleaned = cleanMeta({
-        title: titleInput.value,
-        names: nameInputs().map((i) => i.value),
-        className: classInput.value,
-      });
-      if (!cleaned.ok) {
-        error.textContent = cleaned.errors.map((e) => ERROR_TEXTS[e]).join(' ');
-        (cleaned.errors[0] === 'names-missing' ? nameInputs()[0] : classInput).focus();
-        return;
-      }
-      done(cleaned.meta);
-    });
-    form.addEventListener('input', () => (error.textContent = ''));
-    cancel.addEventListener('click', () => done(null));
-    const close = showDialog(dialog, mode === 'edit' ? () => done(null) : null);
-    function done(meta: Meta | null): void {
+      const meta = fields.read();
+      if (!meta) return;
       close();
       resolve(meta);
-    }
+    });
+    const close = showDialog(dialog, null);
   });
 }
 

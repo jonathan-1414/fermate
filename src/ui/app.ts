@@ -146,10 +146,16 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
       cursor = initialCursor(score);
       history.clear();
       render();
-      await askForDetails('start');
+      await askForDetails();
     },
     openSettings() {
-      showBasicSettings({ editDetails: () => void askForDetails('edit'), showInfo });
+      showBasicSettings(score.meta, {
+        setMeta(meta) {
+          score = { ...score, meta };
+          render();
+        },
+        showInfo,
+      });
     },
     handIn() {
       player.stop();
@@ -177,9 +183,8 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
   });
 
   /** Start dialog (required) or changing the details later. */
-  async function askForDetails(mode: 'start' | 'edit'): Promise<void> {
-    const meta = await askForMeta(mode, score.meta);
-    if (!meta) return;
+  async function askForDetails(): Promise<void> {
+    const meta = await askForMeta(score.meta);
     score = { ...score, meta };
     render();
   }
@@ -349,5 +354,5 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
   });
 
   render();
-  if (!isMetaComplete(score.meta)) void askForDetails('start');
+  if (!isMetaComplete(score.meta)) void askForDetails();
 }
