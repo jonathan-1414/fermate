@@ -427,12 +427,15 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     render();
   });
 
+  /** A score from the start (new, opened, from the wizard): cursor and view at the beginning. */
   function resetCursor(): void {
     cursor = { staff: 0, measure: 0, tick: 0 };
     selectedByTap = false;
     tone = 0;
     chordMode = false;
     noValueAt = null;
+    scrollX = 0;
+    scrollY = 0;
   }
 
   /** After instruments or measures changed: the cursor must still stand on something. */
@@ -736,7 +739,25 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     });
     // Vertical bar on the left, only when not all staves fit into the height.
     const body = scoreBody();
+    // One box per instrument, as high as its staves (with the room up to the next one).
+    const bands = layout?.staves ?? [];
+    const height = layout?.height || 1;
+    const shortNames = partNames(score, true);
+    const sounding = soundingParts(score.parts);
+    let firstStaff = 0;
+    const parts = score.parts.map((part, p) => {
+      const top = p === 0 ? 0 : (bands[firstStaff]?.top ?? 0);
+      firstStaff += part.staves.length;
+      const bottom = firstStaff < bands.length ? bands[firstStaff].top : height;
+      return {
+        name: shortNames[p],
+        share: (bottom - top) / height,
+        hasNotes: part.staves.some((staff) => staff.measures.some((m) => m.some((e) => e.kind === 'note'))),
+        sounding: sounding[p],
+      };
+    });
     verticalOverview.update({
+      parts,
       viewStart: 0,
       viewHeight: 1,
       visible: body !== null && body.scrollHeight > body.clientHeight + 1,

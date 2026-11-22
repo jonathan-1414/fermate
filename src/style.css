@@ -236,13 +236,13 @@ body {
   flex: 1;
   min-width: 0;
 }
-/* Vertical overview bar: one box per staff, shown only when not all staves fit. */
-/* Vertical bar on the far left: a frame for the visible part of the staves. */
+/* Vertical bar on the far left (only when not all staves fit): one box per instrument
+   with its short name, a frame for the visible part of the staves. */
 .overview-v {
   order: -1;
   position: relative;
   flex: none;
-  width: 28px; /* narrower than other tap areas: a long strip, set in CLAUDE.md */
+  width: 44px; /* widened 22.11.2026 (was 28px) */
   margin: 26px 0 8px;
   border-radius: 6px;
   background: var(--bg);
@@ -678,6 +678,17 @@ body {
 .dialog .field .tempo-line {
   margin: 0;
 }
+/* In the vertical bar the boxes lie below each other, the names small. */
+.overview-v .overview-boxes {
+  flex-direction: column;
+}
+.overview-v .overview-box {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.overview-box.muted {
+  color: var(--muted);
+}
 /* In the vertical bar the frame spans the full width and moves up and down. */
 .overview-v .overview-frame {
   left: 0;
@@ -728,4 +739,18 @@ body {
 }
 .tool.symbol .glyph.music {
   font-size: 30px;
+}
+
+/* TEMPORARY: test page for the file picker (…/?dateitest, see fileTest.ts) */
+.file-test {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.file-test-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
 }

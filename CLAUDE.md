@@ -337,7 +337,7 @@ const modul1: ModuleConfig = {
 **Ansicht**
 - Groß und für Touch optimiert (Tippflächen mindestens 44 × 44 pt), Pinch-Zoom. Ausnahme in der
   Vollversion: die beiden Übersichtsleisten sind lange Streifen und dürfen schmaler sein
-  (waagrecht 36 px hoch, senkrecht 28 px breit), „+ Takt“ daneben ist so
+  (waagrecht 36 px hoch, senkrecht 44 px breit, seit 22.11.2026), „+ Takt“ daneben ist so
   hoch wie die waagrechte Leiste (festgelegt 21.11.2026).
 - Querformat auf dem iPad ist der Hauptfall, Hochformat muss benutzbar sein.
 
@@ -402,10 +402,20 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - **Taktnummern:** auf dem Bildschirm klein über jedem Takt, im PDF am Zeilenanfang.
 - **Keine Kopfzeile** über den Noten (wie in Modul 1, geändert 22.11.2026); die Angaben
   ändert man im Einstellungsmenü.
-- Passen nicht alle Notenzeilen in die Höhe, bleiben die Noten groß, und eine zweite, schmale
-  **senkrechte Leiste ganz links** (ohne Instrumentennamen, nur ein Rahmen für den sichtbaren
-  Teil) springt zu den übrigen Zeilen (geändert 21.11.2026). Der Rand links
-  und die Taktnummern bleiben dabei stehen.
+- Passen nicht alle Notenzeilen in die Höhe, bleiben die Noten groß, und eine zweite
+  **senkrechte Leiste ganz links** springt zu den übrigen Zeilen (geändert 21.11.2026). Seit
+  22.11.2026 (erste Testrunde) 44 px breit und wie die waagrechte Leiste mit Inhalt: ein
+  Abschnitt pro Instrument (so hoch wie seine Zeilen) mit kleinem Kurznamen, hell-orange
+  hinterlegt, wenn es Noten hat, grauer Name, wenn es gerade nicht klingt; dazu der Rahmen für
+  den sichtbaren Teil. Der Rand links und die Taktnummern bleiben dabei stehen.
+- **Zoom** bleibt mit zwei Fingern auf dem Notenblatt (geprüft 22.11.2026 nach der ersten
+  Testrunde; Pinch auf den Leisten und Lupen-Buttons verworfen).
+- **Neue Partitur** (neu, geöffnet, aus dem Startassistenten): Die Ansicht beginnt am Anfang.
+- **„Datei öffnen“ auf dem iPad** zeigt das Menü mit Kamera und Fotomediathek, weil die
+  Dateiauswahl keine Dateiart angibt (mit `.fermate` waren alle Dateien ausgegraut). Offen
+  (22.11.2026): Vorübergehende Testseite `…/?dateitest` mit fünf Einstellungen; die, die auf dem
+  iPad direkt „Dateien“ öffnet und `.fermate` wählbar lässt, wird übernommen, danach kommt die
+  Testseite wieder heraus.
 - **Notenblatt füllt die Höhe** (22.11.2026): Das weiße Blatt reicht von der oberen bis zur unteren
   Leiste (keine beigen Streifen darüber und darunter), Noten oben, Übersichtsleiste unten.
 - **Lädt …** (22.11.2026): Tippt man auf „Abspielen“, während die Klänge noch laden, zeigt der

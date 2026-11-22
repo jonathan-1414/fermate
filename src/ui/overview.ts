@@ -105,7 +105,19 @@ export function createOverview(container: HTMLElement, actions: OverviewActions)
   };
 }
 
+/** One instrument in the vertical bar. */
+export interface OverviewPart {
+  /** Short name ("Fl.", "Vl. 1"). */
+  name: string;
+  /** Share of the whole height (0..1); the piano has two staves and gets more. */
+  share: number;
+  hasNotes: boolean;
+  /** Grey when the instrument does not sound right now (mixer). */
+  sounding: boolean;
+}
+
 export interface VerticalOverviewState {
+  parts: OverviewPart[];
   viewStart: number;
   viewHeight: number;
   /** Only shown when not all staves fit into the height. */
@@ -118,17 +130,21 @@ export interface VerticalOverview {
 }
 
 /**
- * The narrow vertical bar on the far left of the music: when not all staves fit into the
- * height, a frame shows the visible part; tapping or dragging moves the view up and down.
+ * The vertical bar on the far left of the music: when not all staves fit into the height,
+ * it shows every instrument as a box with its short name (soft orange when it has notes,
+ * like the measures below), and a frame for the visible part; tapping or dragging moves
+ * the view up and down.
  */
 export function createVerticalOverview(container: HTMLElement, scrollTo: (center: number) => void): VerticalOverview {
   container.classList.add('overview-v');
   container.setAttribute('role', 'slider');
   container.setAttribute('aria-orientation', 'vertical');
   container.setAttribute('aria-label', 'Übersicht der Notenzeilen: zu einer Zeile springen');
+  const boxes = document.createElement('div');
+  boxes.className = 'overview-boxes';
   const frame = document.createElement('div');
   frame.className = 'overview-frame';
-  container.append(frame);
+  container.append(boxes, frame);
 
   const follow = (event: PointerEvent) => {
     const rect = container.getBoundingClientRect();
@@ -158,6 +174,17 @@ export function createVerticalOverview(container: HTMLElement, scrollTo: (center
   return {
     update(state) {
       container.hidden = !state.visible;
+      boxes.replaceChildren(
+        ...state.parts.map((part) => {
+          const box = document.createElement('div');
+          box.className = 'overview-box';
+          box.style.flexGrow = String(part.share);
+          box.textContent = part.name;
+          if (part.hasNotes) box.classList.add('has-notes');
+          if (!part.sounding) box.classList.add('muted');
+          return box;
+        }),
+      );
       setView(state.viewStart, state.viewHeight);
     },
     setView,
