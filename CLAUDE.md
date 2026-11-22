@@ -326,7 +326,7 @@ const modul1: ModuleConfig = {
 **Ansicht**
 - Groß und für Touch optimiert (Tippflächen mindestens 44 × 44 pt), Pinch-Zoom. Ausnahme in der
   Vollversion: die beiden Übersichtsleisten sind lange Streifen und dürfen schmaler sein
-  (waagrecht 36 px hoch, senkrecht 28 px breit), „+ Takt“ und „Takt löschen“ daneben sind so
+  (waagrecht 36 px hoch, senkrecht 28 px breit), „+ Takt“ daneben ist so
   hoch wie die waagrechte Leiste (festgelegt 21.11.2026).
 - Querformat auf dem iPad ist der Hauptfall, Hochformat muss benutzbar sein.
 
@@ -413,11 +413,12 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
 gibt es in der Vollversion nicht (mehr Platz für die Noten, geändert 21.11.2026).
 
 **Leisten (beschlossen 21.11.2026):**
-- **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Rückgängig,
-  Wiederholen, Notennamen | ganz rechts Neu, Abgeben, Einstellungen (nur Symbole).
+- **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Takt löschen,
+  Rückgängig, Wiederholen, Notennamen | ganz rechts Neu, Abgeben, Einstellungen (nur Symbole).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
   Triole | Kreuz, Be, Auflösung | Haltebogen, Akkord (nur Klavier), Löschen.
-- **„+ Takt“ und „Takt löschen“** am rechten Ende der Übersichtsleiste.
+- **„+ Takt“** am rechten Ende der Übersichtsleiste, **„Takt löschen“** in der oberen Leiste
+  links neben „Rückgängig“ (geändert 22.11.2026).
 - **Tempo:** Button „♩ = 90“ öffnet einen Regler (40 bis 200).
 - Im Hochformat dürfen die Leisten in zwei Zeilen umbrechen.
 - **Mischpult:** Button „Mischpult“ öffnet ein Fenster über den Noten (wie „Angaben“), eine

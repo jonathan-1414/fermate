@@ -1,11 +1,11 @@
-import { ICONS } from './icons';
 import { button } from './toolbar';
 
 /**
  * The overview bar below the music (full version): every measure as a small box,
  * a frame shows which part of the piece is on the screen. Tapping or dragging on the
  * bar moves the view there; this is the only way to scroll the music (a finger on the
- * music always enters notes). At its right end: "+ Takt" and "Takt löschen".
+ * music always enters notes). At its right end: "+ Takt"
+ * ("Takt löschen" is in the top toolbar, next to "Rückgängig").
  */
 
 export interface OverviewMeasure {
@@ -22,14 +22,12 @@ export interface OverviewState {
   viewWidth: number;
   cursorMeasure: number;
   canInsert: boolean;
-  canDelete: boolean;
 }
 
 export interface OverviewActions {
   /** The view should be centred at this point of the whole width (0..1). */
   scrollTo(center: number): void;
   insertMeasure(): void;
-  deleteMeasure(): void;
 }
 
 export interface Overview {
@@ -54,10 +52,9 @@ export function createOverview(container: HTMLElement, actions: OverviewActions)
   bar.append(boxes, frame);
 
   const insertButton = button('Takt', actions.insertMeasure, { text: '+' });
-  const deleteButton = button('Takt löschen', actions.deleteMeasure, { svg: ICONS.cross });
   const tools = document.createElement('div');
   tools.className = 'tool-group';
-  tools.append(insertButton, deleteButton);
+  tools.append(insertButton);
   wrapper.append(bar, tools);
   container.append(wrapper);
 
@@ -103,7 +100,6 @@ export function createOverview(container: HTMLElement, actions: OverviewActions)
       );
       setView(state.viewStart, state.viewWidth);
       insertButton.disabled = !state.canInsert;
-      deleteButton.disabled = !state.canDelete;
     },
     setView,
   };

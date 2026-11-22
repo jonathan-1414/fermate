@@ -34,6 +34,7 @@ export interface FullToolbarState {
   chordShown: boolean;
   chordMode: boolean;
   canDelete: boolean;
+  canDeleteMeasure: boolean;
   canUndo: boolean;
   canRedo: boolean;
   playing: boolean;
@@ -46,6 +47,7 @@ export interface FullToolbarActions {
   togglePlay(): void;
   openTempo(): void;
   openMixer(): void;
+  deleteMeasure(): void;
   undo(): void;
   redo(): void;
   showNoteNames(): void;
@@ -76,7 +78,7 @@ function group(label: string, ...buttons: HTMLButtonElement[]): HTMLDivElement {
 }
 
 export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions: FullToolbarActions): FullToolbar {
-  // Top: playing, undo/redo, note names; new and hand in in the corner.
+  // Top: playing, delete measure, undo/redo, note names; new and hand in in the corner.
   const playButton = button('Abspielen', actions.togglePlay, { text: '▶' });
   playButton.classList.add('play');
   const playLabel = playButton.querySelector('span:not(.glyph)')!;
@@ -87,6 +89,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   const tempoGlyph = tempoButton.querySelector('.glyph')!;
   const tempoLabel = tempoButton.querySelector('span:not(.glyph)')!;
   const mixerButton = button('Mischpult', actions.openMixer);
+  const deleteMeasureButton = button('Takt löschen', actions.deleteMeasure, { svg: ICONS.cross });
   const undoButton = button('Rückgängig', actions.undo, { svg: ICONS.undo });
   const redoButton = button('Wiederholen', actions.redo, { svg: ICONS.redo });
   const namesButton = button('Notennamen', actions.showNoteNames);
@@ -98,7 +101,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
 
   const topMain = document.createElement('div');
   topMain.className = 'toolbar-main';
-  topMain.append(group('Wiedergabe', playButton, tempoButton, mixerButton), group('Bearbeiten', undoButton, redoButton, namesButton));
+  topMain.append(group('Wiedergabe', playButton, tempoButton, mixerButton), group('Bearbeiten', deleteMeasureButton, undoButton, redoButton, namesButton));
   const corner = group(
     'Partitur',
     iconButton('Neue Partitur', ICONS.plus, actions.newScore),
@@ -162,6 +165,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
       chordButton.setAttribute('aria-pressed', String(state.chordMode));
       tieButton.setAttribute('aria-pressed', String(state.tie === true));
       deleteButton.disabled = !state.canDelete;
+      deleteMeasureButton.disabled = !state.canDeleteMeasure;
       undoButton.disabled = !state.canUndo;
       redoButton.disabled = !state.canRedo;
       playLabel.textContent = state.playing ? 'Stopp' : 'Abspielen';

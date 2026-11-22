@@ -716,7 +716,7 @@ body {
   align-items: center;
 }
 
-/* "+ Takt" and "Takt löschen" as high as the overview bar next to them */
+/* "+ Takt" as high as the overview bar next to them */
 .overview .tool {
   min-height: 36px;
 }

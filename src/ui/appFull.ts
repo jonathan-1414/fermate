@@ -98,13 +98,6 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       selectedByTap = false;
       render();
     },
-    deleteMeasure() {
-      if (!commit(deleteMeasure(score, module, cursor.measure))) return;
-      const count = staffAt(score, cursor.staff)!.measures.length;
-      cursor = { staff: cursor.staff, measure: Math.min(cursor.measure, count - 1), tick: 0 };
-      selectedByTap = false;
-      render();
-    },
   });
 
   // A score saved in an earlier beta step may lack a staff (piano with one staff): add it.
@@ -176,6 +169,13 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   }
 
   const toolbar = createFullToolbar(root.querySelector('header.toolbar')!, root.querySelector('.toolbar-bottom')!, {
+    deleteMeasure() {
+      if (!commit(deleteMeasure(score, module, cursor.measure))) return;
+      const count = staffAt(score, cursor.staff)!.measures.length;
+      cursor = { staff: cursor.staff, measure: Math.min(cursor.measure, count - 1), tick: 0 };
+      selectedByTap = false;
+      render();
+    },
     togglePlay() {
       if (player.isPlaying() || playedScore) {
         player.stop();
@@ -470,6 +470,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       chordShown: chordsOn(cursor.staff),
       chordMode,
       canDelete: note !== null,
+      canDeleteMeasure: canDeleteMeasure(),
       canUndo: history.canUndo(),
       canRedo: history.canRedo(),
       playing: playedScore !== null,
@@ -487,6 +488,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     if (isCompound(ts)) return { glyph: '\uE1D5\uE1E7', factor: 1.5 };
     if (ts.beatValue === 2) return { glyph: '\uE1D3', factor: 2 };
     return { glyph: '\uE1D5', factor: 1 };
+  }
+
+  /** "Takt löschen" works while more measures remain than the minimum (a pickup can always go). */
+  function canDeleteMeasure(): boolean {
+    const count = allStaves(score)[0].measures.length;
+    return count > Math.max(module.minMeasures, score.pickup > 0 ? 2 : 1) || score.pickup > 0;
   }
 
   function scroller(): HTMLElement | null {
@@ -580,7 +587,6 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       viewWidth: 1,
       cursorMeasure: cursor.measure,
       canInsert: count < module.maxMeasures,
-      canDelete: count > Math.max(module.minMeasures, score.pickup > 0 ? 2 : 1) || score.pickup > 0,
     });
     // Vertical bar on the left, only when not all staves fit into the height.
     const body = scoreBody();
