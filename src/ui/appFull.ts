@@ -1,5 +1,5 @@
 import { inKey } from '../model/accidentals';
-import { isValidDuration, plain } from '../model/duration';
+import { plain } from '../model/duration';
 import { History } from '../model/history';
 import { isCompound } from '../model/meter';
 import { isMetaComplete } from '../model/meta';
@@ -21,7 +21,8 @@ import { completeStaves, entryRange, instrumentById, partNames } from '../model/
 import { createEmptyScore } from '../model/score';
 import { eventAtPosition, nextPosition, positionAtTick } from '../model/sequence';
 import { allStaves, partOfStaff, staffAt } from '../model/staves';
-import type { BaseValue, Duration, Pitch, Position, Score } from '../model/types';
+import type { BaseValue, Duration, Pitch, Position, Score, ScoreEvent } from '../model/types';
+import { isWholeMeasureRest, leftTripletGroup, valueAfterWriting } from '../model/value';
 import type { EditResult } from '../model/edit';
 import type { ModuleConfig } from '../modules/types';
 import { hitTest, staffPositionAt } from '../input/hitTest';
@@ -83,7 +84,14 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   /** Size of the music (screen pixels per drawing unit), changed with two fingers; kept on the device. */
   let zoom = clampZoom(loadZoom() ?? ZOOM, MIN_ZOOM, MAX_ZOOM);
   let pinchFrom = zoom;
-  let beforeDown: { cursor: Position; selectedByTap: boolean; tone: number; duration: Duration } | null = null;
+  let beforeDown: {
+    cursor: Position;
+    selectedByTap: boolean;
+    tone: number;
+    duration: Duration;
+    noValueAt: Position | null;
+    dotOnce: boolean;
+  } | null = null;
   /** How far the music is scrolled to the right (screen pixels). Only the overview bar scrolls it. */
   let scrollX = 0;
   /** How far the music is scrolled down (screen pixels), by the vertical overview bar only. */
@@ -127,7 +135,15 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   let tone = 0;
   /** "Akkord" pressed: a tap on the selected note adds a tone. */
   let chordMode = false;
+  /** The value to write with (the bottom toolbar shows it). */
   let duration: Duration = plain(48);
+  /**
+   * A whole-measure rest tapped here: no value is shown; a tap writes a note as long as
+   * the measure (`duration` holds that length). Ends as soon as the cursor moves.
+   */
+  let noValueAt: Position | null = null;
+  /** The dot was chosen with "Punkt" on a rest: it counts for the next note only. */
+  let dotOnce = false;
   let showNoteNames = false;
   let preview: { at: Position; pitch: Pitch } | null = null;
   let gesture: Gesture | null = null;
@@ -176,13 +192,39 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   }
 
   /** A new value: on a note it changes the note, on a rest it is the value of the next note. */
-  function applyDuration(d: Duration): void {
-    if (!isAllowedDuration(module, score.timeSignature, d)) return;
+  function applyDuration(d: Duration): boolean {
+    if (!isAllowedDuration(module, score.timeSignature, d)) return false;
     if (selectedNote()) {
-      if (!commit(changeNoteDuration(score, module, cursor, d))) return;
+      if (!commit(changeNoteDuration(score, module, cursor, d))) return false;
     }
     duration = d;
+    noValueAt = null;
+    dotOnce = false;
     render();
+    return true;
+  }
+
+  /** Is a whole-measure rest selected by a tap (no value shown)? */
+  function noValue(): boolean {
+    return noValueAt !== null && samePosition(noValueAt, cursor);
+  }
+
+  /**
+   * After a tap moved the cursor: the toolbar takes the value of the selected note or of
+   * the rest as it was drawn; on a whole-measure rest no value is shown.
+   */
+  function takeValueOfSelection(drawn: ScoreEvent | null): void {
+    noValueAt = null;
+    dotOnce = false;
+    const note = selectedNote();
+    if (note) {
+      duration = note.duration;
+    } else if (isWholeMeasureRest(score, cursor)) {
+      duration = eventAtPosition(score, cursor)!.duration;
+      noValueAt = cursor;
+    } else if (drawn?.kind === 'rest') {
+      duration = drawn.duration;
+    }
   }
 
   // "Datei öffnen": the device's own file picker. No file type filter: on the iPad an
@@ -203,6 +245,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       const count = staffAt(score, cursor.staff)!.measures.length;
       cursor = { staff: cursor.staff, measure: Math.min(cursor.measure, count - 1), tick: 0 };
       selectedByTap = false;
+      noValueAt = null;
       render();
     },
     togglePlay() {
@@ -309,14 +352,19 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       });
     },
     selectBase(base: BaseValue) {
-      // Dot and triplet stay switched on if the new value can have them.
-      const keep = (d: Duration) => (isValidDuration(d) ? d : plain(base));
-      applyDuration(keep({ base, dotted: duration.dotted, triplet: duration.triplet }));
+      // A value from the toolbar is always without dot and triplet.
+      applyDuration(plain(base));
     },
     toggleDot() {
-      applyDuration({ ...duration, dotted: !duration.dotted, triplet: false });
+      // Works on what is selected; on a rest the dot counts for the next note only.
+      if (noValue()) return;
+      const onRest = !selectedNote();
+      const next = { ...duration, dotted: !duration.dotted, triplet: false };
+      if (applyDuration(next) && onRest && next.dotted) dotOnce = true;
     },
     toggleTriplet() {
+      // Stays on until the triplet group is written (see the end of a tap).
+      if (noValue()) return;
       applyDuration({ ...duration, triplet: !duration.triplet, dotted: false });
     },
     setAccidental(alter) {
@@ -347,7 +395,10 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     cursor = snapshot.cursor;
     selectedByTap = false;
     tone = 0;
+    // On a note the toolbar shows its value; on a rest it keeps the value to write with.
     duration = selectedNote()?.duration ?? duration;
+    noValueAt = null;
+    dotOnce = false;
     render();
   }
 
@@ -362,6 +413,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     selectedByTap = false;
     tone = 0;
     chordMode = false;
+    noValueAt = null;
   }
 
   /** After instruments or measures changed: the cursor must still stand on something. */
@@ -373,6 +425,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     cursor = eventAtPosition(score, at) || isOnRest(score, at) ? at : { staff, measure, tick: 0 };
     selectedByTap = false;
     tone = 0;
+    noValueAt = null;
   }
 
   async function newScore(): Promise<void> {
@@ -514,12 +567,13 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     const ts = score.timeSignature;
     const note = selectedNote();
     const fits = (d: Duration) => isAllowedDuration(module, ts, d) && fitsTimeSignature(ts, d);
+    const none = noValue();
     toolbar.update({
-      duration,
+      duration: none ? null : duration,
       bases: (module.durations as BaseValue[]).filter((base) => fits(plain(base))),
-      canDot: fits({ base: duration.base, dotted: true, triplet: false }),
+      canDot: !none && fits({ base: duration.base, dotted: true, triplet: false }),
       tripletsShown: module.triplets && !isCompound(ts),
-      canTriplet: fits({ base: duration.base, dotted: false, triplet: true }),
+      canTriplet: !none && fits({ base: duration.base, dotted: false, triplet: true }),
       alter: note ? (selectedPitch()?.alter ?? null) : null,
       tie: note && module.ties ? note.tieToNext === true : null,
       chordShown: chordsOn(cursor.staff),
@@ -704,7 +758,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   attachScoreInput(scoreElement, {
     down(x, y) {
       // Remembered in case a second finger follows (zooming must not move the cursor).
-      beforeDown = { cursor, selectedByTap, tone, duration };
+      beforeDown = { cursor, selectedByTap, tone, duration, noValueAt, dotOnce };
       const band = staffLayoutAt(y);
       if (!band) return;
       const hit = hitTest(band, x, y);
@@ -724,10 +778,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       // note, the toolbar shows its value. A note is changed only by a second tap on it.
       const otherTone = tappedTone !== null && tappedTone !== tone && !chordMode;
       if (!samePosition(spot, cursor) || (selectedNote() && !selectedByTap) || otherTone) {
+        const drawn = eventAtPosition(shownScore(), spot);
         cursor = spot;
         selectedByTap = true;
         tone = tappedTone ?? 0;
-        duration = selectedNote()?.duration ?? duration;
+        takeValueOfSelection(drawn);
         render();
         return;
       }
@@ -773,7 +828,13 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
           score = result.score;
           cursor = nextPosition(score, preview.at);
           selectedByTap = false; // on a rest: the next tap writes; on a note: it only selects
-          duration = selectedNote()?.duration ?? duration;
+          // On a rest the toolbar keeps the value written with (a dot from "Punkt" and
+          // a finished triplet group end here); on a note it shows the note's value.
+          duration =
+            selectedNote()?.duration ??
+            valueAfterWriting(duration, dotOnce, leftTripletGroup(score, preview.at, cursor));
+          noValueAt = null;
+          dotOnce = false;
         }
       }
       if (done?.kind === 'drag' && done.changed) history.push(done.before);
@@ -795,7 +856,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     // Two fingers on the music: only the music gets larger or smaller.
     start() {
       if (beforeDown) {
-        ({ cursor, selectedByTap, tone, duration } = beforeDown);
+        ({ cursor, selectedByTap, tone, duration, noValueAt, dotOnce } = beforeDown);
         beforeDown = null;
         render();
       }

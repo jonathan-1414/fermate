@@ -701,3 +701,13 @@ body {
 .score-area.full .score-frame {
   flex: 1;
 }
+
+/* Note values and accidentals of the full version: only the sign, drawn large */
+.tool.symbol {
+  justify-content: center;
+  width: 48px;
+  padding: 0;
+}
+.tool.symbol .glyph.music {
+  font-size: 30px;
+}

@@ -350,7 +350,9 @@ export function restPreview(score: Score, module: ModuleConfig, at: Position, du
   const nextNote = items.map((item) => item.start).filter((start) => start > at.tick);
   const gapEnd = Math.min(measureLengths(score.timeSignature, score.pickup, staff.measures.length)[at.measure], ...nextNote);
   if (at.tick + (duration.triplet ? 3 * ticks : ticks) > gapEnd) return null;
-  const written = writeNoteAt(score, module, at, [parsePitch(module.range.low)], duration);
+  // Any note the instrument can play will do: it becomes a rest again right away.
+  const low = instrumentById(partOfStaff(score, at.staff)?.instrument ?? '')?.range.low ?? module.range.low;
+  const written = writeNoteAt(score, module, at, [parsePitch(low)], duration);
   if (!written.ok) return null;
   const measure = allStaves(written.score)[at.staff].measures[at.measure];
   let start = 0;

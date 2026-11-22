@@ -80,6 +80,11 @@ Teil des Bildschirms ein, alles andere tritt zurück.
   zeigen nur ein gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
   Tooltip und für Screenreader). In der Vollversion öffnet „+“ eine kleine Auswahl (siehe
   Abschnitt 5, „Dateien“).
+  Zweite Ausnahme (nur Vollversion, beschlossen 22.11.2026): Die Notenwerte (Ganze bis
+  Sechzehntel) und Kreuz, Be, Auflösung zeigen nur ihr Zeichen aus der Notenschrift, groß
+  gezeichnet, Tippfläche weiter mindestens 44 × 44 pt, Name als Tooltip und für
+  Screenreader. Die Zeichen sind hier selbst der Lerninhalt. Punkt, Triole, Haltebogen, Akkord
+  und Löschen behalten ihre Beschriftung, ebenso die obere Leiste. Modul 1 bleibt beschriftet.
 - Kein dunkler Modus in Modul 1.
 
 ## 3. Architektur
@@ -450,7 +455,9 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Speichern und teilen, Einstellungen (nur
   Symbole). „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
-  Triole | Kreuz, Be, Auflösung | Haltebogen, Akkord (nur Klavier), Löschen.
+  Triole | Kreuz, Be, Auflösung | Haltebogen, Akkord (nur Klavier), Löschen. Notenwerte und
+  Vorzeichen nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
+  einmal zu oft „Rückgängig“ tippt, holt den Schritt zurück).
 - **„+ Takt“** am rechten Ende der Übersichtsleiste, **„Takt löschen“** in der oberen Leiste
   links neben „Rückgängig“ (geändert 22.11.2026).
 - **Tempo:** Button „♩ = 90“ öffnet einen Regler (40 bis 200).
@@ -479,6 +486,26 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Tipp. Landet der Cursor von selbst auf einer Note (beim Öffnen, nach Rückgängig/Wiederholen,
   nach dem Setzen vor einer vorhandenen Note), wählt der nächste Tipp sie nur aus. Auf einer
   Pause, auf die der Cursor nach dem Setzen springt, schreibt ein Tipp gleich weiter.
+- **Leiste folgt der Auswahl** (beschlossen 22.11.2026 nach der ersten Testrunde): Tippt man
+  eine Note **oder Pause** an, springt die Leiste auf ihren Wert (Achtelpause → Achtel,
+  punktierte Viertelpause → Viertel + Punkt, Triolen-Achtelpause → Achtel + Triole). Ein Tipp
+  aufs Notensystem macht aus der Pause eine Note gleicher Länge; für einen anderen Wert erst
+  den Wert wählen (die Pause wird geteilt), dann tippen. Springt der Cursor **von selbst** auf
+  eine Pause (nach dem Setzen, beim Öffnen, nach „+ Takt“, nach Rückgängig/Wiederholen),
+  behält die Leiste den Wert, mit dem man gerade schreibt. So schreibt man mit einem Tipp pro
+  Note im selben Wert weiter. Auf Noten springt die Leiste immer auf deren Wert.
+- **Ganztaktpause angetippt:** Kein Notenwert ist gedrückt (ihr Zeichen ist in jeder Taktart
+  gleich). Ein Notenwert teilt sie nach den Regeln (4/4, Achtel → Achtelpause, Achtelpause,
+  Viertelpause, Halbe Pause). Ein Tipp aufs Notensystem ohne Wertwahl schreibt eine Note so
+  lang wie der Takt (4/4 Ganze, 3/4 und 6/8 punktierte Halbe, 2/4 Halbe). Punkt und Triole
+  sind dabei nicht möglich.
+- **Punkt und Triole sind keine Dauerschalter** (beschlossen 22.11.2026): Sie wirken wie
+  Kreuz und Be auf das Ausgewählte. „Punkt“ punktiert die ausgewählte Note bzw. Pause (auf
+  einer Pause: punktierte Pause, der nächste Tipp schreibt eine punktierte Note); nach dem
+  Setzen schreibt man wieder ohne Punkt. Auf einer punktierten Note nimmt „Punkt“ den Punkt
+  weg. „Triole“ bleibt an, bis die Triolengruppe zu Ende geschrieben ist, und geht dann von
+  selbst aus. Ein Notenwert aus der Leiste ist immer ohne Punkt und ohne Triole (beendet also
+  auch eine angefangene Triole). Reihenfolge: erst den Wert, dann Punkt bzw. Triole.
 - **Kürzer:** Der Rest wird zur Pause. **Länger:** Die Note überschreibt, was folgt; folgende
   Noten können dabei verschwinden („Rückgängig“ holt sie zurück), eine nur teilweise überdeckte
   Note wird zur Pause mit der Restlänge. Reicht die Länge über den Taktstrich, setzt die App

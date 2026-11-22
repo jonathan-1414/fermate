@@ -19,7 +19,8 @@ const GLYPH = {
 };
 
 export interface FullToolbarState {
-  duration: Duration;
+  /** The value to write with; null when none is shown (whole-measure rest selected). */
+  duration: Duration | null;
   /** Note values offered (values that never fit into a measure are hidden). */
   bases: BaseValue[];
   canDot: boolean;
@@ -71,6 +72,18 @@ export interface FullToolbar {
   setNoteNamesPhase(phase: RevealPhase, durationMs: number): void;
 }
 
+/**
+ * Note values and accidentals show only their sign (CLAUDE.md, "Gestaltung"): the name
+ * stays as tooltip and for screen readers.
+ */
+function symbolOnly(b: HTMLButtonElement, name: string): HTMLButtonElement {
+  b.querySelector('span:not(.glyph)')?.remove();
+  b.classList.add('symbol');
+  b.setAttribute('aria-label', name);
+  b.title = name;
+  return b;
+}
+
 function group(label: string, ...buttons: HTMLButtonElement[]): HTMLDivElement {
   const g = document.createElement('div');
   g.className = 'tool-group';
@@ -119,6 +132,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   const baseButtons = bases.map((base) => {
     const b = button(DURATION_NAMES[base], () => actions.selectBase(base), { music: DURATION_GLYPHS[base] });
     b.classList.add('duration');
+    symbolOnly(b, DURATION_NAMES[base]);
     return { base, b };
   });
   const dotButton = button('Punkt', actions.toggleDot, { music: GLYPH.dot });
@@ -132,6 +146,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   ).map(([alter, label, glyph]) => {
     const b = button(label, () => actions.setAccidental(alter), { music: glyph });
     b.classList.add('accidental');
+    symbolOnly(b, label);
     return { alter, b };
   });
   const tieButton = button('Haltebogen', actions.toggleTie, { svg: ICONS.tie });
@@ -152,12 +167,12 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
     update(state) {
       for (const { base, b } of baseButtons) {
         b.hidden = !state.bases.includes(base);
-        b.setAttribute('aria-pressed', String(base === state.duration.base));
+        b.setAttribute('aria-pressed', String(base === state.duration?.base));
       }
-      dotButton.setAttribute('aria-pressed', String(state.duration.dotted));
+      dotButton.setAttribute('aria-pressed', String(state.duration?.dotted === true));
       dotButton.disabled = !state.canDot;
       tripletButton.hidden = !state.tripletsShown;
-      tripletButton.setAttribute('aria-pressed', String(state.duration.triplet));
+      tripletButton.setAttribute('aria-pressed', String(state.duration?.triplet === true));
       tripletButton.disabled = !state.canTriplet;
       for (const { alter, b } of accidentalButtons) {
         b.disabled = state.alter === null;

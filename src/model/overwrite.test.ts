@@ -17,6 +17,7 @@ import {
   writeNoteAt,
 } from './overwrite';
 import { createEmptyScore } from './score';
+import { createConfiguredScore } from './setup';
 import { nextPosition, positionAtTick } from './sequence';
 import type { Duration, Score } from './types';
 
@@ -280,6 +281,13 @@ group('choosing a value on a rest (only shown)', () => {
 
   it('triplets show their group', () => {
     expect(m(restPreview(empty(), voll, at(0, 48), triplet(24))!)).toEqual(['r48@0', 'r16@48', 'r16@64', 'r16@80', 'r96@96']);
+  });
+
+  it('works for every instrument, not only for the piano (also the bass clef)', () => {
+    for (const instrument of ['flute', 'tuba', 'violin']) {
+      const score = ok(createConfiguredScore(voll, { instruments: [instrument], timeSignature: '4/4', keySignature: 0, pickup: 0, tempo: 90 }));
+      expect(m(restPreview(score, voll, at(0, 0), Q)!)).toEqual(['r48@0', 'r48@48', 'r96@96']);
+    }
   });
 
   it('nothing to show when the value is longer than the rests up to the next note', () => {
