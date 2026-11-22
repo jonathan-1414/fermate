@@ -51,7 +51,7 @@ export interface FullToolbarActions {
   undo(): void;
   redo(): void;
   showNoteNames(): void;
-  /** "+": new score, open a file, save as a file. */
+  /** "+": new score or open a file. */
   openScoreMenu(): void;
   handIn(): void;
   openSettings(): void;
@@ -105,8 +105,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   topMain.append(group('Wiedergabe', playButton, tempoButton, mixerButton), group('Bearbeiten', deleteMeasureButton, undoButton, redoButton, namesButton));
   const corner = group(
     'Partitur',
-    iconButton('Neu, Öffnen, Speichern', ICONS.plus, actions.openScoreMenu),
-    iconButton('Abgeben', ICONS.share, actions.handIn),
+    iconButton('Neu oder öffnen', ICONS.plus, actions.openScoreMenu),
+    iconButton('Speichern und teilen', ICONS.share, actions.handIn),
     iconButton('Einstellungen', ICONS.gear, actions.openSettings),
   );
   corner.classList.add('corner');

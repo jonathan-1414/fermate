@@ -34,7 +34,7 @@ import { baseFileName } from '../export/filename';
 import { buildHandIn } from '../export/handIn';
 import { canShareFile, shareOrDownload } from '../export/share';
 import { askForMeta, askHandIn, confirm, showInfo, showMessage, showScoreMenu } from './dialogs';
-import { fermateFile, readFermateFile, type ReadError } from '../export/fermateFile';
+import { readFermateFile, type ReadError } from '../export/fermateFile';
 import { createTimedReveal } from './timedReveal';
 import { createFullToolbar } from './toolbarFull';
 import { showMixer, showTempo } from './mixer';
@@ -243,7 +243,6 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       showScoreMenu({
         newScore: () => void newScore(),
         open: () => fileInput.click(),
-        save: () => void shareOrDownload(fermateFile(score, new Date())),
       });
     },
     openSettings() {

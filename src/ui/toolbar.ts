@@ -124,7 +124,7 @@ export function createToolbar(
   // New, hand in and settings: symbols only, always in the top right corner.
   const scoreGroup = document.createElement('div');
   scoreGroup.className = 'tool-group corner';
-  const handInButton = iconButton('Abgeben', ICONS.share, actions.handIn);
+  const handInButton = iconButton('Speichern und teilen', ICONS.share, actions.handIn);
   scoreGroup.append(
     iconButton('Neue Partitur', ICONS.plus, actions.newScore),
     handInButton,

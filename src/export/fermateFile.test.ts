@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { createEmptyScore } from '../model/score';
 import { modul1 } from '../modules/modul1';
 import { voll } from '../modules/voll';
-import { fermateFile, readFermateFile } from './fermateFile';
+import { readFermateFile } from './fermateFile';
+import { buildHandIn } from './handIn';
 
 function score() {
   const s = createEmptyScore(voll);
@@ -11,22 +12,18 @@ function score() {
   return s;
 }
 const day = new Date(2026, 10, 22);
-const bytesOf = async (file: File) => new Uint8Array(await file.arrayBuffer());
+const saved = async (s: ReturnType<typeof score>) => new Uint8Array(await (await buildHandIn(s, ['fermate'], day)).arrayBuffer());
 
-describe('Fermate file: save and open', () => {
-  it('the saved file has the hand-in name scheme', () => {
-    expect(fermateFile(score(), day).name).toBe('7a_Mia-Ben_2026-11-22.fermate');
-  });
-
+describe('Fermate file: open', () => {
   it('a saved file opens again as the same score', async () => {
-    const result = readFermateFile(await bytesOf(fermateFile(score(), day)), voll);
+    const result = readFermateFile(await saved(score()), voll);
     expect(result).toEqual({ ok: true, score: score() });
   });
 
   it('a file of another module is recognised as such', async () => {
     const other = createEmptyScore(modul1);
     other.meta = score().meta;
-    expect(readFermateFile(await bytesOf(fermateFile(other, day)), voll)).toEqual({ ok: false, error: 'other-module' });
+    expect(readFermateFile(await saved(other), voll)).toEqual({ ok: false, error: 'other-module' });
   });
 
   it('anything else cannot be read', () => {

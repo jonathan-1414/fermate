@@ -76,7 +76,7 @@ Teil des Bildschirms ein, alles andere tritt zurück.
 - **Formen:** abgerundete Ecken, keine Schatten, keine Verläufe, keine Animationen außer der
   mitlaufenden Markierung und dem Zeitbalken im Button „Notennamen“. Symbole in Leisten
   immer mit kurzer Beschriftung („Halbe“, „Abspielen“), damit niemand raten muss.
-  Ausnahme: die Buttons „Neu“ (+), „Abgeben“ (Teilen-Symbol) und „Einstellungen“ (Zahnrad)
+  Ausnahme: die Buttons „Neu“ (+), „Speichern und teilen“ (Teilen-Symbol, bis 22.11.2026 „Abgeben“) und „Einstellungen“ (Zahnrad)
   zeigen nur ein gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
   Tooltip und für Screenreader). In der Vollversion öffnet „+“ eine kleine Auswahl (siehe
   Abschnitt 5, „Dateien“).
@@ -338,7 +338,8 @@ const modul1: ModuleConfig = {
 - Automatisches Speichern im Browser nach jeder Änderung, beim Öffnen wird der letzte
   Stand geladen (eigener Speicherplatz pro Modul). Gespeicherte Daten werden vor dem Laden
   geprüft; ungültige werden ignoriert. Ohne `localStorage` läuft die App ohne Speichern.
-- Button **Abgeben** (Teilen-Symbol oben rechts): Auswahl der Formate **Fermate-Datei** und
+- Button **Speichern und teilen** (Teilen-Symbol oben rechts, Name geändert 22.11.2026, weil
+  „Abgeben“ nicht immer passt; der Vorgang heißt weiter Abgabe): Auswahl der Formate **Fermate-Datei** und
   **PDF** (nichts vorausgewählt, man wählt bewusst). Kein Warnhinweis bei nicht vollen Takten.
   - Dateiname: `[klasse]_[name(n)]_[jjjj-mm-tt]`, z. B. `7a_Mia-Ben_2026-11-11.pdf`.
   - Klasse und Namen kommen aus `meta`, das Datum ist der Tag der Abgabe.
@@ -409,7 +410,7 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
    Tempo; mit Voreinstellung 4/4, C-Dur, kein Auftakt, ♩ = 90.
 
 **Einstellungsmenü (beschlossen 21.11.2026):** nur ein Zahnrad-Symbol oben rechts neben „Neu“
-und „Abgeben“ (Name „Einstellungen“ als Tooltip und für Screenreader). Inhalt: oben der Button
+und „Speichern und teilen“ (Name „Einstellungen“ als Tooltip und für Screenreader). Inhalt: oben der Button
 die Angaben (Name(n), Klasse, Titel, direkt änderbar wie in Modul 1, geändert 22.11.2026), Instrumente
 hinzufügen und entfernen (Rückfrage, wenn das Instrument Noten hat), Tonart (die Töne bleiben
 gleich, aus fis in G-Dur wird in C-Dur fis mit Kreuz; Transponieren erst nach der Beta),
@@ -420,8 +421,9 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
 (mehr Platz für die Noten, geändert 21.11.2026, seit 22.11.2026 auch in Modul 1).
 
 **Dateien und PDF (beschlossen 22.11.2026):**
-- **Als Datei speichern:** über „+“, eine Fermate-Datei mit dem Namensschema der Abgabe
-  (`7a_Mia-Ben_2026-11-22.fermate`), weitergegeben über das Teilen-Menü, sonst Download.
+- **Als Datei speichern:** über „Speichern und teilen“ (Teilen-Symbol) mit „Fermate-Datei“, Name
+  nach dem Schema der Abgabe (`7a_Mia-Ben_2026-11-22.fermate`), Teilen-Menü oder Download
+  (geändert 22.11.2026, vorher ein eigener Punkt unter „+“).
 - **Datei öffnen:** über „+“, Dateiauswahl des Geräts. Die Datei wird vollständig geprüft;
   danach Rückfrage „Die aktuelle Partitur wird ersetzt“. Dateien eines anderen Moduls
   (z. B. aus Modul 1) und kaputte Dateien werden mit einem kurzen Hinweis abgelehnt.
@@ -433,8 +435,8 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
 
 **Leisten (beschlossen 21.11.2026):**
 - **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Takt löschen,
-  Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Abgeben, Einstellungen (nur Symbole).
-  „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen, Als Datei speichern (geändert 22.11.2026).
+  Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Speichern und teilen, Einstellungen (nur
+  Symbole). „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
   Triole | Kreuz, Be, Auflösung | Haltebogen, Akkord (nur Klavier), Löschen.
 - **„+ Takt“** am rechten Ende der Übersichtsleiste, **„Takt löschen“** in der oberen Leiste

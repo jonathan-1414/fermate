@@ -171,16 +171,15 @@ export function showMessage(text: string): Promise<void> {
 }
 
 /**
- * The menu behind "+" (full version): new score, open a file, save as a file.
- * Each choice runs right inside the tap, because browsers only allow the file picker
- * and the share menu directly after a touch.
+ * The menu behind "+" (full version): new score or open a file. Saving as a file is in
+ * "Speichern und teilen". Each choice runs right inside the tap, because browsers only
+ * allow the file picker directly after a touch.
  */
-export function showScoreMenu(actions: { newScore(): void; open(): void; save(): void }): void {
+export function showScoreMenu(actions: { newScore(): void; open(): void }): void {
   const dialog = el('dialog', { className: 'dialog' });
   const choices: Array<[string, () => void]> = [
     ['Neue Partitur', actions.newScore],
     ['Datei öffnen', actions.open],
-    ['Als Datei speichern', actions.save],
   ];
   const list = el(
     'div',
@@ -249,8 +248,8 @@ export function askHandIn(options: {
     const send = el('button', { type: 'button', className: 'tool primary' });
 
     dialog.append(
-      el('h2', { textContent: 'Abgeben' }),
-      el('fieldset', { className: 'field' }, el('legend', { textContent: 'Was möchtest du abgeben?' }), ...boxes.map((b) => b.row)),
+      el('h2', { textContent: 'Speichern und teilen' }),
+      el('fieldset', { className: 'field' }, el('legend', { textContent: 'Welche Dateien?' }), ...boxes.map((b) => b.row)),
       nameLine,
       hint,
       el('div', { className: 'dialog-actions' }, cancel, send),

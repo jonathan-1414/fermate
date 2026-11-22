@@ -2,20 +2,10 @@ import { strFromU8 } from 'fflate';
 import { parseScore } from '../model/validate';
 import type { Score } from '../model/types';
 import type { ModuleConfig } from '../modules/types';
-import { baseFileName } from './filename';
-import { fermateBytes } from './handIn';
 
 /**
- * Saving the score as a Fermate file on the device and opening it again.
- * The file is the same as the one handed in: the score as JSON.
+ * Opening a Fermate file (saved with "Speichern und teilen"): the score as JSON.
  */
-
-/** The saved file: same name scheme as for handing in, e.g. 7a_Mia-Ben_2026-11-22.fermate. */
-export function fermateFile(score: Score, date: Date): File {
-  return new File([fermateBytes(score) as BlobPart], `${baseFileName(score.meta, date)}.fermate`, {
-    type: 'application/json',
-  });
-}
 
 export type ReadError =
   /** Not a Fermate file, broken, or from an older version. */
