@@ -35,7 +35,7 @@ export function fitsTimeSignature(ts: TimeSignature, d: Duration): boolean {
 }
 
 /** Everything an edit needs to know about one staff. */
-interface StaffContext {
+export interface StaffContext {
   copy: Score;
   staff: Staff;
   lengths: number[];
@@ -64,13 +64,13 @@ function isWritable(staff: Staff, at: Position): boolean {
   return false;
 }
 
-function readItems(staff: Staff, measure: number): Item[] {
+export function readItems(staff: Staff, measure: number): Item[] {
   const items = toItems(staff.measures[measure]);
   if (!items) throw new Error('Broken measure');
   return items;
 }
 
-function writeItems(ctx: StaffContext, measure: number, items: Item[]): void {
+export function writeItems(ctx: StaffContext, measure: number, items: Item[]): void {
   ctx.staff.measures[measure] = fromItems(items, ctx.lengths[measure], ctx.copy.timeSignature);
 }
 
@@ -87,7 +87,7 @@ const noteOf = (pitches: Pitch[], duration: Duration, tieToNext = false): NoteEv
  * context `ctx`). Triplets go into their group; a longer note overwrites what
  * follows and is tied over the bar line if needed.
  */
-function writeNote(ctx: StaffContext, at: Position, pitches: Pitch[], duration: Duration, tieToNext: boolean): Fail | null {
+export function writeNote(ctx: StaffContext, at: Position, pitches: Pitch[], duration: Duration, tieToNext: boolean): Fail | null {
   const ts = ctx.copy.timeSignature;
   const length = ctx.lengths[at.measure];
   const items = readItems(ctx.staff, at.measure);

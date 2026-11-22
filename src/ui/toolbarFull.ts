@@ -35,6 +35,10 @@ export interface FullToolbarState {
   chordShown: boolean;
   chordMode: boolean;
   canDelete: boolean;
+  /** A marking with notes: "Kopieren" works. */
+  canCopy: boolean;
+  /** Something was copied: "Einfügen" works. */
+  canPaste: boolean;
   canDeleteMeasure: boolean;
   canUndo: boolean;
   canRedo: boolean;
@@ -69,6 +73,8 @@ export interface FullToolbarActions {
   toggleTie(): void;
   toggleChord(): void;
   deleteSelection(): void;
+  copy(): void;
+  paste(): void;
 }
 
 export interface FullToolbar {
@@ -158,6 +164,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   const tieButton = button('Haltebogen', actions.toggleTie, { svg: ICONS.tie });
   // Akkord: while pressed, a tap adds a tone to the selected note instead of moving it.
   const chordButton = button('Akkord', actions.toggleChord);
+  const copyButton = button('Kopieren', actions.copy);
+  const pasteButton = button('Einfügen', actions.paste);
   const deleteButton = button('Löschen', actions.deleteSelection, { svg: ICONS.cross });
 
   const bottomMain = document.createElement('div');
@@ -165,7 +173,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   bottomMain.append(
     group('Notenwert', ...baseButtons.map(({ b }) => b), dotButton, tripletButton),
     group('Vorzeichen', ...accidentalButtons.map(({ b }) => b)),
-    group('Note', tieButton, chordButton, deleteButton),
+    group('Note', tieButton, chordButton, copyButton, pasteButton, deleteButton),
   );
   bottom.append(bottomMain);
 
@@ -189,6 +197,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
       chordButton.setAttribute('aria-pressed', String(state.chordMode));
       tieButton.setAttribute('aria-pressed', String(state.tie === true));
       deleteButton.disabled = !state.canDelete;
+      copyButton.disabled = !state.canCopy;
+      pasteButton.disabled = !state.canPaste;
       deleteMeasureButton.disabled = !state.canDeleteMeasure;
       undoButton.disabled = !state.canUndo;
       redoButton.disabled = !state.canRedo;

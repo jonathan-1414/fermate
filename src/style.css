@@ -319,6 +319,10 @@ body {
 #score .vf-instrument-name.muted text {
   fill: var(--muted);
 }
+/* Marked notes (copy, paste, delete): a soft orange area behind them */
+#score .marking rect {
+  fill: var(--accent-soft);
+}
 #score .vf-swing-mark text {
   fill: var(--text);
 }

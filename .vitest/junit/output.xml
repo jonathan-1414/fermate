@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="15" failures="1" errors="0" time="0.038362223">
+    <testsuite name="src/model/range.test.ts" timestamp="2026-11-22T20:01:31.449Z" hostname="nuc11" tests="15" failures="1" errors="0" skipped="0" time="0.038362223">
+        <testcase classname="src/model/range.test.ts" name="positions in the piece &gt; absolute ticks and back, also with a pickup" time="0.005011404">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="marking &gt; from one note to another, both included, in either order" time="0.003095553">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="marking &gt; a rectangle over several staves" time="0.008724764">
+            <failure message="expected { firstStaff: +0, lastStaff: 1, …(2) } to deeply equal { firstStaff: +0, lastStaff: 1, …(2) }" type="AssertionError">
+AssertionError: expected { firstStaff: +0, lastStaff: 1, …(2) } to deeply equal { firstStaff: +0, lastStaff: 1, …(2) }
+
+- Expected
++ Received
+
+  {
+    &quot;firstStaff&quot;: 0,
+    &quot;from&quot;: 0,
+    &quot;lastStaff&quot;: 1,
+-   &quot;to&quot;: 96,
++   &quot;to&quot;: 192,
+  }
+
+ ❯ src/model/range.test.ts:47:60
+            </failure>
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="marking &gt; a cut triplet group is marked completely" time="0.001300121">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="marking &gt; whole measures over the measure numbers, all staves" time="0.000943443">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="deleting a marking &gt; the marked notes become rests, nothing moves" time="0.001917666">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="deleting a marking &gt; nothing to delete in a marking without notes" time="0.000828561">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="copy and paste &gt; copies the notes and pastes them at the cursor, overwriting" time="0.001422055">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="copy and paste &gt; nothing is copied from a marking without notes" time="0.00075681">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="copy and paste &gt; a pasted note across the bar line is tied" time="0.002448671">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="copy and paste &gt; adds empty measures at the end when needed, at most 32" time="0.006326489">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="copy and paste &gt; several staves go from the cursor downwards; too few staves: nothing happens" time="0.001217186">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="copy and paste &gt; chords keep only the highest tone where chords are not allowed" time="0.000792124">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="copy and paste &gt; a tone outside the input range stops the paste" time="0.000622802">
+        </testcase>
+        <testcase classname="src/model/range.test.ts" name="copy and paste &gt; triplet groups are pasted whole, only on a beat; never into the middle of a group" time="0.001191335">
+        </testcase>
+    </testsuite>
+</testsuites>

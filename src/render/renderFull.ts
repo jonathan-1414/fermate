@@ -86,6 +86,8 @@ export interface FullRenderOptions extends RenderOptions {
   playingList: Position[];
   /** Screen pixels per drawing unit. */
   zoom: number;
+  /** A marking (several notes): staves and the stretch from `from` up to `to` (not incl.). */
+  marked?: { firstStaff: number; lastStaff: number; from: { measure: number; tick: number }; to: { measure: number; tick: number } } | null;
 }
 
 /** Eighths are beamed per beat: per quarter, in 2/2 per half, in 6/8 three eighths together. */
@@ -397,6 +399,7 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
       drawNoteNames(ctx, staff, notesOf, layout.staves[s].topLineY + 4 * layout.staves[s].lineSpacing);
     }
   });
+  if (options.marked) drawMarking(drawing.querySelector('svg'), layout, options.marked);
   return layout;
 }
 
@@ -413,6 +416,47 @@ export function setDrawingZoom(container: HTMLElement, zoom: number): void {
   const spacer = container.querySelector<HTMLElement>('.score-numbers-spacer');
   const margin = container.querySelector<SVGSVGElement>('.score-margin svg');
   if (spacer && margin) spacer.style.width = `${Math.round(margin.viewBox.baseVal.width * zoom)}px`;
+}
+
+/**
+ * The marking: a soft orange area behind the marked notes of each marked staff, from the
+ * first marked note up to the first note after the marking (or the end of the measure).
+ * Put first into the drawing so that it lies behind everything.
+ */
+function drawMarking(svg: SVGSVGElement | null, layout: FullLayout, marked: NonNullable<FullRenderOptions['marked']>): void {
+  if (!svg) return;
+  const area = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  area.setAttribute('class', 'marking');
+  for (let s = marked.firstStaff; s <= marked.lastStaff; s++) {
+    const band = layout.staves[s];
+    if (!band) continue;
+    const top = band.topLineY - 14;
+    const height = 4 * band.lineSpacing + 28;
+    // A marking up to a bar line ends with the measure before it.
+    const last = marked.to.tick === 0 && marked.to.measure > marked.from.measure ? marked.to.measure - 1 : marked.to.measure;
+    for (let m = marked.from.measure; m <= last; m++) {
+      const box = band.measures[m];
+      if (!box) continue;
+      // At the start of a measure the area begins at the bar line (a whole-measure rest is
+      // drawn in the middle of the measure).
+      const xAt = (tick: number) => {
+        if (tick === 0) return box.x + 2;
+        const event = box.events.find((e) => e.tick >= tick);
+        return event ? event.headLeft - 6 : box.x + box.width;
+      };
+      const left = m === marked.from.measure ? xAt(marked.from.tick) : box.x;
+      const right = m === marked.to.measure ? xAt(marked.to.tick) : box.x + box.width;
+      if (right <= left) continue;
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', String(left));
+      rect.setAttribute('y', String(top));
+      rect.setAttribute('width', String(right - left));
+      rect.setAttribute('height', String(height));
+      rect.setAttribute('rx', '4');
+      area.append(rect);
+    }
+  }
+  svg.insertBefore(area, svg.firstChild);
 }
 
 /**

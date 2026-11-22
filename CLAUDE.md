@@ -384,10 +384,10 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
   (Lautstärke, Stumm, Solo), Rückgängig und Wiederholen, Speichern im Browser, Speichern und
   Öffnen als Datei, Abgabe (Fermate-Datei, PDF).
 - *Nach der Beta:* Liedtext, Akkordsymbole mit Begleitung, Audio- und MusicXML-Export, Teilen
-  per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren, Takt kopieren,
+  per Link, Metronom, Einzähler, Schleife, Bildschirmklaviatur, Transponieren (des Stücks),
   PWA, Aufgaben der Lehrkraft, Hördiktat.
-  Für „Takt kopieren“ später den Tipp auf eine Taktnummer (Takt auswählen) freihalten,
-  Taktnummern und Übersichtsleiste in der Beta nicht anders belegen.
+  „Takt kopieren“ ist seit 22.11.2026 vorgezogen: Markieren (auch über die Taktnummern),
+  Kopieren, Einfügen und Löschen gehören jetzt zur Beta (siehe „Eingabe“).
 - Alle Punkte vor dem Bauen sind geklärt (21.11.2026); nächster Schritt: Arbeitsschritte der Beta.
 
 **Ansicht (beschlossen 21.11.2026):**
@@ -567,6 +567,29 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   passt). Der letzte Takt wird hinten gekürzt bzw. bekommt hinten Pausen. Rückgängig holt
   Verlorenes zurück.
 - Rückgängig und Wiederholen.
+- **Markieren, Kopieren, Einfügen, Löschen** (beschlossen 22.11.2026 nach der ersten
+  Testrunde, vorgezogen):
+  - *Markieren:* Erst eine Note oder Pause antippen (Cursor), dann auf der letzten Stelle den
+    Finger etwa eine halbe Sekunde still **halten**: alles dazwischen ist markiert. Liegt die
+    letzte Stelle in einer anderen Notenzeile, wird ein Rechteck über alle Zeilen dazwischen
+    markiert. Halten auf der Cursor-Stelle bleibt Setzen bzw. Tonhöhe ziehen. Ein Tipp auf eine
+    **Taktnummer** markiert den ganzen Takt in allen Instrumenten, Ziehen über mehrere Nummern
+    mehrere Takte. Am Rechner zusätzlich Shift + Klick. Eine angeschnittene Triolengruppe wird
+    ganz mitmarkiert. Die Markierung ist eine hell-orange Fläche hinter den Noten; ein normaler
+    Tipp hebt sie auf.
+  - *Löschen* mit Markierung: alle markierten Noten werden zu Pausen, nichts rückt nach.
+  - *Kopieren* (Button in der unteren Leiste bei „Löschen“) merkt sich die markierten Noten
+    (bis zum nächsten Kopieren oder Neuladen der Seite).
+  - *Einfügen* schreibt ab dem Cursor und überschreibt wie eine lange Note; mehrere Zeilen
+    landen ab der Cursor-Zeile nach unten. Nicht mitten in einer Triole. Passt es nicht bis zum
+    Ende, hängt die App leere Takte an (Ausnahme von „Takte entstehen nie automatisch“), höchstens
+    bis 32 Takte, sonst passiert nichts mit kurzem Hinweis. In ein Instrument ohne Akkorde nur der
+    höchste Ton; Töne außerhalb des Eingabebereichs verhindern das Einfügen mit Hinweis.
+    Rückgängig nimmt alles zurück, auch angehängte Takte.
+- **Abspielen ab dem Cursor** (beschlossen 22.11.2026): Die Wiedergabe beginnt bei der
+  ausgewählten Note oder Pause und läuft bis zum Ende (alle Instrumente). Folgt dort nichts mehr,
+  was klingt (gerade fertig geschrieben), beginnt sie am Anfang. Mit einer Markierung spielt sie
+  nur den markierten Ausschnitt (nur die markierten Zeilen).
 
 **Transponierende Instrumente (beschlossen 22.11.2026 nach der ersten Testrunde, gebaut
 nach Block F als eigener Schritt):**

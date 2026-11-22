@@ -5,7 +5,8 @@
  * the two fingers then zoom the music, otherwise the browser zooms the page.
  */
 export interface ScoreGestureHandler {
-  down(x: number, y: number): void;
+  /** `shift`: the Shift key is held (computer: mark up to here). */
+  down(x: number, y: number, shift: boolean): void;
   move(x: number, y: number): void;
   up(): void;
   cancel(): void;
@@ -70,7 +71,7 @@ export function attachScoreInput(element: HTMLElement, handler: ScoreGestureHand
     if (!point) return;
     active = event.pointerId;
     capture(element, event.pointerId);
-    handler.down(point.x, point.y);
+    handler.down(point.x, point.y, event.shiftKey);
   });
 
   element.addEventListener('pointermove', (event) => {

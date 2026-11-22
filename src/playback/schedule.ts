@@ -58,12 +58,46 @@ export function swingQuarters(events: Located[]): Set<string> {
  * two eighths on a quarter sound long–short (2:1).
  * Ticks become seconds via the tempo (quarter notes per minute).
  */
-export function buildSchedule(score: Score): Schedule {
+export interface ScheduleSection {
+  /** Absolute tick to start at (from the start of the piece). */
+  from: number;
+  /** Absolute tick to stop before; Infinity = to the end. */
+  to: number;
+  /** Only these staves (a marking); all if not given. */
+  firstStaff?: number;
+  lastStaff?: number;
+}
+
+/**
+ * Where "Abspielen" starts (CLAUDE.md, "Abspielen ab dem Cursor"): at the cursor, unless
+ * nothing that sounds comes after it (just finished writing): then at the start.
+ */
+export function playbackStart(score: Score, cursorTick: number): number {
+  const later = allStaves(score).some((staff) => {
+    let measureStart = 0;
+    let lastMeasure = -1;
+    let measureLength = 0;
+    return staffEvents(staff).some(({ measure, tick, event }) => {
+      if (measure !== lastMeasure) {
+        measureStart += measureLength;
+        lastMeasure = measure;
+      }
+      measureLength = tick + eventTicks(event);
+      return event.kind === 'note' && measureStart + tick >= cursorTick;
+    });
+  });
+  return later ? cursorTick : 0;
+}
+
+export function buildSchedule(score: Score, section: ScheduleSection = { from: 0, to: Infinity }): Schedule {
   const secondsPerTick = 60 / score.tempo / TICKS_PER_QUARTER;
+  const offset = section.from * secondsPerTick;
   // No swing in 6/8 (the switch is greyed out there).
   const swing = score.swing && !isCompound(score.timeSignature);
   const notes: ScheduledNote[] = [];
   allStaves(score).forEach((staff, staffIndex) => {
+    if (section.firstStaff !== undefined && staffIndex < section.firstStaff) return;
+    if (section.lastStaff !== undefined && staffIndex > section.lastStaff) return;
     const part = score.parts.indexOf(partOfStaff(score, staffIndex)!);
     let measureStart = 0;
     let lastMeasure = -1;
@@ -84,8 +118,14 @@ export function buildSchedule(score: Score): Schedule {
         lastMeasure = measure;
       }
       measureLength = tick + eventTicks(event);
+      // Only the section: a note tied into it from before starts as a new note.
+      const absolute = measureStart + tick;
+      if (absolute < section.from || absolute >= section.to) {
+        open = new Map();
+        continue;
+      }
       const start = swung(measure, tick);
-      const time = (measureStart + start) * secondsPerTick;
+      const time = (measureStart + start) * secondsPerTick - offset;
       const duration = (swung(measure, tick + eventTicks(event)) - start) * secondsPerTick;
       const at = { staff: staffIndex, measure, tick };
       if (event.kind === 'rest') {

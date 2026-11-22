@@ -37,6 +37,8 @@ export type EditError =
   | 'not-empty' // only possible while the score has no notes
   | 'invalid-pickup' // pickup length not possible in this time signature
   | 'too-many-measures'
+  | 'not-enough-staves' // pasting more staves than there are below the cursor
+  | 'nothing-copied' // the marking has no notes
   | 'too-few-measures';
 
 export type EditResult = { ok: true; score: Score } | { ok: false; error: EditError };

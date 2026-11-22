@@ -23,8 +23,20 @@ import { eventAtPosition, nextPosition, positionAtTick } from '../model/sequence
 import { allStaves, partOfStaff, staffAt } from '../model/staves';
 import type { BaseValue, Duration, Pitch, Position, Score, ScoreEvent } from '../model/types';
 import { soundingParts } from '../model/mix';
+import {
+  type Clip,
+  copyRange,
+  deleteRange,
+  fromAbsolute,
+  measureRange,
+  pasteClip,
+  type Range,
+  rangeBetween,
+  rangeHasNotes,
+  toAbsolute,
+} from '../model/range';
 import { isWholeMeasureRest, leftTripletGroup, valueAfterWriting } from '../model/value';
-import type { EditResult } from '../model/edit';
+import type { EditError, EditResult } from '../model/edit';
 import type { ModuleConfig } from '../modules/types';
 import { hitTest, staffPositionAt } from '../input/hitTest';
 import { attachScoreInput } from '../input/scoreInput';
@@ -32,7 +44,7 @@ import { MAX_ZOOM, MIN_ZOOM, renderFullScore, setDrawingZoom, ZOOM, type FullLay
 import { clampZoom, scrollAfterZoom, zoomForWheel } from '../input/zoom';
 import { loadZoom, saveZoom } from '../storage/zoom';
 import { createPlayer } from '../playback/player';
-import { buildSchedule } from '../playback/schedule';
+import { buildSchedule, playbackStart } from '../playback/schedule';
 import { loadScore, saveScore } from '../storage/autosave';
 import { baseFileName } from '../export/filename';
 import { buildHandIn } from '../export/handIn';
@@ -54,6 +66,18 @@ const NOTE_NAMES_LOCK_MS = 30000;
 const READ_ERRORS: Record<ReadError, string> = {
   unreadable: 'Diese Datei lässt sich nicht öffnen. Sie ist keine Fermate-Datei oder beschädigt.',
   'other-module': 'Diese Datei wurde in einem anderen Modul von Fermate geschrieben und lässt sich hier nicht öffnen.',
+};
+
+/** Holding a finger still this long on another place marks up to there. */
+const HOLD_MS = 500;
+
+/** Why "Einfügen" did nothing (other reasons need no message). */
+const PASTE_ERRORS: Partial<Record<EditError, string>> = {
+  'too-many-measures': 'Zu lang: Ein Stück hat höchstens 32 Takte.',
+  'not-enough-staves': 'Darunter sind nicht genug Notenzeilen für alles, was kopiert wurde.',
+  'out-of-range': 'Einige Töne liegen außerhalb des Tonumfangs dieses Instruments.',
+  'inside-triplet': 'Mitten in einer Triole lässt sich nichts einfügen.',
+  'triplet-position': 'Hier lässt sich nichts einfügen: Eine Triole muss auf einer Zählzeit beginnen.',
 };
 
 interface Snapshot {
@@ -92,6 +116,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     duration: Duration;
     noValueAt: Position | null;
     dotOnce: boolean;
+    marked: Range | null;
   } | null = null;
   /** How far the music is scrolled to the right (screen pixels). Only the overview bar scrolls it. */
   let scrollX = 0;
@@ -145,6 +170,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   let noValueAt: Position | null = null;
   /** The dot was chosen with "Punkt" on a rest: it counts for the next note only. */
   let dotOnce = false;
+  /** Several notes marked (hold, Shift + click, measure numbers); null = none. */
+  let marked: Range | null = null;
+  /** What "Kopieren" took (until the next copy or reloading the page). */
+  let clipboard: Clip | null = null;
+  /** A finger rests on another place: after HOLD_MS it marks from `from` up to there. */
+  let hold: { timer: ReturnType<typeof setTimeout>; x: number; y: number } | null = null;
   let showNoteNames = false;
   let preview: { at: Position; pitch: Pitch } | null = null;
   let gesture: Gesture | null = null;
@@ -191,6 +222,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     if (!result.ok) return false;
     history.push({ score, cursor });
     score = result.score;
+    marked = null; // the notes changed: the marking would no longer fit them
     return true;
   }
 
@@ -261,7 +293,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
         render();
         return;
       }
-      const schedule = buildSchedule(score);
+      // A marking plays only itself; otherwise from the cursor (or from the start, see playbackStart).
+      const section = marked
+        ? { from: marked.from, to: marked.to, firstStaff: marked.firstStaff, lastStaff: marked.lastStaff }
+        : { from: playbackStart(score, toAbsolute(score, cursor.measure, cursor.tick)), to: Infinity };
+      const schedule = buildSchedule(score, section);
       if (schedule.notes.length === 0) return;
       playedScore = score;
       loadingSound = true; // until the samples are there ("Lädt …")
@@ -399,11 +435,37 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       const note = selectedNote();
       if (note && commit(setTie(score, module, cursor, !note.tieToNext))) render();
     },
+    copy() {
+      if (!marked) return;
+      clipboard = copyRange(score, marked) ?? clipboard;
+      render();
+    },
+    paste() {
+      if (!clipboard) return;
+      const result = pasteClip(score, module, cursor, clipboard);
+      if (!result.ok) {
+        const message = PASTE_ERRORS[result.error];
+        if (message) void showMessage(message);
+        return;
+      }
+      commit(result);
+      checkCursor();
+      render();
+    },
     toggleChord() {
       chordMode = !chordMode;
       render();
     },
     deleteSelection() {
+      // A marking: all its notes become rests (the marking stays to be seen).
+      if (marked) {
+        const kept = marked;
+        if (commit(deleteRange(score, kept))) {
+          marked = kept;
+          render();
+        }
+        return;
+      }
       // In a chord only the selected tone goes; a single note becomes rest.
       if (!commit(removeChordTone(score, cursor, tone))) return;
       tone = Math.max(0, tone - 1);
@@ -417,6 +479,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     cursor = snapshot.cursor;
     selectedByTap = false;
     tone = 0;
+    marked = null;
     // On a note the toolbar shows its value; on a rest it keeps the value to write with.
     duration = selectedNote()?.duration ?? duration;
     noValueAt = null;
@@ -437,6 +500,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     tone = 0;
     chordMode = false;
     noValueAt = null;
+    marked = null;
     scrollX = 0;
     scrollY = 0;
   }
@@ -597,6 +661,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       selectedTone: tone,
       playingList,
       zoom,
+      marked: marked && {
+        firstStaff: marked.firstStaff,
+        lastStaff: marked.lastStaff,
+        from: fromAbsolute(score, marked.from),
+        to: fromAbsolute(score, marked.to),
+      },
     });
     player.prepare(score.parts.map((part) => part.instrument));
     fitHeight();
@@ -615,7 +685,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       tie: note && module.ties ? note.tieToNext === true : null,
       chordShown: chordsOn(cursor.staff),
       chordMode,
-      canDelete: note !== null,
+      canDelete: note !== null || (marked !== null && rangeHasNotes(score, marked)),
+      canCopy: marked !== null && rangeHasNotes(score, marked),
+      canPaste: clipboard !== null,
       canDeleteMeasure: canDeleteMeasure(),
       canUndo: history.canUndo(),
       canRedo: history.canRedo(),
@@ -812,14 +884,58 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     return { at: cursor, pitch };
   }
 
+  function endHold(): void {
+    if (hold) clearTimeout(hold.timer);
+    hold = null;
+  }
+
+  /** A place inside a rest (a split rest as drawn) counts from the start of that rest. */
+  function markablePosition(spot: Position): Position {
+    if (eventAtPosition(score, spot)) return spot;
+    return positionAtTick(score, spot.staff, spot.measure, spot.tick) ?? spot;
+  }
+
+  // The measure numbers: a tap marks the measure in all staves, dragging several.
+  let numbersFrom: number | null = null;
+  const measureAtX = (clientX: number): number | null => {
+    const svg = scoreElement.querySelector<SVGSVGElement>('.score-numbers svg');
+    const matrix = svg?.getScreenCTM();
+    const boxes = layout?.staves[0]?.measures ?? [];
+    if (!matrix || boxes.length === 0) return null;
+    const x = new DOMPoint(clientX, 0).matrixTransform(matrix.inverse()).x;
+    const index = boxes.findIndex((b) => x >= b.x && x < b.x + b.width);
+    return index >= 0 ? index : x < boxes[0].x ? 0 : boxes.length - 1;
+  };
+  scoreElement.addEventListener('pointerdown', (event) => {
+    if (!(event.target instanceof Element) || !event.target.closest('.score-numbers')) return;
+    const measure = measureAtX(event.clientX);
+    if (measure === null) return;
+    numbersFrom = measure;
+    marked = measureRange(score, measure, measure);
+    render();
+  });
+  scoreElement.addEventListener('pointermove', (event) => {
+    if (numbersFrom === null) return;
+    const measure = measureAtX(event.clientX);
+    if (measure === null) return;
+    const next = measureRange(score, numbersFrom, measure);
+    if (marked && next.from === marked.from && next.to === marked.to) return;
+    marked = next;
+    render();
+  });
+  for (const type of ['pointerup', 'pointercancel'] as const) {
+    scoreElement.addEventListener(type, () => (numbersFrom = null));
+  }
+
   attachScoreInput(scoreElement, {
-    down(x, y) {
+    down(x, y, shift) {
       // Remembered in case a second finger follows (zooming must not move the cursor).
-      beforeDown = { cursor, selectedByTap, tone, duration, noValueAt, dotOnce };
+      beforeDown = { cursor, selectedByTap, tone, duration, noValueAt, dotOnce, marked };
       const band = staffLayoutAt(y);
       if (!band) return;
       const hit = hitTest(band, x, y);
       if (!hit) return;
+      endHold();
       const before = { score, cursor };
       // The spot under the finger, as drawn (a split rest counts with its parts).
       let spot: Position = { staff: band.index, measure: hit.measure, tick: hit.noteTick ?? hit.columnTick };
@@ -834,12 +950,32 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       // The first tap on a spot (or on another tone of the chord) only selects it; on a
       // note, the toolbar shows its value. A note is changed only by a second tap on it.
       const otherTone = tappedTone !== null && tappedTone !== tone && !chordMode;
+      // Shift + click (computer): mark from the cursor up to here.
+      if (shift && (eventAtPosition(score, spot) || isOnRest(score, spot))) {
+        marked = rangeBetween(score, cursor, markablePosition(spot));
+        render();
+        return;
+      }
+      marked = null; // a normal tap ends a marking
       if (!samePosition(spot, cursor) || (selectedNote() && !selectedByTap) || otherTone) {
         const drawn = eventAtPosition(shownScore(), spot);
+        const from = cursor;
         cursor = spot;
         selectedByTap = true;
         tone = tappedTone ?? 0;
         takeValueOfSelection(drawn);
+        // Held still on this other place: everything from the old cursor up to here is marked.
+        if (!samePosition(from, spot)) {
+          hold = {
+            x,
+            y,
+            timer: setTimeout(() => {
+              hold = null;
+              marked = rangeBetween(score, from, markablePosition(spot));
+              render();
+            }, HOLD_MS),
+          };
+        }
         render();
         return;
       }
@@ -855,7 +991,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       render();
     },
 
-    move(_x, y) {
+    move(x, y) {
+      // Moving the finger is not holding still.
+      if (hold && Math.hypot(x - hold.x, y - hold.y) > 8) endHold();
       if (!gesture) return;
       if (gesture.kind === 'chord') {
         const pitch = pitchAt(y);
@@ -876,6 +1014,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
 
     up() {
       beforeDown = null;
+      endHold();
       const done = gesture;
       gesture = null;
       if (done?.kind === 'place' && preview) {
@@ -904,6 +1043,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     },
 
     cancel() {
+      endHold();
       if (gesture?.kind === 'drag' && gesture.changed) score = gesture.before.score;
       gesture = null;
       preview = null;
@@ -913,7 +1053,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     // Two fingers on the music: only the music gets larger or smaller.
     start() {
       if (beforeDown) {
-        ({ cursor, selectedByTap, tone, duration, noValueAt, dotOnce } = beforeDown);
+        ({ cursor, selectedByTap, tone, duration, noValueAt, dotOnce, marked } = beforeDown);
+        endHold();
         beforeDown = null;
         render();
       }

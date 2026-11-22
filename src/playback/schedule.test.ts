@@ -8,7 +8,7 @@ import { createEmptyScore } from '../model/score';
 import type { Score } from '../model/types';
 import { modul1 } from '../modules/modul1';
 import { ok, p } from '../test/helpers';
-import { buildSchedule, noteName } from './schedule';
+import { buildSchedule, noteName, playbackStart } from './schedule';
 
 function place(notes: Array<[number, number, number, string]>): Score {
   return notes.reduce((score, [measure, tick, ticks, pitch]) => {
@@ -139,5 +139,37 @@ describe('swing', () => {
   it('no swing in 6/8', () => {
     const score = { ...eighths(), swing: true, timeSignature: { beats: 6, beatValue: 8 } };
     expect(times(score)[1]).toEqual(['D4', 0.5, 0.5]);
+  });
+});
+
+describe('playing from the cursor or a marking', () => {
+  const write = (score: Score, measure: number, tick: number, pitch: string, staff = 0) =>
+    ok(writeNoteAt(score, voll, { staff, measure, tick }, [p(pitch)], plain(48)));
+  const piece = () => write(write(write(createEmptyScore(voll), 0, 0, 'C4'), 0, 48, 'D4'), 1, 0, 'E4');
+
+  it('starts at the cursor, the first note there at time 0', () => {
+    const schedule = buildSchedule(piece(), { from: 48, to: Infinity });
+    expect(schedule.notes.map((n) => [n.note, +(n.time / Q).toFixed(3)])).toEqual([
+      ['D4', 0],
+      ['E4', 3],
+    ]);
+  });
+
+  it('a marking plays only its stretch and its staves', () => {
+    const two = write(piece(), 0, 0, 'C3', 1); // the piano's bass staff
+    const marked = buildSchedule(two, { from: 0, to: 96, firstStaff: 0, lastStaff: 0 });
+    expect(marked.notes.map((n) => n.note)).toEqual(['C4', 'D4']);
+  });
+
+  it('after the last note it starts at the beginning', () => {
+    expect(playbackStart(piece(), 48)).toBe(48);
+    expect(playbackStart(piece(), 192)).toBe(192);
+    expect(playbackStart(piece(), 240)).toBe(0);
+  });
+
+  it('a note tied into the section sounds from the section start', () => {
+    const tied = ok(writeNoteAt(createEmptyScore(voll), voll, { staff: 0, measure: 0, tick: 144 }, [p('G4')], plain(96)));
+    const schedule = buildSchedule(tied, { from: 192, to: Infinity });
+    expect(schedule.notes.map((n) => [n.note, n.time, +(n.duration / Q).toFixed(3)])).toEqual([['G4', 0, 1]]);
   });
 });
