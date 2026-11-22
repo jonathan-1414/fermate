@@ -319,6 +319,9 @@ body {
 #score .vf-instrument-name.muted text {
   fill: var(--muted);
 }
+#score .vf-instrument-name.solo text {
+  fill: var(--accent-text);
+}
 
 /* Bottom toolbar of the full version (writing), close to the hand */
 .toolbar-bottom {
@@ -555,6 +558,9 @@ body {
 }
 .mixer-name.muted {
   color: var(--muted);
+}
+.mixer-name.solo {
+  color: var(--accent-text);
 }
 .mixer-volume,
 .tempo-slider {

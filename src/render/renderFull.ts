@@ -19,6 +19,7 @@ import { accidentalsForStaff, type AccidentalSign } from '../model/accidentals';
 import { eventTicks } from '../model/duration';
 import { isOutsideRange, partNames } from '../model/instruments';
 import { toItems } from '../model/items';
+import { soundingParts } from '../model/mix';
 import { placeEvents } from '../model/measure';
 import { fullMeasureLength, isCompound, measureLengths } from '../model/meter';
 import { germanNoteName } from '../model/noteName';
@@ -232,13 +233,14 @@ function drawMargin(container: HTMLDivElement, score: Score, tops: number[], hei
   if (drawn.length > 1) new StaveConnector(drawn[0], drawn[drawn.length - 1]).setType('singleLeft').setContext(ctx).draw();
   const names = partNames(score, true);
   let first = 0;
+  const sounding = soundingParts(score.parts);
   score.parts.forEach((part, p) => {
     const own = drawn.slice(first, first + part.staves.length);
     if (own.length > 1) new StaveConnector(own[0], own[own.length - 1]).setType('brace').setContext(ctx).draw();
     // The name in the middle of the instrument's staves.
     const middle = (own[0].getYForLine(2) + own[own.length - 1].getYForLine(2)) / 2;
-    // A muted instrument (mixer) has a grey name.
-    ctx.openGroup(part.mute ? 'instrument-name muted' : 'instrument-name');
+    // Grey: the instrument does not sound right now (mixer); solo in the accent colour.
+    ctx.openGroup(`instrument-name${sounding[p] ? '' : ' muted'}${part.solo ? ' solo' : ''}`);
     ctx.setFont('sans-serif', 13);
     ctx.fillText(names[p], 2, middle + 4);
     ctx.closeGroup();

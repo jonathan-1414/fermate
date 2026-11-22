@@ -1,3 +1,4 @@
+import { soundingParts, toggleMute, toggleSolo } from '../model/mix';
 import { el, showDialog, textButton } from './dialogs';
 
 /**
@@ -14,7 +15,13 @@ export interface MixerPart {
 export function showMixer(parts: MixerPart[], onChange: (parts: MixerPart[]) => void): void {
   const current = parts.map((p) => ({ ...p }));
   const dialog = el('dialog', { className: 'dialog mixer' });
-  const rows = current.map((part) => {
+  const syncs: Array<() => void> = [];
+  /** All rows again: one instrument's solo makes the others silent (grey). */
+  const changed = () => {
+    for (const sync of syncs) sync();
+    onChange(current.map((p) => ({ ...p })));
+  };
+  const rows = current.map((part, i) => {
     const slider = el('input', {
       type: 'range',
       min: '0',
@@ -26,28 +33,27 @@ export function showMixer(parts: MixerPart[], onChange: (parts: MixerPart[]) => 
     const mute = textButton('Stumm');
     const solo = textButton('Solo');
     const name = el('span', { className: 'mixer-name', textContent: part.name });
-    const sync = () => {
-      mute.setAttribute('aria-pressed', String(part.mute));
-      solo.setAttribute('aria-pressed', String(part.solo));
-      name.classList.toggle('muted', part.mute);
-    };
+    syncs.push(() => {
+      mute.setAttribute('aria-pressed', String(current[i].mute));
+      solo.setAttribute('aria-pressed', String(current[i].solo));
+      name.classList.toggle('muted', !soundingParts(current)[i]);
+      name.classList.toggle('solo', current[i].solo);
+    });
     slider.addEventListener('input', () => {
-      part.volume = Number(slider.value) / 100;
+      current[i].volume = Number(slider.value) / 100;
       onChange(current.map((p) => ({ ...p })));
     });
     mute.addEventListener('click', () => {
-      part.mute = !part.mute;
-      sync();
-      onChange(current.map((p) => ({ ...p })));
+      current[i] = toggleMute(current[i]);
+      changed();
     });
     solo.addEventListener('click', () => {
-      part.solo = !part.solo;
-      sync();
-      onChange(current.map((p) => ({ ...p })));
+      current[i] = toggleSolo(current[i]);
+      changed();
     });
-    sync();
     return el('div', { className: 'mixer-row' }, name, slider, mute, solo);
   });
+  for (const sync of syncs) sync();
   const done = textButton('Fertig', 'tool primary');
   dialog.append(el('h2', { textContent: 'Mischpult' }), ...rows, el('div', { className: 'dialog-actions' }, done));
   const close = showDialog(dialog, () => close());

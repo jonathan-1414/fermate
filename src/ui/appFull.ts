@@ -22,6 +22,7 @@ import { createEmptyScore } from '../model/score';
 import { eventAtPosition, nextPosition, positionAtTick } from '../model/sequence';
 import { allStaves, partOfStaff, staffAt } from '../model/staves';
 import type { BaseValue, Duration, Pitch, Position, Score, ScoreEvent } from '../model/types';
+import { soundingParts } from '../model/mix';
 import { isWholeMeasureRest, leftTripletGroup, valueAfterWriting } from '../model/value';
 import type { EditResult } from '../model/edit';
 import type { ModuleConfig } from '../modules/types';
@@ -150,7 +151,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   let layout: FullLayout | null = null;
   const history = new History<Snapshot>();
 
-  /** The notes sounding right now (all staves); the first one is followed by the view. */
+  /**
+   * The notes sounding right now (all staves, as the player reports them). Only those of
+   * instruments that can be heard are marked and followed (see audible()).
+   */
+  let soundingList: Position[] = [];
   let playingList: Position[] = [];
   let playing: Position | null = null;
   let playedScore: Score | null = null;
@@ -162,13 +167,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     },
     onSounding(list) {
       if (list.length > 0 && !playedScore) return;
-      playingList = list;
-      playing = list[0] ?? null;
+      soundingList = list;
       render();
     },
     onEnd() {
-      playingList = [];
-      playing = null;
+      soundingList = [];
       playedScore = null;
       render();
     },
@@ -502,6 +505,15 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     }
   }
 
+  /** The positions of instruments that can be heard (not muted, solo rules). */
+  function audible(list: Position[]): Position[] {
+    const sounding = soundingParts(score.parts);
+    return list.filter((at) => {
+      const part = partOfStaff(score, at.staff);
+      return part !== undefined && sounding[score.parts.indexOf(part)];
+    });
+  }
+
   /** How the parts sound (mixer settings). */
   function mixOf(s: Score) {
     return s.parts.map((part) => ({ instrument: part.instrument, volume: part.volume, mute: part.mute, solo: part.solo }));
@@ -544,6 +556,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       playedScore = null;
       player.stop();
     }
+    // Only what can be heard is marked; the view follows its first note.
+    playingList = audible(soundingList);
+    playing = playingList[0] ?? null;
     const shown = shownScore();
     const quiet = preview !== null || playedScore !== null;
     // The cursor shows as the selected note or rest; where no event starts at the cursor

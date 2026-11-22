@@ -466,6 +466,13 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Zeile pro Instrument mit Lautstärkeregler, „Stumm“ und „Solo“, geschlossen mit „Fertig“. Auf
   schmalen Bildschirmen füllt es fast den ganzen Bildschirm. Ein stummes Instrument erkennt man
   am grauen Kurznamen im Rand links.
+- **Was klingt** (beschlossen 22.11.2026 nach der ersten Testrunde): Ist bei mindestens einem
+  Instrument „Solo“ an, klingen nur die Solo-Instrumente (mehrere zusammen erlaubt); ein
+  stummes Instrument klingt nie. „Stumm“ und „Solo“ schließen sich aus: Wer das eine einschaltet,
+  schaltet das andere aus. Kurznamen (im Rand links und im Mischpult): grau = klingt gerade
+  nicht (stumm oder wegen eines Solos anderer), Solo in `--accent-text`. Die mitlaufende
+  Markierung und das Mitscrollen folgen nur klingenden Instrumenten, Änderungen im Mischpult
+  wirken auch während der Wiedergabe sofort.
 
 **Eingabe (beschlossen 21.11.2026, anders als in Modul 1):**
 - **Immer Eingabemodus**, kein Umschalten in einen eigenen Auswahlmodus (wie in Modul 1).
