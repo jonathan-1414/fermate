@@ -38,6 +38,8 @@ export interface FullToolbarState {
   canUndo: boolean;
   canRedo: boolean;
   playing: boolean;
+  /** Abspielen was tapped, the sounds are still loading. */
+  loading: boolean;
   /** Tempo as shown on its button: the beat (music font) and the number. */
   tempoGlyph: string;
   tempo: number;
@@ -169,7 +171,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
       deleteMeasureButton.disabled = !state.canDeleteMeasure;
       undoButton.disabled = !state.canUndo;
       redoButton.disabled = !state.canRedo;
-      playLabel.textContent = state.playing ? 'Stopp' : 'Abspielen';
+      playLabel.textContent = state.loading ? 'Lädt …' : state.playing ? 'Stopp' : 'Abspielen';
       playGlyph.textContent = state.playing ? '■' : '▶';
       playButton.setAttribute('aria-pressed', String(state.playing));
       tempoGlyph.textContent = state.tempoGlyph;

@@ -42,6 +42,9 @@ body {
   align-items: flex-start;
   gap: 10px;
   padding: 8px 12px;
+  /* The music font's symbols reach far beyond their buttons (invisibly); without this the
+     page became a little higher than the screen and could be moved on the iPad. */
+  overflow: hidden;
 }
 .toolbar-main {
   flex: 1;
@@ -681,4 +684,20 @@ body {
   flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+/* Full version: the white sheet fills the whole height between the toolbars (no empty
+   stripes above and below); the music at the top, the overview bar at the bottom. */
+.score-area.full {
+  align-items: stretch;
+}
+.measuring .score-area.full {
+  align-items: center;
+}
+.score-area.full .sheet {
+  display: flex;
+  flex-direction: column;
+}
+.score-area.full .score-frame {
+  flex: 1;
 }

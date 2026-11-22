@@ -399,6 +399,11 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
   **senkrechte Leiste ganz links** (ohne Instrumentennamen, nur ein Rahmen für den sichtbaren
   Teil) springt zu den übrigen Zeilen (geändert 21.11.2026). Der Rand links
   und die Taktnummern bleiben dabei stehen.
+- **Notenblatt füllt die Höhe** (22.11.2026): Das weiße Blatt reicht von der oberen bis zur unteren
+  Leiste (keine beigen Streifen darüber und darunter), Noten oben, Übersichtsleiste unten.
+- **Lädt …** (22.11.2026): Tippt man auf „Abspielen“, während die Klänge noch laden, zeigt der
+  Button „Lädt …“ und die Wiedergabe startet von selbst, sobald sie da sind. Die Klangdateien
+  bleiben in 192 kbit/s (verkleinern abgelehnt).
 - **Zoom nur für die Noten** (beschlossen 22.11.2026, Teil von Beta-Schritt 10): Zwei Finger auf dem
   Notenblatt vergrößern oder verkleinern nur das Notenblatt (Noten, Rand links, Taktnummern), von
   halber bis doppelter Normalgröße; die Stelle unter den Fingern bleibt stehen. Leisten und

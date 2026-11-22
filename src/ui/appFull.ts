@@ -74,10 +74,12 @@ type Gesture =
 export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   root.innerHTML = `
     <header class="toolbar"></header>
-    <main class="score-area"><div class="sheet"><div class="score-frame"><div id="score"></div><div></div></div></div></main>
+    <main class="score-area full"><div class="sheet"><div class="score-frame"><div id="score"></div><div></div></div></div></main>
     <div class="toolbar toolbar-bottom"></div>
   `;
   const scoreElement = root.querySelector<HTMLDivElement>('#score')!;
+  /** Abspielen was tapped while the samples were still loading. */
+  let loadingSound = false;
   /** Size of the music (screen pixels per drawing unit), changed with two fingers; kept on the device. */
   let zoom = clampZoom(loadZoom() ?? ZOOM, MIN_ZOOM, MAX_ZOOM);
   let pinchFrom = zoom;
@@ -137,6 +139,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   let playing: Position | null = null;
   let playedScore: Score | null = null;
   const player = createPlayer({
+    onLoaded() {
+      if (!loadingSound) return;
+      loadingSound = false;
+      render();
+    },
     onSounding(list) {
       if (list.length > 0 && !playedScore) return;
       playingList = list;
@@ -208,6 +215,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       const schedule = buildSchedule(score);
       if (schedule.notes.length === 0) return;
       playedScore = score;
+      loadingSound = true; // until the samples are there ("Lädt …")
       render();
       void player.play(schedule, mixOf(score));
     },
@@ -521,6 +529,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       canUndo: history.canUndo(),
       canRedo: history.canRedo(),
       playing: playedScore !== null,
+      loading: loadingSound && playedScore !== null,
       tempoGlyph: tempoUnit().glyph,
       tempo: Math.round(score.tempo / tempoUnit().factor),
     });
@@ -563,12 +572,15 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     const body = scoreBody();
     if (!body) return;
     body.style.maxHeight = 'none';
+    // Measured with the sheet as high as its content (not stretched to the toolbars).
+    root.classList.add('measuring');
     const page = document.documentElement.scrollHeight;
     // Empty room around the sheet (it sits in the middle of the area) is free as well.
     const area = root.querySelector<HTMLElement>('.score-area');
     const sheet = root.querySelector<HTMLElement>('.sheet');
     const slack = area && sheet ? Math.max(0, area.clientHeight - 32 - sheet.offsetHeight) : 0;
     const free = window.innerHeight - (page - body.offsetHeight) + slack - 4;
+    root.classList.remove('measuring');
     body.style.maxHeight = `${Math.max(Math.round(130 * zoom), free)}px`;
   }
 

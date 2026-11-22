@@ -34,6 +34,8 @@ export interface PlayerEvents {
   onSounding(at: Position[]): void;
   /** Playback has ended (by itself or by stop()). */
   onEnd(): void;
+  /** The samples were still loading when play() was called and are there now. */
+  onLoaded?(): void;
 }
 
 export interface PlayerOptions {
@@ -138,6 +140,7 @@ export function createPlayer(events: PlayerEvents, options: PlayerOptions = {}):
       ensureVoices();
       setMix(mix);
       await Tone.loaded(); // the samples may still be loading
+      events.onLoaded?.();
       if (mine !== request || schedule.notes.length === 0) return;
 
       const transport = Tone.getTransport();
