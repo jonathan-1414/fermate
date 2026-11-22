@@ -230,10 +230,13 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     }
   }
 
-  // "Datei öffnen": the device's own file picker. No file type filter: on the iPad an
-  // unknown ending like .fermate would make every file greyed out.
+  // "Datei öffnen": the device's own file picker. Tested on the iPad (22.11.2026): with
+  // ".fermate" plus "any data" Safari opens "Dateien" directly (no camera, no photo
+  // library) and .fermate files can be chosen; without a filter or with ".fermate" alone
+  // the camera menu comes, with text/JSON the .fermate files are greyed out.
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
+  fileInput.accept = '.fermate,application/octet-stream';
   fileInput.hidden = true;
   root.append(fileInput);
   fileInput.addEventListener('change', () => {

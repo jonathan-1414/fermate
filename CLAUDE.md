@@ -411,11 +411,10 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - **Zoom** bleibt mit zwei Fingern auf dem Notenblatt (geprüft 22.11.2026 nach der ersten
   Testrunde; Pinch auf den Leisten und Lupen-Buttons verworfen).
 - **Neue Partitur** (neu, geöffnet, aus dem Startassistenten): Die Ansicht beginnt am Anfang.
-- **„Datei öffnen“ auf dem iPad** zeigt das Menü mit Kamera und Fotomediathek, weil die
-  Dateiauswahl keine Dateiart angibt (mit `.fermate` waren alle Dateien ausgegraut). Offen
-  (22.11.2026): Vorübergehende Testseite `…/?dateitest` mit fünf Einstellungen; die, die auf dem
-  iPad direkt „Dateien“ öffnet und `.fermate` wählbar lässt, wird übernommen, danach kommt die
-  Testseite wieder heraus.
+- **„Datei öffnen“ auf dem iPad** öffnet direkt die Dateien-App, ohne Kamera und
+  Fotomediathek: Die Dateiauswahl gibt `.fermate,application/octet-stream` an. Auf dem iPad
+  getestet 22.11.2026: ohne Angabe, nur `.fermate` oder `*/*` kommt das Kamera-Menü, mit
+  Text/JSON sind `.fermate`-Dateien ausgegraut.
 - **Notenblatt füllt die Höhe** (22.11.2026): Das weiße Blatt reicht von der oberen bis zur unteren
   Leiste (keine beigen Streifen darüber und darunter), Noten oben, Übersichtsleiste unten.
 - **Lädt …** (22.11.2026): Tippt man auf „Abspielen“, während die Klänge noch laden, zeigt der

@@ -741,16 +741,3 @@ body {
   font-size: 30px;
 }
 
-/* TEMPORARY: test page for the file picker (…/?dateitest, see fileTest.ts) */
-.file-test {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 16px;
-}
-.file-test-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin: 12px 0;
-}
