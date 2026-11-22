@@ -673,3 +673,11 @@ body {
 .overview .tool {
   min-height: 36px;
 }
+
+/* The menu behind "+": one choice per line */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}

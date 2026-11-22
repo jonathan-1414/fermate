@@ -78,7 +78,8 @@ Teil des Bildschirms ein, alles andere tritt zurück.
   immer mit kurzer Beschriftung („Halbe“, „Abspielen“), damit niemand raten muss.
   Ausnahme: die Buttons „Neu“ (+), „Abgeben“ (Teilen-Symbol) und „Einstellungen“ (Zahnrad)
   zeigen nur ein gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
-  Tooltip und für Screenreader).
+  Tooltip und für Screenreader). In der Vollversion öffnet „+“ eine kleine Auswahl (siehe
+  Abschnitt 5, „Dateien“).
 - Kein dunkler Modus in Modul 1.
 
 ## 3. Architektur
@@ -418,9 +419,22 @@ Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für di
 Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeile gibt es nicht
 (mehr Platz für die Noten, geändert 21.11.2026, seit 22.11.2026 auch in Modul 1).
 
+**Dateien und PDF (beschlossen 22.11.2026):**
+- **Als Datei speichern:** über „+“, eine Fermate-Datei mit dem Namensschema der Abgabe
+  (`7a_Mia-Ben_2026-11-22.fermate`), weitergegeben über das Teilen-Menü, sonst Download.
+- **Datei öffnen:** über „+“, Dateiauswahl des Geräts. Die Datei wird vollständig geprüft;
+  danach Rückfrage „Die aktuelle Partitur wird ersetzt“. Dateien eines anderen Moduls
+  (z. B. aus Modul 1) und kaputte Dateien werden mit einem kurzen Hinweis abgelehnt.
+  Rückgängig gilt danach erst für neue Änderungen.
+- **PDF** der Vollversion: A4 hoch, Kopf (Titel, Name(n), Klasse, Datum) nur auf Seite 1,
+  Zeilen untereinander mit Kurznamen, Schlüssel und Tonart in jeder Zeile, Taktnummer am
+  Zeilenanfang, Zeilen auf volle Breite gezogen (eine kurze letzte Zeile nicht), Haltebögen über
+  das Zeilenende in zwei Hälften, „Seite n von m“ ab zwei Seiten. Modul 1 bleibt A4 quer.
+
 **Leisten (beschlossen 21.11.2026):**
 - **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Takt löschen,
-  Rückgängig, Wiederholen, Notennamen | ganz rechts Neu, Abgeben, Einstellungen (nur Symbole).
+  Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Abgeben, Einstellungen (nur Symbole).
+  „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen, Als Datei speichern (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
   Triole | Kreuz, Be, Auflösung | Haltebogen, Akkord (nur Klavier), Löschen.
 - **„+ Takt“** am rechten Ende der Übersichtsleiste, **„Takt löschen“** in der oberen Leiste

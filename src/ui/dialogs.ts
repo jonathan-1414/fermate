@@ -154,6 +154,53 @@ export function askForMeta(current: Meta): Promise<Meta> {
   });
 }
 
+/** A short message with "OK" (e.g. a file that cannot be opened). */
+export function showMessage(text: string): Promise<void> {
+  return new Promise((resolve) => {
+    const dialog = el('dialog', { className: 'dialog' });
+    const ok = textButton('OK', 'tool primary');
+    dialog.append(el('p', { className: 'dialog-text', textContent: text }), el('div', { className: 'dialog-actions' }, ok));
+    const close = showDialog(dialog, () => done());
+    function done(): void {
+      close();
+      resolve();
+    }
+    ok.addEventListener('click', done);
+    ok.focus();
+  });
+}
+
+/**
+ * The menu behind "+" (full version): new score, open a file, save as a file.
+ * Each choice runs right inside the tap, because browsers only allow the file picker
+ * and the share menu directly after a touch.
+ */
+export function showScoreMenu(actions: { newScore(): void; open(): void; save(): void }): void {
+  const dialog = el('dialog', { className: 'dialog' });
+  const choices: Array<[string, () => void]> = [
+    ['Neue Partitur', actions.newScore],
+    ['Datei öffnen', actions.open],
+    ['Als Datei speichern', actions.save],
+  ];
+  const list = el(
+    'div',
+    { className: 'menu-list' },
+    ...choices.map(([label, action]) => {
+      const b = textButton(label);
+      b.addEventListener('click', () => {
+        close();
+        action();
+      });
+      return b;
+    }),
+  );
+  const cancel = textButton('Abbrechen');
+  dialog.append(el('h2', { textContent: 'Partitur' }), list, el('div', { className: 'dialog-actions' }, cancel));
+  const close = showDialog(dialog, () => close());
+  cancel.addEventListener('click', () => close());
+  dialog.focus();
+}
+
 /** A yes/no question. Resolves true if confirmed. */
 export function confirm(text: string, confirmLabel: string): Promise<boolean> {
   return new Promise((resolve) => {

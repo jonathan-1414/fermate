@@ -2,6 +2,7 @@ import {
   Accidental,
   BarlineType,
   Beam,
+  CanvasContext,
   Dot,
   Formatter,
   Fraction,
@@ -26,6 +27,7 @@ import { allStaves, partOfStaff } from '../model/staves';
 import type { Part, Position, Score, ScoreEvent, Staff, TimeSignature } from '../model/types';
 import type { MeasureLayout, ScoreLayout } from './layout';
 import type { RenderOptions } from './renderScore';
+import { breakIntoSystems, stretchFactor } from './systems';
 
 /**
  * Draws the score of the full version: every staff one long line to the right
@@ -436,4 +438,149 @@ function drawNoteNames(ctx: RenderContext, staff: Staff, prepared: PreparedStaff
     names.forEach((name, k) => ctx.fillText(name, center, bottomLineY + 26 + k * 14));
   });
   ctx.closeGroup();
+}
+
+/** Room above the first staff of a printed line for the measure number. */
+const PRINT_NUMBER_ROOM = 14;
+
+/**
+ * Draws the score for the PDF: the measures in lines (systems) below each other, every line
+ * with short names, clefs and key, the measure number at the start of the line. No cursor,
+ * selection or note names. Returns one canvas per line, `width` drawing units wide and
+ * `scale` times larger.
+ */
+export function renderFullSystemsToCanvases(score: Score, width: number, scale: number): HTMLCanvasElement[] {
+  const staves = allStaves(score);
+  const parts = staves.map((_, i) => partOfStaff(score, i));
+  const tops = staffTops(score).map((t) => t + PRINT_NUMBER_ROOM);
+  const height = tops[tops.length - 1] + ROW;
+  const ts = score.timeSignature;
+  const signs = staves.map((staff) => accidentalsForStaff(staff, score.keySignature));
+  const count = staves[0].measures.length;
+  const prepared = Array.from({ length: count }, (_, m) =>
+    staves.map((staff, s) => prepareStaff(staff.measures[m], staff, parts[s], ts, signs[s][m], null)),
+  );
+  const formatters = prepared.map((column) => {
+    const formatter = new Formatter();
+    column.forEach((p) => formatter.joinVoices([p.voice]));
+    return { formatter, minWidth: formatter.preCalculateMinTotalWidth(column.map((p) => p.voice)) };
+  });
+  const timeSignature = `${ts.beats}/${ts.beatValue}`;
+  const timeWidth = new Stave(0, 0, 200).addTimeSignature(timeSignature).getNoteStartX() - new Stave(0, 0, 200).getNoteStartX();
+  const natural = formatters.map((f) => Math.max(MIN_MEASURE_WIDTH, f.minWidth + MEASURE_PADDING));
+
+  const key = KEY_NAMES[score.keySignature] ?? 'C';
+  const nameWidth = 58;
+  const marginWidth = new Stave(nameWidth, 0, 200).addClef('treble').addKeySignature(key).getNoteStartX() + 6;
+  const available = width - marginWidth - 2; // a little room for the final bar line
+  const systems = breakIntoSystems(natural, available, timeWidth);
+  const systemOf: number[] = [];
+  systems.forEach((line, k) => line.forEach((m) => (systemOf[m] = k)));
+  const names = partNames(score, true);
+
+  const contexts = systems.map((line, k) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    const context2d = canvas.getContext('2d')!;
+    context2d.fillStyle = '#ffffff';
+    context2d.fillRect(0, 0, canvas.width, canvas.height);
+    context2d.fillStyle = '#000000';
+    context2d.strokeStyle = '#000000';
+    context2d.scale(scale, scale);
+    const ctx = new CanvasContext(context2d);
+
+    // Margin: short names, clefs, key, brace for the piano, the line on the left.
+    const marginStaves = staves.map((staff, s) => {
+      const stave = new Stave(nameWidth, tops[s] + STAVE_OFFSET, marginWidth - nameWidth, STAVE_OPTIONS).addClef(staff.clef).addKeySignature(key);
+      stave.setEndBarType(BarlineType.NONE);
+      stave.setContext(ctx).draw();
+      return stave;
+    });
+    if (marginStaves.length > 1) {
+      new StaveConnector(marginStaves[0], marginStaves[marginStaves.length - 1]).setType('singleLeft').setContext(ctx).draw();
+    }
+    let first = 0;
+    score.parts.forEach((part, p) => {
+      const own = marginStaves.slice(first, first + part.staves.length);
+      if (own.length > 1) new StaveConnector(own[0], own[own.length - 1]).setType('brace').setContext(ctx).draw();
+      const middle = (own[0].getYForLine(2) + own[own.length - 1].getYForLine(2)) / 2;
+      ctx.setFont('sans-serif', 13);
+      ctx.fillText(names[p], 2, middle + 4);
+      first += part.staves.length;
+    });
+
+    // Measure number at the start of the line (the pickup measure has none).
+    const number = score.pickup > 0 ? line[0] : line[0] + 1;
+    if (number >= 1) {
+      ctx.setFont('sans-serif', 11);
+      ctx.fillText(String(number), nameWidth, tops[0] + 4);
+    }
+
+    // The measures, stretched to the full width (a short last line is not).
+    const extra = k === 0 ? timeWidth : 0;
+    const sum = line.reduce((total, m) => total + natural[m], 0);
+    const factor = stretchFactor(sum, available - extra, k === systems.length - 1);
+    let x = marginWidth;
+    line.forEach((m, j) => {
+      const w = natural[m] * factor + (k === 0 && j === 0 ? extra : 0);
+      const column = prepared[m];
+      const drawn = column.map((p, s) => {
+        const stave = new Stave(x, tops[s] + STAVE_OFFSET, w, STAVE_OPTIONS);
+        if (j === 0) stave.setBegBarType(BarlineType.NONE);
+        if (k === 0 && j === 0) stave.addTimeSignature(timeSignature);
+        if (m === count - 1) stave.setEndBarType(BarlineType.END);
+        stave.setContext(ctx).draw();
+        p.notes.forEach((note) => note.setStave(stave));
+        return stave;
+      });
+      let firstStaff = 0;
+      for (const part of score.parts) {
+        if (part.staves.length > 1) {
+          const type = m === count - 1 ? 'boldDoubleRight' : 'singleRight';
+          new StaveConnector(drawn[firstStaff], drawn[firstStaff + part.staves.length - 1]).setType(type).setContext(ctx).draw();
+        }
+        firstStaff += part.staves.length;
+      }
+      formatters[m].formatter.formatToStave(column.map((p) => p.voice), drawn[0]);
+      column.forEach((p, s) => {
+        p.voice.draw(ctx, drawn[s]);
+        p.beams.forEach((beam) => beam.setContext(ctx).draw());
+        p.tuplets.forEach((tuplet) => tuplet.setContext(ctx).draw());
+      });
+      x += w;
+    });
+    return { canvas, ctx };
+  });
+
+  // Ties; a tie over the end of a line is drawn in two halves.
+  staves.forEach((staff, s) => {
+    const notesOf = prepared.map((column) => column[s]);
+    const events = staffEvents(staff);
+    const notes = drawnNotes(staff, notesOf);
+    events.forEach(({ event, measure }, i) => {
+      const nextEntry = events[i + 1];
+      const next = nextEntry?.event;
+      if (event.kind !== 'note' || !event.tieToNext || !next || next.kind !== 'note') return;
+      const firstIndexes: number[] = [];
+      const lastIndexes: number[] = [];
+      event.pitches.forEach((p, a) => {
+        const b = next.pitches.findIndex((q) => q.step === p.step && q.alter === p.alter && q.octave === p.octave);
+        if (b >= 0) {
+          firstIndexes.push(a);
+          lastIndexes.push(b);
+        }
+      });
+      if (firstIndexes.length === 0) return;
+      const here = systemOf[measure];
+      const there = systemOf[nextEntry.measure];
+      if (here === there) {
+        new StaveTie({ firstNote: notes[i], lastNote: notes[i + 1], firstIndexes, lastIndexes }).setContext(contexts[here].ctx).draw();
+      } else {
+        new StaveTie({ firstNote: notes[i], lastNote: null, firstIndexes, lastIndexes }).setContext(contexts[here].ctx).draw();
+        new StaveTie({ firstNote: null, lastNote: notes[i + 1], firstIndexes, lastIndexes }).setContext(contexts[there].ctx).draw();
+      }
+    });
+  });
+  return contexts.map((c) => c.canvas);
 }

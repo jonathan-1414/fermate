@@ -33,7 +33,8 @@ import { loadScore, saveScore } from '../storage/autosave';
 import { baseFileName } from '../export/filename';
 import { buildHandIn } from '../export/handIn';
 import { canShareFile, shareOrDownload } from '../export/share';
-import { askForMeta, askHandIn, confirm, showInfo } from './dialogs';
+import { askForMeta, askHandIn, confirm, showInfo, showMessage, showScoreMenu } from './dialogs';
+import { fermateFile, readFermateFile, type ReadError } from '../export/fermateFile';
 import { createTimedReveal } from './timedReveal';
 import { createFullToolbar } from './toolbarFull';
 import { showMixer, showTempo } from './mixer';
@@ -45,6 +46,11 @@ import { createOverview, createVerticalOverview } from './overview';
 
 const NOTE_NAMES_SHOW_MS = 5000;
 const NOTE_NAMES_LOCK_MS = 30000;
+
+const READ_ERRORS: Record<ReadError, string> = {
+  unreadable: 'Diese Datei lässt sich nicht öffnen. Sie ist keine Fermate-Datei oder beschädigt.',
+  'other-module': 'Diese Datei wurde in einem anderen Modul von Fermate geschrieben und lässt sich hier nicht öffnen.',
+};
 
 interface Snapshot {
   score: Score;
@@ -166,6 +172,18 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     render();
   }
 
+  // "Datei öffnen": the device's own file picker. No file type filter: on the iPad an
+  // unknown ending like .fermate would make every file greyed out.
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.hidden = true;
+  root.append(fileInput);
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = ''; // the same file can be chosen again
+    if (file) void openFile(file);
+  });
+
   const toolbar = createFullToolbar(root.querySelector('header.toolbar')!, root.querySelector('.toolbar-bottom')!, {
     deleteMeasure() {
       if (!commit(deleteMeasure(score, module, cursor.measure))) return;
@@ -221,16 +239,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     showNoteNames() {
       noteNames.start();
     },
-    async newScore() {
-      const yes = await confirm('Neue Partitur beginnen? Alle Noten dieser Partitur werden gelöscht.', 'Neu beginnen');
-      if (!yes) return;
-      player.stop();
-      // Everything starts empty, also names, class and title; then the start wizard.
-      score = createEmptyScore(module);
-      resetCursor();
-      history.clear();
-      render();
-      await runWizard();
+    openScoreMenu() {
+      showScoreMenu({
+        newScore: () => void newScore(),
+        open: () => fileInput.click(),
+        save: () => void shareOrDownload(fermateFile(score, new Date())),
+      });
     },
     openSettings() {
       showSettings(module, {
@@ -346,6 +360,39 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     cursor = eventAtPosition(score, at) || isOnRest(score, at) ? at : { staff, measure, tick: 0 };
     selectedByTap = false;
     tone = 0;
+  }
+
+  async function newScore(): Promise<void> {
+    const yes = await confirm('Neue Partitur beginnen? Alle Noten dieser Partitur werden gelöscht.', 'Neu beginnen');
+    if (!yes) return;
+    player.stop();
+    // Everything starts empty, also names, class and title; then the start wizard.
+    score = createEmptyScore(module);
+    resetCursor();
+    history.clear();
+    render();
+    await runWizard();
+  }
+
+  /** Opens a Fermate file: checked first, then it replaces the score (after asking). */
+  async function openFile(file: File): Promise<void> {
+    const result = readFermateFile(new Uint8Array(await file.arrayBuffer()), module);
+    if (!result.ok) {
+      await showMessage(READ_ERRORS[result.error]);
+      return;
+    }
+    const yes = await confirm('Datei öffnen? Die aktuelle Partitur wird ersetzt.', 'Öffnen');
+    if (!yes) return;
+    player.stop();
+    playedScore = null;
+    score = result.score;
+    resetCursor();
+    history.clear();
+    render();
+    if (!isMetaComplete(score.meta)) {
+      score = { ...score, meta: await askForMeta(score.meta) };
+      render();
+    }
   }
 
   /**

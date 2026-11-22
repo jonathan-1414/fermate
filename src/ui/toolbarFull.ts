@@ -51,7 +51,8 @@ export interface FullToolbarActions {
   undo(): void;
   redo(): void;
   showNoteNames(): void;
-  newScore(): void;
+  /** "+": new score, open a file, save as a file. */
+  openScoreMenu(): void;
   handIn(): void;
   openSettings(): void;
   selectBase(base: BaseValue): void;
@@ -104,7 +105,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   topMain.append(group('Wiedergabe', playButton, tempoButton, mixerButton), group('Bearbeiten', deleteMeasureButton, undoButton, redoButton, namesButton));
   const corner = group(
     'Partitur',
-    iconButton('Neue Partitur', ICONS.plus, actions.newScore),
+    iconButton('Neu, Öffnen, Speichern', ICONS.plus, actions.openScoreMenu),
     iconButton('Abgeben', ICONS.share, actions.handIn),
     iconButton('Einstellungen', ICONS.gear, actions.openSettings),
   );
