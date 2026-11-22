@@ -26,7 +26,9 @@ import type { EditResult } from '../model/edit';
 import type { ModuleConfig } from '../modules/types';
 import { hitTest, staffPositionAt } from '../input/hitTest';
 import { attachScoreInput } from '../input/scoreInput';
-import { renderFullScore, ZOOM, type FullLayout, type StaffLayout } from '../render/renderFull';
+import { MAX_ZOOM, MIN_ZOOM, renderFullScore, setDrawingZoom, ZOOM, type FullLayout, type StaffLayout } from '../render/renderFull';
+import { clampZoom, scrollAfterZoom, zoomForWheel } from '../input/zoom';
+import { loadZoom, saveZoom } from '../storage/zoom';
 import { createPlayer } from '../playback/player';
 import { buildSchedule } from '../playback/schedule';
 import { loadScore, saveScore } from '../storage/autosave';
@@ -76,6 +78,10 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     <div class="toolbar toolbar-bottom"></div>
   `;
   const scoreElement = root.querySelector<HTMLDivElement>('#score')!;
+  /** Size of the music (screen pixels per drawing unit), changed with two fingers; kept on the device. */
+  let zoom = clampZoom(loadZoom() ?? ZOOM, MIN_ZOOM, MAX_ZOOM);
+  let pinchFrom = zoom;
+  let beforeDown: { cursor: Position; selectedByTap: boolean; tone: number; duration: Duration } | null = null;
   /** How far the music is scrolled to the right (screen pixels). Only the overview bar scrolls it. */
   let scrollX = 0;
   /** How far the music is scrolled down (screen pixels), by the vertical overview bar only. */
@@ -492,6 +498,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       measureCheck: false,
       selectedTone: tone,
       playingList,
+      zoom,
     });
     player.prepare(score.parts.map((part) => part.instrument));
     fitHeight();
@@ -562,7 +569,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     const sheet = root.querySelector<HTMLElement>('.sheet');
     const slack = area && sheet ? Math.max(0, area.clientHeight - 32 - sheet.offsetHeight) : 0;
     const free = window.innerHeight - (page - body.offsetHeight) + slack - 4;
-    body.style.maxHeight = `${Math.max(Math.round(130 * ZOOM), free)}px`;
+    body.style.maxHeight = `${Math.max(Math.round(130 * zoom), free)}px`;
   }
 
   /** Puts the music at the remembered scroll position and moves the frames in the overviews. */
@@ -587,12 +594,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     const band = layout?.staves[staff];
     const box = band?.measures[measure];
     if (!sc || !body || !band || !box) return;
-    const left = box.x * ZOOM;
-    const right = (box.x + box.width) * ZOOM;
+    const left = box.x * zoom;
+    const right = (box.x + box.width) * zoom;
     if (left < scrollX) scrollX = left - 24;
     else if (right > scrollX + sc.clientWidth) scrollX = Math.min(left - 24, right - sc.clientWidth + 24);
-    const top = band.top * ZOOM;
-    const bottom = band.bottom * ZOOM;
+    const top = band.top * zoom;
+    const bottom = band.bottom * zoom;
     if (top < scrollY) scrollY = top;
     else if (bottom > scrollY + body.clientHeight) scrollY = Math.min(top, bottom - body.clientHeight);
   }
@@ -684,6 +691,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
 
   attachScoreInput(scoreElement, {
     down(x, y) {
+      // Remembered in case a second finger follows (zooming must not move the cursor).
+      beforeDown = { cursor, selectedByTap, tone, duration };
       const band = staffLayoutAt(y);
       if (!band) return;
       const hit = hitTest(band, x, y);
@@ -742,6 +751,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     },
 
     up() {
+      beforeDown = null;
       const done = gesture;
       gesture = null;
       if (done?.kind === 'place' && preview) {
@@ -769,7 +779,64 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       preview = null;
       render();
     },
+  }, {
+    // Two fingers on the music: only the music gets larger or smaller.
+    start() {
+      if (beforeDown) {
+        ({ cursor, selectedByTap, tone, duration } = beforeDown);
+        beforeDown = null;
+        render();
+      }
+      pinchFrom = zoom;
+    },
+    change(ratio, centerX, centerY) {
+      zoomTo(pinchFrom * ratio, centerX, centerY);
+    },
+    end() {
+      saveZoom(zoom);
+      render();
+    },
   });
+
+  // Ctrl + mouse wheel, or two fingers on a trackpad: the same on a computer.
+  let wheelTimer: ReturnType<typeof setTimeout> | undefined;
+  scoreElement.addEventListener(
+    'wheel',
+    (event) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault(); // not the whole page
+      zoomTo(zoomForWheel(zoom, event.deltaY), event.clientX, event.clientY);
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(() => {
+        saveZoom(zoom);
+        render();
+      }, 200);
+    },
+    { passive: false },
+  );
+  // Safari zooms the page with its own gesture events: not on the music.
+  for (const type of ['gesturestart', 'gesturechange']) {
+    scoreElement.addEventListener(type, (event) => event.preventDefault());
+  }
+
+  /**
+   * Sets a new size for the music at once (without drawing it again); the point at
+   * (clientX, clientY) stays in its place.
+   */
+  function zoomTo(wanted: number, clientX: number, clientY: number): void {
+    const next = clampZoom(wanted, MIN_ZOOM, MAX_ZOOM);
+    const sc = scroller();
+    const body = scoreBody();
+    if (!Number.isFinite(next) || next === zoom || !sc || !body) return;
+    const view = sc.getBoundingClientRect();
+    const height = body.getBoundingClientRect();
+    scrollX = scrollAfterZoom(scrollX, clientX - view.left, zoom, next);
+    scrollY = scrollAfterZoom(scrollY, clientY - height.top, zoom, next);
+    zoom = next;
+    setDrawingZoom(scoreElement, zoom);
+    fitHeight();
+    applyScroll();
+  }
 
   // A turned iPad (portrait / landscape) has another height for the music.
   window.addEventListener('resize', () => render());

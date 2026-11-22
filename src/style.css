@@ -219,7 +219,7 @@ body {
   flex: 1;
   min-width: 0;
   overflow: hidden; /* scrolled only by the overview bar */
-  touch-action: pinch-zoom;
+  touch-action: none;
 }
 
 /* Music and the vertical overview bar side by side */
@@ -299,9 +299,10 @@ body {
   border-radius: 6px;
   pointer-events: none;
 }
-.score-margin,
-.score-scroller * {
-  touch-action: pinch-zoom;
+/* Full version: two fingers zoom only the music (the app does it), not the page. */
+#score.full-score,
+#score.full-score * {
+  touch-action: none;
 }
 #score.full-score svg {
   width: auto;

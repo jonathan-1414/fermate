@@ -37,8 +37,13 @@ import { breakIntoSystems, stretchFactor } from './systems';
  * Contains no musical logic: everything (rests, ties, accidentals) comes from the model.
  */
 
-/** Drawing units → screen pixels. Matches the staff size of Modul 1 on an iPad. */
+/**
+ * Drawing units → screen pixels at normal size (matches the staff size of Modul 1 on an
+ * iPad). The music can be zoomed from half to double this size (pinch).
+ */
 export const ZOOM = 1.4;
+export const MIN_ZOOM = ZOOM / 2;
+export const MAX_ZOOM = ZOOM * 2;
 /**
  * Height of one staff's band: room above for ledger lines, the five lines (40 units),
  * room below for ledger lines and note names. The top line lies STAVE_OFFSET below the
@@ -76,6 +81,8 @@ export interface FullRenderOptions extends RenderOptions {
   selectedTone: number;
   /** All notes sounding right now during playback (in all staves). */
   playingList: Position[];
+  /** Screen pixels per drawing unit. */
+  zoom: number;
 }
 
 /** Eighths are beamed per beat: per quarter, in 2/2 per half, in 6/8 three eighths together. */
@@ -193,15 +200,15 @@ function staffTops(score: Score): number[] {
   return tops;
 }
 
-/** The SVG gets a fixed size in screen pixels (ZOOM per drawing unit), not the screen width. */
-function newDrawing(container: HTMLDivElement, width: number, height: number): RenderContext {
+/** The SVG gets a fixed size in screen pixels (`zoom` per drawing unit), not the screen width. */
+function newDrawing(container: HTMLDivElement, width: number, height: number, zoom: number): RenderContext {
   const renderer = new Renderer(container, Renderer.Backends.SVG);
   renderer.resize(width, height);
   const svg = container.querySelector('svg');
   if (svg) {
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    svg.setAttribute('width', String(Math.round(width * ZOOM)));
-    svg.setAttribute('height', String(Math.round(height * ZOOM)));
+    svg.setAttribute('width', String(Math.round(width * zoom)));
+    svg.setAttribute('height', String(Math.round(height * zoom)));
     svg.style.width = '';
     svg.style.height = '';
   }
@@ -209,13 +216,13 @@ function newDrawing(container: HTMLDivElement, width: number, height: number): R
 }
 
 /** The fixed margin: short names, clefs and keys, a brace for the piano, the line on the left. */
-function drawMargin(container: HTMLDivElement, score: Score, tops: number[], height: number): number {
+function drawMargin(container: HTMLDivElement, score: Score, tops: number[], height: number, zoom: number): number {
   const staves = allStaves(score);
   const key = KEY_NAMES[score.keySignature] ?? 'C';
   const nameWidth = 58;
   const probe = new Stave(nameWidth, 0, 200).addClef('treble').addKeySignature(key);
   const width = probe.getNoteStartX() + 6;
-  const ctx = newDrawing(container, width, height);
+  const ctx = newDrawing(container, width, height, zoom);
   const drawn = staves.map((staff, i) => {
     const stave = new Stave(nameWidth, tops[i] + STAVE_OFFSET, width - nameWidth, STAVE_OPTIONS).addClef(staff.clef).addKeySignature(key);
     stave.setEndBarType(BarlineType.NONE);
@@ -291,10 +298,10 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
   body.append(scroller, margin); // the music first: the input reads the first SVG
   container.append(body, numbersRow);
 
-  const marginWidth = drawMargin(margin, score, tops, height);
-  numbersSpacer.style.width = `${Math.round(marginWidth * ZOOM)}px`;
-  const numbersCtx = newDrawing(numbersDrawing, total, NUMBERS_HEIGHT);
-  const ctx = newDrawing(drawing, total, height);
+  const marginWidth = drawMargin(margin, score, tops, height, options.zoom);
+  numbersSpacer.style.width = `${Math.round(marginWidth * options.zoom)}px`;
+  const numbersCtx = newDrawing(numbersDrawing, total, NUMBERS_HEIGHT, options.zoom);
+  const ctx = newDrawing(drawing, total, height, options.zoom);
   drawing.querySelector('svg')?.classList.add('music');
 
   const layout: FullLayout = {
@@ -385,6 +392,21 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
     }
   });
   return layout;
+}
+
+/**
+ * Changes the size of the drawn music at once, without drawing it again (while pinching):
+ * every SVG keeps its drawing (viewBox) and only gets a new size on the screen.
+ */
+export function setDrawingZoom(container: HTMLElement, zoom: number): void {
+  for (const svg of container.querySelectorAll('svg')) {
+    const box = svg.viewBox.baseVal;
+    svg.setAttribute('width', String(Math.round(box.width * zoom)));
+    svg.setAttribute('height', String(Math.round(box.height * zoom)));
+  }
+  const spacer = container.querySelector<HTMLElement>('.score-numbers-spacer');
+  const margin = container.querySelector<SVGSVGElement>('.score-margin svg');
+  if (spacer && margin) spacer.style.width = `${Math.round(margin.viewBox.baseVal.width * zoom)}px`;
 }
 
 /**

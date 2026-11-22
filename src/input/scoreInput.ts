@@ -1,13 +1,32 @@
 /**
  * Turns touch, pen and mouse events on the score into calls of the app.
  * Coordinates are converted into drawing coordinates first.
- * A second finger (pinch zoom) cancels the current gesture.
+ * A second finger cancels the current gesture; with a `pinch` handler (full version)
+ * the two fingers then zoom the music, otherwise the browser zooms the page.
  */
 export interface ScoreGestureHandler {
   down(x: number, y: number): void;
   move(x: number, y: number): void;
   up(): void;
   cancel(): void;
+}
+
+export interface PinchHandler {
+  /** Two fingers are down. */
+  start(): void;
+  /** `ratio`: distance of the fingers now / at the start; centre in screen pixels. */
+  change(ratio: number, centerX: number, centerY: number): void;
+  /** A finger was lifted. */
+  end(): void;
+}
+
+/** Keeps the pointer's events on the music even outside it (fails harmlessly if not possible). */
+function capture(element: HTMLElement, pointerId: number): void {
+  try {
+    element.setPointerCapture(pointerId);
+  } catch {
+    // e.g. the pointer is already gone
+  }
 }
 
 function toDrawing(element: HTMLElement, event: PointerEvent): { x: number; y: number } | null {
@@ -18,26 +37,49 @@ function toDrawing(element: HTMLElement, event: PointerEvent): { x: number; y: n
   return { x: point.x, y: point.y };
 }
 
-export function attachScoreInput(element: HTMLElement, handler: ScoreGestureHandler): void {
-  const pointers = new Set<number>();
+export function attachScoreInput(element: HTMLElement, handler: ScoreGestureHandler, pinch?: PinchHandler): void {
+  const pointers = new Map<number, { x: number; y: number }>();
   let active: number | null = null;
+  let pinchStart: number | null = null;
+
+  const distance = () => {
+    const [a, b] = [...pointers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
 
   element.addEventListener('pointerdown', (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
-    pointers.add(event.pointerId);
+    // The first finger of a new touch: forget fingers whose lifting was missed.
+    if (event.isPrimary) {
+      pointers.clear();
+      if (pinchStart !== null) pinch?.end();
+      pinchStart = null;
+    }
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.size > 1) {
       if (active !== null) handler.cancel();
       active = null;
+      if (pinch && pointers.size === 2 && pinchStart === null) {
+        capture(element, event.pointerId);
+        pinchStart = distance();
+        pinch.start();
+      }
       return;
     }
     const point = toDrawing(element, event);
     if (!point) return;
     active = event.pointerId;
-    element.setPointerCapture(event.pointerId);
+    capture(element, event.pointerId);
     handler.down(point.x, point.y);
   });
 
   element.addEventListener('pointermove', (event) => {
+    if (pointers.has(event.pointerId)) pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinch && pinchStart !== null && pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      if (pinchStart > 0) pinch.change(distance() / pinchStart, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      return;
+    }
     if (event.pointerId !== active) return;
     const point = toDrawing(element, event);
     if (point) handler.move(point.x, point.y);
@@ -45,6 +87,10 @@ export function attachScoreInput(element: HTMLElement, handler: ScoreGestureHand
 
   const end = (event: PointerEvent, cancelled: boolean) => {
     pointers.delete(event.pointerId);
+    if (pinchStart !== null) {
+      pinchStart = null;
+      pinch?.end();
+    }
     if (event.pointerId !== active) return;
     active = null;
     if (cancelled) handler.cancel();

@@ -398,7 +398,14 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - Passen nicht alle Notenzeilen in die Höhe, bleiben die Noten groß, und eine zweite, schmale
   **senkrechte Leiste ganz links** (ohne Instrumentennamen, nur ein Rahmen für den sichtbaren
   Teil) springt zu den übrigen Zeilen (geändert 21.11.2026). Der Rand links
-  und die Taktnummern bleiben dabei stehen. Pinch-Zoom bleibt.
+  und die Taktnummern bleiben dabei stehen.
+- **Zoom nur für die Noten** (beschlossen 22.11.2026, Teil von Beta-Schritt 10): Zwei Finger auf dem
+  Notenblatt vergrößern oder verkleinern nur das Notenblatt (Noten, Rand links, Taktnummern), von
+  halber bis doppelter Normalgröße; die Stelle unter den Fingern bleibt stehen. Leisten und
+  Übersichtsleisten bleiben gleich groß, die Seite selbst zoomt dort nicht. Am Rechner: Strg +
+  Mausrad bzw. zwei Finger auf dem Trackpad. Die Größe merkt sich das Gerät. Kommt beim Zoomen
+  der zweite Finger dazu, verwirft die App, was der erste begonnen hat (keine Note, kein neuer
+  Cursor). Modul 1 behält den Zoom des Browsers.
 
 **Startassistent (beschlossen 21.11.2026):** drei kurze Seiten, nicht wegklickbar.
 1. *Angaben:* Name(n), Klasse, Titel wie in Modul 1 (Namen und Klasse Pflicht).
@@ -602,6 +609,7 @@ Tests für die Programmlogik. **Modul 1 muss nach jedem Schritt unverändert fun
    Speichern im Browser (eigener Speicherplatz), „Neu“.
 9. **Dateien und Abgabe:** als Datei speichern und öffnen, Abgabe mit Fermate-Datei und PDF
    (Zeilen untereinander auf A4-Seiten, mehrere Instrumente, Taktnummern am Zeilenanfang).
-10. **Feinschliff auf dem iPad:** Tippflächen, Querformat und Hochformat, Ladezeiten der Klänge.
+10. **Feinschliff auf dem iPad:** Zoom nur für die Noten (zwei Finger), Tippflächen, Querformat und
+    Hochformat, Ladezeiten der Klänge.
 
 Nach Schritt 10 beginnt der Beta-Test.
