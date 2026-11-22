@@ -1,4 +1,4 @@
-import { INSTRUMENTS, instrumentById } from '../model/instruments';
+import { INSTRUMENTS, instrumentById, partNames } from '../model/instruments';
 import { fullMeasureLength, isCompound, pickupUnit } from '../model/meter';
 import { parseTimeSignature } from '../model/score';
 import type { Score } from '../model/types';
@@ -227,6 +227,8 @@ export interface SettingsActions {
   showInfo(): void;
   addInstrument(id: string): void;
   removeInstrument(index: number): Promise<void>;
+  /** One place up (-1) or down (+1). */
+  moveInstrument(index: number, direction: -1 | 1): void;
   setKey(key: number): void;
   setTimeSignature(text: string): void;
   setPickup(ticks: number): void;
@@ -253,11 +255,24 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
   function draw(): void {
     const score = actions.score();
     const ids = score.parts.map((p) => p.instrument);
-    const names = namesInOrder(ids);
+    // In the order of the score; numbers by place (the upper violin is "Violine 1").
+    const names = partNames(score);
     const list = el(
       'ul',
       { className: 'instrument-list' },
-      ...names.map(({ index, name }) => {
+      ...names.map((name, index) => {
+        const arrow = (direction: -1 | 1) => {
+          const label = direction < 0 ? 'nach oben' : 'nach unten';
+          const b = textButton(direction < 0 ? '↑' : '↓', 'tool arrow');
+          b.setAttribute('aria-label', `${name} ${label}`);
+          b.title = `${name} ${label}`;
+          b.disabled = direction < 0 ? index === 0 : index === ids.length - 1;
+          b.addEventListener('click', () => {
+            actions.moveInstrument(index, direction);
+            draw();
+          });
+          return b;
+        };
         const remove = textButton('Entfernen');
         remove.setAttribute('aria-label', `${name} entfernen`);
         remove.disabled = ids.length <= 1;
@@ -265,7 +280,7 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
           await actions.removeInstrument(index);
           draw();
         });
-        return el('li', {}, el('span', { textContent: name }), remove);
+        return el('li', {}, el('span', { textContent: name }), arrow(-1), arrow(1), remove);
       }),
     );
     const staffCount = score.parts.reduce((n, p) => n + p.staves.length, 0);

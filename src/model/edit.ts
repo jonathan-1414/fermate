@@ -31,6 +31,7 @@ export type EditError =
   | 'too-many-instruments'
   | 'piano-only-once'
   | 'last-instrument'
+  | 'cannot-move' // the first instrument cannot go up, the last one not down
   | 'no-matching-note' // a tie needs a next note with the same pitch
   | 'not-allowed' // the module does not have this feature
   | 'not-empty' // only possible while the score has no notes

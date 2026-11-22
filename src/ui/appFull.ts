@@ -44,7 +44,7 @@ import { createFullToolbar } from './toolbarFull';
 import { showMixer, showTempo } from './mixer';
 import { askInstruments, askMeter, showSettings, type MeterChoice } from './setup';
 import { createConfiguredScore } from '../model/setup';
-import { addPart, removePart } from '../model/instruments';
+import { addPart, movePart, removePart } from '../model/instruments';
 import { deleteMeasure, insertMeasure, setKeySignature, setPickup, setTimeSignature } from '../model/measures';
 import { createOverview, createVerticalOverview } from './overview';
 
@@ -320,11 +320,21 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
           const part = score.parts[index];
           const hasNotes = part.staves.some((s) => s.measures.some((m) => m.some((e) => e.kind === 'note')));
           const name = partNames(score)[index];
-          if (hasNotes && !(await confirm(`${name} entfernen? Die Noten dieses Instruments gehen verloren.`, 'Entfernen'))) return;
+          // Always asked (a wrong "Violine 1" is easily tapped); undo brings it back.
+          const question = hasNotes ? `${name} entfernen? Die Noten dieses Instruments gehen verloren.` : `${name} entfernen?`;
+          if (!(await confirm(question, 'Entfernen'))) return;
           if (commit(removePart(score, index))) {
             checkCursor();
             render();
           }
+        },
+        moveInstrument(index, direction) {
+          // The cursor stays on its staff, wherever that goes.
+          const staffId = allStaves(score)[cursor.staff]?.id;
+          if (!commit(movePart(score, index, direction))) return;
+          const staff = allStaves(score).findIndex((s) => s.id === staffId);
+          if (staff >= 0) cursor = { ...cursor, staff };
+          render();
         },
         setKey(key) {
           if (commit(setKeySignature(score, module, key))) render();

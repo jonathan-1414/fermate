@@ -420,22 +420,31 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 **Startassistent (beschlossen 21.11.2026):** drei kurze Seiten, nicht wegklickbar.
 1. *Angaben:* Name(n), Klasse, Titel wie in Modul 1 (Namen und Klasse Pflicht).
 2. *Instrumente:* Liste der 13 Instrumente mit „+“, **ohne Voreinstellung** (mindestens ein
-   Instrument muss gewählt werden), höchstens 5, Klavier nur einmal, gleiche Instrumente werden
-   nummeriert. Schlüssel setzt die App, die Reihenfolge ist automatisch die übliche
-   Partiturordnung (Holz, Blech, Klavier, Streicher); selbst umsortieren erst nach der Beta.
+   Instrument muss gewählt werden), höchstens 10 (geändert 22.11.2026, vorher 5), Klavier nur
+   einmal, gleiche Instrumente werden nummeriert. Schlüssel setzt die App, die Reihenfolge ist
+   automatisch die übliche Partiturordnung (Holz, Blech, Klavier, Streicher); umsortieren
+   danach im Einstellungsmenü.
 3. *Takt und Tonart:* Taktart, Tonart (Dur/Moll bis 4 Vorzeichen), Auftakt (an/aus, Länge),
    Tempo; mit Voreinstellung 4/4, C-Dur, kein Auftakt, ♩ = 90.
 
 **Einstellungsmenü (beschlossen 21.11.2026):** nur ein Zahnrad-Symbol oben rechts neben „Neu“
 und „Speichern und teilen“ (Name „Einstellungen“ als Tooltip und für Screenreader). Inhalt: oben der Button
 die Angaben (Name(n), Klasse, Titel, direkt änderbar wie in Modul 1, geändert 22.11.2026), Instrumente
-hinzufügen und entfernen (Rückfrage, wenn das Instrument Noten hat), Tonart (die Töne bleiben
+hinzufügen, entfernen und umsortieren, Tonart (die Töne bleiben
 gleich, aus fis in G-Dur wird in C-Dur fis mit Kreuz; Transponieren erst nach der Beta),
 Auftakt. Die **Taktart** lässt sich nur ändern, solange die Partitur leer ist, sonst steht dort
 ein kurzer Hinweis. Das Tempo steht nicht im Menü, sondern als Regler bei der Wiedergabe.
 Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für die Angaben.
 Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeile gibt es nicht
 (mehr Platz für die Noten, geändert 21.11.2026, seit 22.11.2026 auch in Modul 1).
+- **Instrumente im Einstellungsmenü** (beschlossen 22.11.2026 nach der ersten Testrunde): Die
+  Liste steht in der Reihenfolge der Partitur. Jede Zeile hat „↑“ und „↓“ (beim obersten bzw.
+  untersten Instrument ausgegraut) und „Entfernen“. Das Klavier wandert mit beiden Zeilen.
+  Notenbild, Mischpult und PDF folgen der Reihenfolge, Rückgängig gilt. Gleiche Instrumente
+  werden nach ihrem Platz nummeriert (die obere Violine heißt immer „Violine 1“). Ein neu
+  hinzugefügtes Instrument kommt vor das erste Instrument, das in der üblichen Partiturordnung
+  später kommt; von dort lässt es sich verschieben. „Entfernen“ fragt **immer** nach („Flöte
+  entfernen?“, mit Noten zusätzlich „Die Noten dieses Instruments gehen verloren.“).
 
 **Dateien und PDF (beschlossen 22.11.2026):**
 - **Als Datei speichern:** über „Speichern und teilen“ (Teilen-Symbol) mit „Fermate-Datei“, Name
@@ -449,6 +458,8 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Zeilen untereinander mit Kurznamen, Schlüssel und Tonart in jeder Zeile, Taktnummer am
   Zeilenanfang, Zeilen auf volle Breite gezogen (eine kurze letzte Zeile nicht), Haltebögen über
   das Zeilenende in zwei Hälften, „Seite n von m“ ab zwei Seiten. Modul 1 bleibt A4 quer.
+  Eine Zeile, die auf einer Seite nicht Platz hat (viele Instrumente; auf Seite 1 unter dem
+  Kopf), wird verkleinert, bis sie passt; keine Seite bleibt ohne Noten (22.11.2026).
 
 **Leisten (beschlossen 21.11.2026):**
 - **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Takt löschen,
@@ -547,8 +558,8 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
 - Rückgängig und Wiederholen.
 
 **Weitere Funktionen (Entwurf):**
-- Bis zu 5 Instrumente, jedes mit eigener Notenzeile, das Klavier mit zwei Zeilen
-  (höchstens 6 Zeilen). Kurzer Assistent beim Anlegen: Instrumente wählen, Klavier nur einmal.
+- Bis zu 10 Instrumente (geändert 22.11.2026, vorher 5), jedes mit eigener Notenzeile, das
+  Klavier mit zwei Zeilen (höchstens 11 Zeilen). Kurzer Assistent beim Anlegen: Instrumente wählen, Klavier nur einmal.
 - Instrumente: Flöte, Klarinette, Fagott, Saxofon, Trompete, Horn, Posaune, Tuba, Violine,
   Viola, Violoncello, Kontrabass, Klavier. Samples aus *tonejs-instruments*. Viola ohne eigene
   Samples: tief aus Cello-, hoch aus Violinen-Samples. Nur die verwendeten Instrumente laden.
@@ -556,6 +567,11 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Violinschlüssel notiert, weitere Schlüssel gibt es nicht.
 - Tonumfang pro Instrument, Noten außerhalb farbig markiert (in `--accent-text`, Variable
   `--out-of-range`). Eingeben lassen sich Töne bis eine Oktave über den Umfang hinaus.
+  Der Umfang ist, was Schüler.innen üblicherweise spielen können (festgelegt 22.11.2026,
+  klingend, Jonathan passt bei Bedarf an): Flöte c'–g''', Klarinette d–b'', Saxofon (Alt,
+  Name bleibt „Saxofon“) des–f'', Fagott B₁–g', Trompete b–f'', Horn c–c'', Posaune E–f',
+  Tuba F₁–b, Violine g–d''', Viola c–f'', Violoncello C–g', Kontrabass E₁–d, Klavier ganze
+  Tastatur.
 - Eine Stimme pro Notenzeile, Akkorde nur beim Klavier.
 - **Akkorde eingeben** (beschlossen 21.11.2026): Button „Akkord“, nur beim Klavier sichtbar.
   Ist er gedrückt, fügt ein Tipp in Fingerhöhe dem ausgewählten Akkord einen Ton hinzu, statt
@@ -580,7 +596,7 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   **Begleitung:** liegende Akkorde mit Klavierklang in mittlerer Lage, ein Akkord klingt bis zum
   nächsten Symbol, die Begleitung endet mit der letzten Note. Im Mischpult eine eigene Zeile
   „Begleitung“ (Lautstärke, Stumm, Solo), keine eigene Notenzeile, zählt nicht zu den
-  5 Instrumenten.
+  10 Instrumenten.
 - **Swing-Achtel:** Gerade notierte Achtel klingen lang–kurz (etwa 2:1).
 - Notenwerte Ganze bis Sechzehntel, punktierte Halbe, Viertel und Achtel, Achtel- und
   Vierteltriolen, alle auch als Pausen (siehe 3.1).

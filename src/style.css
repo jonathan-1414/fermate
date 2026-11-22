@@ -607,9 +607,18 @@ body {
 .instrument-list li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   padding: 4px 0;
+}
+/* The name takes the room, arrows and "Entfernen" stand on the right. */
+.instrument-list li > span {
+  flex: 1;
+}
+.tool.arrow {
+  justify-content: center;
+  width: 44px;
+  padding: 0;
+  font-size: 20px;
 }
 .segmented {
   display: flex;

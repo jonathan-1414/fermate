@@ -28,7 +28,7 @@ describe('a new score from the start wizard', () => {
   it('refuses what is not possible', () => {
     expect(createConfiguredScore(voll, { ...base, instruments: [] }).ok).toBe(false);
     expect(createConfiguredScore(voll, { ...base, instruments: ['piano', 'piano'] })).toEqual({ ok: false, error: 'piano-only-once' });
-    expect(createConfiguredScore(voll, { ...base, instruments: ['flute', 'flute', 'flute', 'flute', 'flute', 'flute'] })).toEqual({
+    expect(createConfiguredScore(voll, { ...base, instruments: Array(11).fill('flute') })).toEqual({
       ok: false,
       error: 'too-many-instruments',
     });

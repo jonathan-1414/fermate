@@ -92,6 +92,26 @@ const PRINT_WIDTH = 860;
 const SYSTEM_GAP = 4;
 
 /**
+ * Where a line of music goes: on a new page when it does not fit below the lines already
+ * on this page. A line that is too high for an empty page (many instruments; on page 1
+ * below the heading) is made smaller until it fits, so no page stays without music.
+ * Sizes in mm; `y` is where the line would start on the current page.
+ */
+export function placeSystem(
+  width: number,
+  height: number,
+  y: number,
+  bottom: number,
+  pageHasMusic: boolean,
+): { newPage: boolean; width: number; height: number } {
+  const newPage = pageHasMusic && y + height > bottom;
+  const top = newPage ? MARGIN : y;
+  if (top + height <= bottom) return { newPage, width, height };
+  const shrink = (bottom - top) / height;
+  return { newPage, width: width * shrink, height: height * shrink };
+}
+
+/**
  * Full version: the lines of music below each other, a new page when the next line does not
  * fit any more. Page numbers when there is more than one page.
  */
@@ -103,14 +123,16 @@ function fullMusic(pdf: Pdf, score: Score, date: Date): void {
   // About 300 dpi when printed.
   const scale = ((width / 25.4) * 300) / PRINT_WIDTH;
   let y = pageHead(pdf, score, date);
+  let pageHasMusic = false;
   for (const canvas of renderFullSystemsToCanvases(score, PRINT_WIDTH, scale)) {
-    const height = (width * canvas.height) / canvas.width;
-    if (y + height > bottom && y > MARGIN) {
+    const fit = placeSystem(width, (width * canvas.height) / canvas.width, y, bottom, pageHasMusic);
+    if (fit.newPage) {
       pdf.addPage();
       y = MARGIN;
     }
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', MARGIN, y, width, height, undefined, 'FAST');
-    y += height + SYSTEM_GAP;
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', MARGIN, y, fit.width, fit.height, undefined, 'FAST');
+    y += fit.height + SYSTEM_GAP;
+    pageHasMusic = true;
   }
   const pages = pdf.getNumberOfPages();
   if (pages > 1) {

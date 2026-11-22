@@ -8,8 +8,8 @@ import type { ModuleConfig } from './types';
 export const voll: ModuleConfig = {
   id: 'voll',
   name: 'Vollversion (Beta)',
-  maxParts: 5,
-  maxStaves: 6, // 5 instruments, the piano with two staves
+  maxParts: 10,
+  maxStaves: 11, // 10 instruments, the piano with two staves
   measures: 8,
   minMeasures: 1,
   maxMeasures: 32,

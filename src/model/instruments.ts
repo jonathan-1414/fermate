@@ -21,20 +21,24 @@ export interface Instrument {
   chords: boolean;
 }
 
+/**
+ * In score order. Ranges (sounding) are what pupils can usually play (decided 22.11.2026);
+ * the piano has the whole keyboard.
+ */
 export const INSTRUMENTS: Instrument[] = [
-  { id: 'flute', name: 'Flöte', short: 'Fl.', clefs: ['treble'], range: { low: 'C4', high: 'C7' }, chords: false },
-  { id: 'clarinet', name: 'Klarinette', short: 'Klar.', clefs: ['treble'], range: { low: 'D3', high: 'G6' }, chords: false },
-  { id: 'saxophone', name: 'Saxofon', short: 'Sax.', clefs: ['treble'], range: { low: 'Db3', high: 'Ab5' }, chords: false },
-  { id: 'bassoon', name: 'Fagott', short: 'Fag.', clefs: ['bass'], range: { low: 'Bb1', high: 'Eb5' }, chords: false },
-  { id: 'horn', name: 'Horn', short: 'Hr.', clefs: ['treble'], range: { low: 'F2', high: 'F5' }, chords: false },
-  { id: 'trumpet', name: 'Trompete', short: 'Trp.', clefs: ['treble'], range: { low: 'E3', high: 'Bb5' }, chords: false },
-  { id: 'trombone', name: 'Posaune', short: 'Pos.', clefs: ['bass'], range: { low: 'E2', high: 'F5' }, chords: false },
-  { id: 'tuba', name: 'Tuba', short: 'Tb.', clefs: ['bass'], range: { low: 'D1', high: 'F4' }, chords: false },
+  { id: 'flute', name: 'Flöte', short: 'Fl.', clefs: ['treble'], range: { low: 'C4', high: 'G6' }, chords: false },
+  { id: 'clarinet', name: 'Klarinette', short: 'Klar.', clefs: ['treble'], range: { low: 'D3', high: 'Bb5' }, chords: false },
+  { id: 'saxophone', name: 'Saxofon', short: 'Sax.', clefs: ['treble'], range: { low: 'Db3', high: 'F5' }, chords: false },
+  { id: 'bassoon', name: 'Fagott', short: 'Fag.', clefs: ['bass'], range: { low: 'Bb1', high: 'G4' }, chords: false },
+  { id: 'horn', name: 'Horn', short: 'Hr.', clefs: ['treble'], range: { low: 'C3', high: 'C5' }, chords: false },
+  { id: 'trumpet', name: 'Trompete', short: 'Trp.', clefs: ['treble'], range: { low: 'Bb3', high: 'F5' }, chords: false },
+  { id: 'trombone', name: 'Posaune', short: 'Pos.', clefs: ['bass'], range: { low: 'E2', high: 'F4' }, chords: false },
+  { id: 'tuba', name: 'Tuba', short: 'Tb.', clefs: ['bass'], range: { low: 'F1', high: 'Bb3' }, chords: false },
   { id: 'piano', name: 'Klavier', short: 'Klav.', clefs: ['treble', 'bass'], range: { low: 'A0', high: 'C8' }, chords: true },
-  { id: 'violin', name: 'Violine', short: 'Vl.', clefs: ['treble'], range: { low: 'G3', high: 'E7' }, chords: false },
-  { id: 'viola', name: 'Viola', short: 'Va.', clefs: ['treble'], range: { low: 'C3', high: 'E6' }, chords: false },
-  { id: 'cello', name: 'Violoncello', short: 'Vc.', clefs: ['bass'], range: { low: 'C2', high: 'A5' }, chords: false },
-  { id: 'contrabass', name: 'Kontrabass', short: 'Kb.', clefs: ['bass'], range: { low: 'E1', high: 'G4' }, chords: false },
+  { id: 'violin', name: 'Violine', short: 'Vl.', clefs: ['treble'], range: { low: 'G3', high: 'D6' }, chords: false },
+  { id: 'viola', name: 'Viola', short: 'Va.', clefs: ['treble'], range: { low: 'C3', high: 'F5' }, chords: false },
+  { id: 'cello', name: 'Violoncello', short: 'Vc.', clefs: ['bass'], range: { low: 'C2', high: 'G4' }, chords: false },
+  { id: 'contrabass', name: 'Kontrabass', short: 'Kb.', clefs: ['bass'], range: { low: 'E1', high: 'D3' }, chords: false },
 ];
 
 export function instrumentById(id: string): Instrument | undefined {
@@ -117,6 +121,17 @@ export function addPart(
   const part = newPart(copy, instrument, staves);
   copy.parts.splice(index < 0 ? copy.parts.length : index, 0, part);
   if (copy.parts.reduce((n, p) => n + p.staves.length, 0) > module.maxStaves) return { ok: false, error: 'too-many-instruments' };
+  return { ok: true, score: copy };
+}
+
+/** Moves an instrument one place up (-1) or down (+1); the piano moves with both staves. */
+export function movePart(score: Score, index: number, direction: -1 | 1): EditResult {
+  const target = index + direction;
+  if (index < 0 || index >= score.parts.length || target < 0 || target >= score.parts.length) {
+    return { ok: false, error: 'cannot-move' };
+  }
+  const copy = structuredClone(score);
+  [copy.parts[index], copy.parts[target]] = [copy.parts[target], copy.parts[index]];
   return { ok: true, score: copy };
 }
 
