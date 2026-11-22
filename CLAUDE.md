@@ -76,9 +76,9 @@ Teil des Bildschirms ein, alles andere tritt zurück.
 - **Formen:** abgerundete Ecken, keine Schatten, keine Verläufe, keine Animationen außer der
   mitlaufenden Markierung und dem Zeitbalken im Button „Notennamen“. Symbole in Leisten
   immer mit kurzer Beschriftung („Halbe“, „Abspielen“), damit niemand raten muss.
-  Ausnahme: die Buttons „Neu“ (+) und „Abgeben“ (Teilen-Symbol) zeigen nur ein
-  gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
-  Tooltip und für Screenreader). In der Vollversion kommt „Einstellungen“ (Zahnrad) dazu.
+  Ausnahme: die Buttons „Neu“ (+), „Abgeben“ (Teilen-Symbol) und „Einstellungen“ (Zahnrad)
+  zeigen nur ein gezeichnetes SVG-Symbol und stehen immer ganz oben rechts (Name als
+  Tooltip und für Screenreader).
 - Kein dunkler Modus in Modul 1.
 
 ## 3. Architektur
@@ -250,10 +250,11 @@ const modul1: ModuleConfig = {
   **Klasse**, Titel optional (bis zu 6 Namensfelder, „+ Weitere Person“). Gespeichert in
   `meta`. Der Startdialog lässt sich nicht wegklicken. „Rückgängig“ betrifft nur Noten, nicht
   die Angaben.
-- **Kopfzeile** über dem Notensystem wie auf gedruckten Noten: Titel in der Mitte, Name(n)
-  und Klasse rechts (wo sonst Komponist.innen stehen), dahinter ein kleines Stift-Symbol.
-  Ein Tipp auf die Kopfzeile öffnet den Dialog „Angaben“ zum Ändern. Einen eigenen Button
-  dafür gibt es nicht. So sieht man jederzeit, wessen Partitur das ist.
+- **Keine Kopfzeile** über den Noten (geändert 22.11.2026, mehr Platz für die Noten). Titel,
+  Name(n) und Klasse stehen nur im PDF. Geändert werden sie im **Einstellungsmenü**
+  (Zahnrad oben rechts) über den Button „Angaben ändern“, der den Dialog „Angaben“ öffnet.
+- **Einstellungsmenü** in Modul 1: nur „Angaben ändern“ und unten der Link „Info und
+  Lizenzen“, geschlossen mit „Fertig“.
 - Eine Notenzeile, Violinschlüssel, C-Dur, 4/4-Takt, genau 4 Takte in einer Zeile,
   Schlussstrich automatisch, keine Taktnummern.
 - Button „Neu“ (mit Rückfrage) beginnt eine leere Partitur. Danach erscheint der Startdialog
@@ -351,7 +352,8 @@ const modul1: ModuleConfig = {
 
 **Sonstiges**
 - Info-Seite mit Lizenzhinweisen (Samples CC BY 3.0, Schriften, verwendete Bibliotheken):
-  unauffälliger Link „Info und Lizenzen“ unten rechts, öffnet ein Fenster über der Partitur.
+  unauffälliger Link „Info und Lizenzen“ unten im Einstellungsmenü (eine Fußzeile gibt es
+  nicht mehr, geändert 22.11.2026), öffnet ein Fenster über der Partitur.
 - Läuft als WebApp im Browser (Safari auf dem iPad, dazu Chrome und Firefox am Rechner).
   Eine PWA ist erst für die Vollversion vorgesehen, aber nichts verbauen, was das verhindert.
 
@@ -387,7 +389,8 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
   ein Finger ist immer für die Eingabe da. Automatisch folgt die Ansicht dem Cursor, wenn er aus
   dem Bild wandert, und bei der Wiedergabe (Mitscrollen).
 - **Taktnummern:** auf dem Bildschirm klein über jedem Takt, im PDF am Zeilenanfang.
-- **Kopfzeile** (Titel, Namen, Klasse) bleibt fest oben, Tippen öffnet „Angaben“.
+- **Keine Kopfzeile** über den Noten (wie in Modul 1, geändert 22.11.2026); die Angaben
+  ändert man im Einstellungsmenü.
 - Passen nicht alle Notenzeilen in die Höhe, bleiben die Noten groß, und eine zweite, schmale
   **senkrechte Leiste ganz links** (ohne Instrumentennamen, nur ein Rahmen für den sichtbaren
   Teil) springt zu den übrigen Zeilen (geändert 21.11.2026). Der Rand links
@@ -403,14 +406,15 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
    Tempo; mit Voreinstellung 4/4, C-Dur, kein Auftakt, ♩ = 90.
 
 **Einstellungsmenü (beschlossen 21.11.2026):** nur ein Zahnrad-Symbol oben rechts neben „Neu“
-und „Abgeben“ (Name „Einstellungen“ als Tooltip und für Screenreader). Inhalt: Instrumente
+und „Abgeben“ (Name „Einstellungen“ als Tooltip und für Screenreader). Inhalt: oben der Button
+„Angaben ändern“ (öffnet den Dialog „Angaben“, geändert 22.11.2026), Instrumente
 hinzufügen und entfernen (Rückfrage, wenn das Instrument Noten hat), Tonart (die Töne bleiben
 gleich, aus fis in G-Dur wird in C-Dur fis mit Kreuz; Transponieren erst nach der Beta),
 Auftakt. Die **Taktart** lässt sich nur ändern, solange die Partitur leer ist, sonst steht dort
 ein kurzer Hinweis. Das Tempo steht nicht im Menü, sondern als Regler bei der Wiedergabe.
 Rückgängig gilt auch für Änderungen im Einstellungsmenü, nicht aber für die Angaben.
-Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeile wie in Modul 1
-gibt es in der Vollversion nicht (mehr Platz für die Noten, geändert 21.11.2026).
+Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeile gibt es nicht
+(mehr Platz für die Noten, geändert 21.11.2026, seit 22.11.2026 auch in Modul 1).
 
 **Leisten (beschlossen 21.11.2026):**
 - **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Takt löschen,

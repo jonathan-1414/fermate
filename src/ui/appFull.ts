@@ -35,7 +35,6 @@ import { buildHandIn } from '../export/handIn';
 import { canShareFile, shareOrDownload } from '../export/share';
 import { askForMeta, askHandIn, confirm, showInfo } from './dialogs';
 import { createTimedReveal } from './timedReveal';
-import { createScoreHeader } from './scoreHeader';
 import { createFullToolbar } from './toolbarFull';
 import { showMixer, showTempo } from './mixer';
 import { askInstruments, askMeter, showSettings, type MeterChoice } from './setup';
@@ -71,7 +70,6 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     <div class="toolbar toolbar-bottom"></div>
   `;
   const scoreElement = root.querySelector<HTMLDivElement>('#score')!;
-  const header = createScoreHeader(root.querySelector('.sheet')!, () => void askForDetails('edit'));
   /** How far the music is scrolled to the right (screen pixels). Only the overview bar scrolls it. */
   let scrollX = 0;
   /** How far the music is scrolled down (screen pixels), by the vertical overview bar only. */
@@ -237,6 +235,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     openSettings() {
       showSettings(module, {
         score: () => score,
+        editDetails: () => void askForDetails('edit'),
         showInfo,
         addInstrument(id) {
           if (commit(addPart(score, module, id))) render();
@@ -455,7 +454,6 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     player.prepare(score.parts.map((part) => part.instrument));
     fitHeight();
     followView();
-    header.update(score.meta);
     const ts = score.timeSignature;
     const note = selectedNote();
     const fits = (d: Duration) => isAllowedDuration(module, ts, d) && fitsTimeSignature(ts, d);

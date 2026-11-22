@@ -150,54 +150,13 @@ body {
   padding: 16px;
 }
 
-/* The sheet: header (title, names, class) and music on one white surface. */
+/* The sheet: the music on one white surface. */
 .sheet {
   width: 100%;
   background: var(--surface);
   border-radius: var(--radius);
 }
 
-.score-header {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 44px;
-  padding: 12px 16px 0;
-  border: none;
-  border-radius: var(--radius) var(--radius) 0 0;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-.score-header:active {
-  background: var(--accent-soft);
-}
-.score-title {
-  grid-column: 2;
-  font-size: 22px;
-  font-weight: 700;
-  text-align: center;
-}
-.score-people {
-  grid-column: 3;
-  justify-self: end;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 16px;
-  text-align: right;
-}
-/* Pencil: shows that the header can be tapped. A symbol, so --muted is enough (3:1). */
-.score-edit {
-  flex: none;
-  color: var(--muted);
-}
 .score-edit svg {
   display: block;
 }
@@ -544,12 +503,6 @@ body {
   overflow-wrap: anywhere;
 }
 
-/* Info and licenses: a quiet link in the bottom right corner */
-.app-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 12px 4px;
-}
 .link-button {
   min-height: 44px;
   padding: 0 8px;
@@ -719,4 +672,9 @@ body {
 /* "+ Takt" as high as the overview bar next to them */
 .overview .tool {
   min-height: 36px;
+}
+
+/* Settings: "Angaben ändern" at the top, with room below */
+.settings-details {
+  margin-bottom: 16px;
 }

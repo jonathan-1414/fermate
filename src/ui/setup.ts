@@ -220,7 +220,9 @@ function pickupField(timeSignature: string, pickup: number, onChange: (ticks: nu
 
 export interface SettingsActions {
   score(): Score;
-  /** "Info und Lizenzen" (in the full version only here, to save room on the screen). */
+  /** "Angaben ändern": closes the settings and opens the details dialog. */
+  editDetails(): void;
+  /** "Info und Lizenzen" (only here, to save room on the screen). */
   showInfo(): void;
   addInstrument(id: string): void;
   removeInstrument(index: number): Promise<void>;
@@ -230,7 +232,7 @@ export interface SettingsActions {
 }
 
 /**
- * The settings menu (gear): instruments, key, time signature (only while the score is
+ * The settings menu (gear): details, instruments, key, time signature (only while the score is
  * empty), pickup. Every change applies at once and can be undone.
  */
 export function showSettings(module: ModuleConfig, actions: SettingsActions): void {
@@ -239,8 +241,10 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
   const done = textButton('Fertig', 'tool primary');
   const info = el('button', { type: 'button', className: 'link-button', textContent: 'Info und Lizenzen' });
   info.addEventListener('click', () => actions.showInfo());
+  const details = detailsButton();
   dialog.append(
     el('h2', { textContent: 'Einstellungen' }),
+    details,
     body,
     el('div', { className: 'dialog-actions settings-actions' }, info, done),
   );
@@ -318,5 +322,42 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
 
   const close = showDialog(dialog, () => close());
   done.addEventListener('click', () => close());
+  details.addEventListener('click', () => {
+    close();
+    actions.editDetails();
+  });
+  dialog.focus();
+}
+
+/** "Angaben ändern": names, class and title (shown only here since the header is gone). */
+function detailsButton(): HTMLButtonElement {
+  const b = textButton('Angaben ändern');
+  b.classList.add('settings-details');
+  return b;
+}
+
+export interface BasicSettingsActions {
+  editDetails(): void;
+  showInfo(): void;
+}
+
+/** The settings menu of module 1 (gear): only the details and "Info und Lizenzen". */
+export function showBasicSettings(actions: BasicSettingsActions): void {
+  const dialog = el('dialog', { className: 'dialog' });
+  const done = textButton('Fertig', 'tool primary');
+  const info = el('button', { type: 'button', className: 'link-button', textContent: 'Info und Lizenzen' });
+  info.addEventListener('click', () => actions.showInfo());
+  const details = detailsButton();
+  dialog.append(
+    el('h2', { textContent: 'Einstellungen' }),
+    details,
+    el('div', { className: 'dialog-actions settings-actions' }, info, done),
+  );
+  const close = showDialog(dialog, () => close());
+  done.addEventListener('click', () => close());
+  details.addEventListener('click', () => {
+    close();
+    actions.editDetails();
+  });
   dialog.focus();
 }
