@@ -20,7 +20,7 @@ import { eventTicks } from '../model/duration';
 import { isOutsideRange, partNames } from '../model/instruments';
 import { toItems } from '../model/items';
 import { placeEvents } from '../model/measure';
-import { fullMeasureLength, isCompound } from '../model/meter';
+import { fullMeasureLength, isCompound, measureLengths } from '../model/meter';
 import { germanNoteName } from '../model/noteName';
 import { shareAPitch, staffEvents } from '../model/sequence';
 import { allStaves, partOfStaff } from '../model/staves';
@@ -170,6 +170,17 @@ function prepareStaff(
   return { events: measure, notes, voice, beams, tuplets };
 }
 
+/**
+ * The width each measure needs: room for its notes, at least a minimum. A pickup and the
+ * shortened last measure get a smaller minimum, in proportion to their length, so that a
+ * one-beat pickup does not stand in a measure as wide as a full one.
+ */
+function naturalWidths(score: Score, formatters: Array<{ minWidth: number }>): number[] {
+  const full = fullMeasureLength(score.timeSignature);
+  const lengths = measureLengths(score.timeSignature, score.pickup, formatters.length);
+  return formatters.map((f, i) => Math.max((MIN_MEASURE_WIDTH * lengths[i]) / full, f.minWidth + MEASURE_PADDING));
+}
+
 /** Top of each staff's band (drawing units), with extra room between instruments. */
 function staffTops(score: Score): number[] {
   const tops: number[] = [];
@@ -256,7 +267,7 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
   });
   const timeSignature = `${ts.beats}/${ts.beatValue}`;
   const timeWidth = new Stave(0, 0, 200).addTimeSignature(timeSignature).getNoteStartX() - new Stave(0, 0, 200).getNoteStartX();
-  const widths = formatters.map((f, i) => Math.max(MIN_MEASURE_WIDTH, f.minWidth + MEASURE_PADDING) + (i === 0 ? timeWidth : 0));
+  const widths = naturalWidths(score, formatters).map((w, i) => w + (i === 0 ? timeWidth : 0));
   const total = widths.reduce((sum, w) => sum + w, 0) + 12;
 
   // Measure numbers on top; below them margin and music side by side.
@@ -467,7 +478,7 @@ export function renderFullSystemsToCanvases(score: Score, width: number, scale: 
   });
   const timeSignature = `${ts.beats}/${ts.beatValue}`;
   const timeWidth = new Stave(0, 0, 200).addTimeSignature(timeSignature).getNoteStartX() - new Stave(0, 0, 200).getNoteStartX();
-  const natural = formatters.map((f) => Math.max(MIN_MEASURE_WIDTH, f.minWidth + MEASURE_PADDING));
+  const natural = naturalWidths(score, formatters);
 
   const key = KEY_NAMES[score.keySignature] ?? 'C';
   const nameWidth = 58;
