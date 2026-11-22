@@ -44,11 +44,15 @@ export interface FullToolbarState {
   /** Tempo as shown on its button: the beat (music font) and the number. */
   tempoGlyph: string;
   tempo: number;
+  swing: boolean;
+  /** Swing can be switched (not in 6/8: greyed out). */
+  canSwing: boolean;
 }
 
 export interface FullToolbarActions {
   togglePlay(): void;
   openTempo(): void;
+  toggleSwing(): void;
   openMixer(): void;
   deleteMeasure(): void;
   undo(): void;
@@ -104,6 +108,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   tempoButton.setAttribute('aria-label', 'Tempo');
   const tempoGlyph = tempoButton.querySelector('.glyph')!;
   const tempoLabel = tempoButton.querySelector('span:not(.glyph)')!;
+  // Swing: one tap switches, also to compare while listening.
+  const swingButton = button('Swing', actions.toggleSwing);
   const mixerButton = button('Mischpult', actions.openMixer);
   const deleteMeasureButton = button('Takt löschen', actions.deleteMeasure, { svg: ICONS.cross });
   const undoButton = button('Rückgängig', actions.undo, { svg: ICONS.undo });
@@ -117,7 +123,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
 
   const topMain = document.createElement('div');
   topMain.className = 'toolbar-main';
-  topMain.append(group('Wiedergabe', playButton, tempoButton, mixerButton), group('Bearbeiten', deleteMeasureButton, undoButton, redoButton, namesButton));
+  topMain.append(group('Wiedergabe', playButton, tempoButton, swingButton, mixerButton), group('Bearbeiten', deleteMeasureButton, undoButton, redoButton, namesButton));
   const corner = group(
     'Partitur',
     iconButton('Neu oder öffnen', ICONS.plus, actions.openScoreMenu),
@@ -192,6 +198,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
       tempoGlyph.textContent = state.tempoGlyph;
       tempoLabel.textContent = `= ${state.tempo}`;
       tempoButton.setAttribute('aria-label', `Tempo ${state.tempo}`);
+      swingButton.setAttribute('aria-pressed', String(state.swing && state.canSwing));
+      swingButton.disabled = !state.canSwing;
     },
 
     setNoteNamesPhase(phase, durationMs) {

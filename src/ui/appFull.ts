@@ -272,6 +272,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
         render();
       });
     },
+    toggleSwing() {
+      // Like the tempo: no undo step; it stops playback (play again to hear it).
+      if (isCompound(score.timeSignature)) return;
+      score = { ...score, swing: !score.swing };
+      render();
+    },
     openMixer() {
       const names = partNames(score);
       showMixer(
@@ -611,6 +617,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       loading: loadingSound && playedScore !== null,
       tempoGlyph: tempoUnit().glyph,
       tempo: Math.round(score.tempo / tempoUnit().factor),
+      swing: score.swing,
+      canSwing: !isCompound(ts),
     });
   }
 

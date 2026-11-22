@@ -54,6 +54,8 @@ const ROW = 100;
 /** Extra room between two instruments (the two piano staves stay closer). */
 const PART_GAP = 8;
 const STAVE_OFFSET = 30;
+/** Extra room above the first staff when the swing mark is shown. */
+const SWING_ROOM = 12;
 const STAVE_OPTIONS = { spaceAboveStaffLn: 0, spaceBelowStaffLn: 0 };
 const NUMBERS_HEIGHT = 18;
 const MIN_MEASURE_WIDTH = 90;
@@ -192,7 +194,8 @@ function naturalWidths(score: Score, formatters: Array<{ minWidth: number }>): n
 /** Top of each staff's band (drawing units), with extra room between instruments. */
 function staffTops(score: Score): number[] {
   const tops: number[] = [];
-  let y = 0;
+  // With swing, a little room above the first staff for the swing mark.
+  let y = score.swing && !isCompound(score.timeSignature) ? SWING_ROOM : 0;
   allStaves(score).forEach((_, i) => {
     if (i > 0 && partOfStaff(score, i) !== partOfStaff(score, i - 1)) y += PART_GAP;
     tops.push(y);
@@ -332,6 +335,7 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
       first += part.staves.length;
     }
     drawMeasureNumber(numbersCtx, score, m, x);
+    if (m === 0) drawSwingMark(ctx, score, x + 4, tops[0] + STAVE_OFFSET - 7);
     formatters[m].formatter.formatToStave(
       column.map((p) => p.voice),
       drawnStaves[0],
@@ -409,6 +413,32 @@ export function setDrawingZoom(container: HTMLElement, zoom: number): void {
   const spacer = container.querySelector<HTMLElement>('.score-numbers-spacer');
   const margin = container.querySelector<SVGSVGElement>('.score-margin svg');
   if (spacer && margin) spacer.style.width = `${Math.round(margin.viewBox.baseVal.width * zoom)}px`;
+}
+
+/**
+ * The swing mark above the first staff at the start: two eighths = triplet quarter and
+ * triplet eighth (♫ = ♩³♪). Only when swing is on (never in 6/8). `y` is the baseline.
+ */
+function drawSwingMark(ctx: RenderContext, score: Score, x: number, y: number): void {
+  if (!score.swing || isCompound(score.timeSignature)) return;
+  ctx.openGroup('swing-mark');
+  // Each piece is placed after the one before it (widths as drawn in its font).
+  let at = x;
+  const put = (text: string, font: string, size: number, dy = 0, gap = 4): number => {
+    ctx.setFont(font, size);
+    const left = at;
+    ctx.fillText(text, at, y + dy);
+    at += ctx.measureText(text).width + gap;
+    return left;
+  };
+  put('\uE1F0\uE1F7\uE1F2', 'Bravura', 15); // two beamed eighths
+  put('=', 'sans-serif', 11, -3);
+  const quarter = put('\uE1D5', 'Bravura', 15, 0, 2);
+  put('\uE1D7', 'Bravura', 15, 0, 0);
+  // "3" over quarter and eighth: they are a triplet.
+  ctx.setFont('sans-serif', 9);
+  ctx.fillText('3', (quarter + at) / 2 - 3, y - 18);
+  ctx.closeGroup();
 }
 
 /**
@@ -569,6 +599,7 @@ export function renderFullSystemsToCanvases(score: Score, width: number, scale: 
         p.notes.forEach((note) => note.setStave(stave));
         return stave;
       });
+      if (k === 0 && j === 0) drawSwingMark(ctx, score, x + 4, tops[0] + STAVE_OFFSET - 7);
       let firstStaff = 0;
       for (const part of score.parts) {
         if (part.staves.length > 1) {

@@ -1,6 +1,7 @@
 import { TICKS_PER_QUARTER } from '../model/constants';
 import { eventTicks } from '../model/duration';
-import { staffEvents } from '../model/sequence';
+import { isCompound } from '../model/meter';
+import { type Located, staffEvents } from '../model/sequence';
 import { allStaves, partOfStaff } from '../model/staves';
 import type { Pitch, Position, Score } from '../model/types';
 
@@ -28,13 +29,39 @@ export function noteName(p: Pitch): string {
   return `${p.step}${p.alter === 1 ? '#' : p.alter === -1 ? 'b' : ''}${p.octave}`;
 }
 
+/** Swing: the second of two eighths on a quarter starts this many ticks later (2:1). */
+const SWING_DELAY = 8;
+
+/**
+ * Swing (CLAUDE.md, "Swing-Achtel"): in which quarters of each measure are there exactly
+ * two plain eighths (notes or rests), on the beat and in the middle? Only those swing:
+ * the second eighth comes later, the first gets longer. Key: `measure:quarterStart`.
+ */
+export function swingQuarters(events: Located[]): Set<string> {
+  const byQuarter = new Map<string, Located[]>();
+  for (const located of events) {
+    const key = `${located.measure}:${located.tick - (located.tick % TICKS_PER_QUARTER)}`;
+    byQuarter.set(key, [...(byQuarter.get(key) ?? []), located]);
+  }
+  const eighth = (l: Located) => !l.event.duration.dotted && !l.event.duration.triplet && l.event.duration.base === 24;
+  const swinging = new Set<string>();
+  for (const [key, list] of byQuarter) {
+    const start = Number(key.split(':')[1]);
+    if (list.length === 2 && list.every(eighth) && list[0].tick === start && list[1].tick === start + 24) swinging.add(key);
+  }
+  return swinging;
+}
+
 /**
  * Turns the score into a list of timed notes. Automatic rests are silence without a
- * marking. Tied notes sound as one long note. A chord is one entry per pitch.
+ * marking. Tied notes sound as one long note. A chord is one entry per pitch. With swing,
+ * two eighths on a quarter sound long–short (2:1).
  * Ticks become seconds via the tempo (quarter notes per minute).
  */
 export function buildSchedule(score: Score): Schedule {
   const secondsPerTick = 60 / score.tempo / TICKS_PER_QUARTER;
+  // No swing in 6/8 (the switch is greyed out there).
+  const swing = score.swing && !isCompound(score.timeSignature);
   const notes: ScheduledNote[] = [];
   allStaves(score).forEach((staff, staffIndex) => {
     const part = score.parts.indexOf(partOfStaff(score, staffIndex)!);
@@ -43,15 +70,23 @@ export function buildSchedule(score: Score): Schedule {
     let measureLength = 0;
     /** Notes still sounding because a tie leads on: pitch → its entry. */
     let open = new Map<string, ScheduledNote>();
-    for (const { measure, tick, event } of staffEvents(staff)) {
+    const events = staffEvents(staff);
+    // Swing changes only when the second eighth of a swinging quarter starts.
+    const swinging = swing ? swingQuarters(events) : new Set<string>();
+    const swung = (measure: number, tick: number) => {
+      const quarter = tick - (tick % TICKS_PER_QUARTER);
+      return tick % TICKS_PER_QUARTER === 24 && swinging.has(`${measure}:${quarter}`) ? tick + SWING_DELAY : tick;
+    };
+    for (const { measure, tick, event } of events) {
       if (measure !== lastMeasure) {
         measureStart += measureLength;
         measureLength = 0;
         lastMeasure = measure;
       }
       measureLength = tick + eventTicks(event);
-      const time = (measureStart + tick) * secondsPerTick;
-      const duration = eventTicks(event) * secondsPerTick;
+      const start = swung(measure, tick);
+      const time = (measureStart + start) * secondsPerTick;
+      const duration = (swung(measure, tick + eventTicks(event)) - start) * secondsPerTick;
       const at = { staff: staffIndex, measure, tick };
       if (event.kind === 'rest') {
         open = new Map();

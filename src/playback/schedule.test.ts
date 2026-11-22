@@ -100,3 +100,44 @@ describe('buildSchedule in the full version', () => {
     ]);
   });
 });
+
+describe('swing', () => {
+  const E = plain(24);
+  const write = (score: Score, tick: number, pitch: string, d = E) =>
+    ok(writeNoteAt(score, voll, { staff: 0, measure: 0, tick }, [p(pitch)], d));
+  const eighths = () => write(write(write(createEmptyScore(voll), 0, 'C4'), 24, 'D4'), 48, 'E4', plain(48));
+  const times = (score: Score) => buildSchedule(score).notes.map((n) => [n.note, +(n.time / Q).toFixed(3), +(n.duration / Q).toFixed(3)]);
+
+  it('two eighths on a quarter sound long–short (2:1), other values stay', () => {
+    expect(times({ ...eighths(), swing: true })).toEqual([
+      ['C4', 0, 0.667],
+      ['D4', 0.667, 0.333],
+      ['E4', 1, 1],
+    ]);
+  });
+
+  it('without the switch everything stays straight', () => {
+    expect(times(eighths())).toEqual([
+      ['C4', 0, 0.5],
+      ['D4', 0.5, 0.5],
+      ['E4', 1, 1],
+    ]);
+  });
+
+  it('an eighth after an eighth rest comes late (off-beat)', () => {
+    expect(times({ ...write(createEmptyScore(voll), 24, 'D4'), swing: true })).toEqual([['D4', 0.667, 0.333]]);
+  });
+
+  it('sixteenths, dotted rhythms and triplets do not swing', () => {
+    const dotted = write(write(createEmptyScore(voll), 0, 'C4', { base: 24, dotted: true, triplet: false }), 36, 'D4', plain(12));
+    expect(times({ ...dotted, swing: true })).toEqual([
+      ['C4', 0, 0.75],
+      ['D4', 0.75, 0.25],
+    ]);
+  });
+
+  it('no swing in 6/8', () => {
+    const score = { ...eighths(), swing: true, timeSignature: { beats: 6, beatValue: 8 } };
+    expect(times(score)[1]).toEqual(['D4', 0.5, 0.5]);
+  });
+});

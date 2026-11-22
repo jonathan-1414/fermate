@@ -217,7 +217,9 @@ Regeln:
   Verbundene Noten klingen als ein Ton, die mitlaufende Markierung leuchtet über beiden, der
   Notenname steht nur unter der ersten. Wird eine Note über den Taktstrich hinaus verlängert,
   setzt die App selbst einen Bogen in den nächsten Takt (siehe Eingabe der Vollversion).
-- Notiert wird **immer klingend**, transponierende Instrumente gibt es im Notenbild nicht.
+- Das Modell speichert **immer klingend**. In der Vollversion lassen sich transponierende
+  Instrumente transponiert **anzeigen** (Abschnitt 5, „Transponierende Instrumente“, beschlossen
+  22.11.2026); Modul 1 und die Voreinstellung bleiben klingend.
 - Notennamen in der Oberfläche sind **deutsch**: c d e f g a h, B = H, Be-Vorzeichen auf h
   heißt b. Oktaven: c' … h' = 4. Oktave, c'' … = 5. Oktave.
 - Gespeichert wird das Modell als JSON. Die Fermate-Datei hat die Endung `.fermate`
@@ -462,7 +464,7 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Kopf), wird verkleinert, bis sie passt; keine Seite bleibt ohne Noten (22.11.2026).
 
 **Leisten (beschlossen 21.11.2026):**
-- **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Mischpult | Takt löschen,
+- **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Swing, Mischpult | Takt löschen,
   Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Speichern und teilen, Einstellungen (nur
   Symbole). „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
@@ -557,6 +559,21 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Verlorenes zurück.
 - Rückgängig und Wiederholen.
 
+**Transponierende Instrumente (beschlossen 22.11.2026 nach der ersten Testrunde, gebaut
+nach Block F als eigener Schritt):**
+- Das Modell bleibt klingend (Wiedergabe, Tonumfang, Datei unverändert). „Transponiert“ ist nur
+  eine Anzeige-Einstellung pro Instrument.
+- Schalter im Einstellungsmenü neben dem Instrument, Voreinstellung „klingend“: Klarinette
+  „in B“ (große Sekunde höher), Saxofon „in Es“ (große Sexte höher), Trompete „in B“, Horn
+  „in F“ (Quinte höher), Kontrabass „Oktave“ (eine Oktave höher). Andere Instrumente haben
+  keinen Schalter.
+- Kurzname zeigt die Stimmung („Klar. (B)“). Die Vorzeichnung wird mittransponiert (C-Dur →
+  D-Dur bei der B-Klarinette); entstehen mehr als 4 Vorzeichen, ist das erlaubt, die App wählt
+  die Schreibweise mit weniger Vorzeichen (H-Dur statt Ces-Dur).
+- Eingabe, Ziehen und Vorzeichen-Buttons arbeiten im angezeigten (gegriffenen) Bild, die App
+  rechnet um. „Notennamen“ zeigt die gegriffenen Namen.
+- Das PDF zeigt jedes Instrument so, wie es eingestellt ist.
+
 **Weitere Funktionen (Entwurf):**
 - Bis zu 10 Instrumente (geändert 22.11.2026, vorher 5), jedes mit eigener Notenzeile, das
   Klavier mit zwei Zeilen (höchstens 11 Zeilen). Kurzer Assistent beim Anlegen: Instrumente wählen, Klavier nur einmal.
@@ -597,7 +614,12 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   nächsten Symbol, die Begleitung endet mit der letzten Note. Im Mischpult eine eigene Zeile
   „Begleitung“ (Lautstärke, Stumm, Solo), keine eigene Notenzeile, zählt nicht zu den
   10 Instrumenten.
-- **Swing-Achtel:** Gerade notierte Achtel klingen lang–kurz (etwa 2:1).
+- **Swing-Achtel:** Gerade notierte Achtel klingen lang–kurz (etwa 2:1). Beschlossen
+  22.11.2026 nach der ersten Testrunde: eigener Button „Swing“ in der oberen Leiste neben dem
+  Tempo (gedrückt = an, im 6/8 ausgegraut), ein Tipp schaltet um; wie beim Tempo kein
+  Rückgängig-Schritt, die Wiedergabe hält an. Es swingen nur zwei einfache Achtel (Noten oder
+  Pausen) auf einer Viertel; Sechzehntel, Punktierungen und Triolen bleiben. Ist Swing an,
+  steht über der ersten Zeile am Anfang „♫ = ♩³♪“ (Bildschirm und PDF).
 - Notenwerte Ganze bis Sechzehntel, punktierte Halbe, Viertel und Achtel, Achtel- und
   Vierteltriolen, alle auch als Pausen (siehe 3.1).
 - Dur und Moll bis 4 Vorzeichen, 6/8 und 2/2, Auflösungszeichen,
@@ -612,7 +634,7 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
 Dynamik, Artikulation (auch Bindebögen), Verzierungen, Agogik (Ritardando, Fermate als Zeichen; der Name der App ist davon unberührt),
 Generalbass, Panorama/Hall/Effekte, mehrere Stimmen in einer Notenzeile,
 Schlüssel-/Tonart-/Taktartwechsel im Stück, Wiederholungszeichen, weitere Schlüssel
-(Alt, Tenor), transponierte Notation, MIDI-Keyboard (Safari auf iOS hat kein Web MIDI),
+(Alt, Tenor), MIDI-Keyboard (Safari auf iOS hat kein Web MIDI),
 Echtzeit-Einspielen, MIDI-Export, Konten, Server, Mailversand.
 
 ## 7. Arbeitsschritte für Modul 1

@@ -319,6 +319,9 @@ body {
 #score .vf-instrument-name.muted text {
   fill: var(--muted);
 }
+#score .vf-swing-mark text {
+  fill: var(--text);
+}
 #score .vf-instrument-name.solo text {
   fill: var(--accent-text);
 }
