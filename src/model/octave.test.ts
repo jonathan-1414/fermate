@@ -2,7 +2,8 @@ import { describe as group, expect, it } from 'vitest';
 import { voll } from '../modules/voll';
 import { describe, ok, p } from '../test/helpers';
 import { plain } from './duration';
-import { octaveAt, octaveRange } from './octave';
+import { octaveAt, octaveRange, stepAt, stepRange } from './octave';
+import { setKeySignature } from './measures';
 import { setTie, writeNoteAt } from './overwrite';
 import { rangeBetween } from './range';
 import { createEmptyScore } from './score';
@@ -61,5 +62,35 @@ group('Oktave ↑ / ↓', () => {
     const score = trombone();
     expect(octaveAt(score, voll, at(0, 0), 1)).toEqual({ ok: false, error: 'no-note' });
     expect(octaveRange(score, voll, rangeBetween(score, at(0, 0), at(1, 0)), 1)).toEqual({ ok: false, error: 'no-note' });
+  });
+});
+
+group('Ton höher / tiefer (diatonic sequences)', () => {
+  it('one step on the staff, following the key', () => {
+    const c = note(trombone(), 0, 0, ['E4']);
+    expect(m(ok(stepAt(c, voll, at(0, 0), 1)))[0]).toBe('n48@0 F4');
+    const g = ok(setKeySignature(c, voll, 1)); // G major: e → f sharp
+    expect(m(ok(stepAt(g, voll, at(0, 0), 1)))[0]).toBe('n48@0 F#4');
+    expect(m(ok(stepAt(g, voll, at(0, 0), -1)))[0]).toBe('n48@0 D4');
+  });
+
+  it('an accidental outside the key goes: in C major f sharp → g', () => {
+    const score = note(trombone(), 0, 0, ['F#4']);
+    expect(m(ok(stepAt(score, voll, at(0, 0), 1)))[0]).toBe('n48@0 G4');
+    expect(m(ok(stepAt(score, voll, at(0, 0), -1)))[0]).toBe('n48@0 E4');
+  });
+
+  it('a marking moves as a sequence; ties stay', () => {
+    const score = ok(setTie(note(note(note(trombone(), 0, 0, ['C4']), 0, 48, ['D4']), 0, 96, ['D4']), voll, at(0, 48), true));
+    const moved = ok(stepRange(score, voll, rangeBetween(score, at(0, 0), at(0, 96)), 1));
+    expect(m(moved).slice(0, 3)).toEqual(['n48@0 D4', 'n48@48 E4~', 'n48@96 E4']);
+  });
+
+  it('a chord moves together; a selected chord tone alone (not onto another tone)', () => {
+    const score = note(createEmptyScore(voll), 0, 0, ['C4', 'E4', 'G4']);
+    expect(m(ok(stepAt(score, voll, at(0, 0), 1)))[0]).toBe('n48@0 D4+F4+A4');
+    expect(m(ok(stepAt(score, voll, at(0, 0), 1, 0)))[0]).toBe('n48@0 D4+E4+G4');
+    const second = note(createEmptyScore(voll), 0, 0, ['C4', 'D4']);
+    expect(stepAt(second, voll, at(0, 0), 1, 0)).toEqual({ ok: false, error: 'duplicate-tone' });
   });
 });

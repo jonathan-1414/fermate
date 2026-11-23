@@ -88,7 +88,8 @@ Teil des Bildschirms ein, alles andere tritt zurück.
   nur ihre bekannten Symbole (zwei Blätter, Klemmbrett; seit 23.11.2026, spart Platz in der
   Leiste). Ebenso in der oberen Leiste (seit 23.11.2026): „Abspielen“ (Dreieck, beim Spielen
   Quadrat, beim Laden drei Punkte), „Mischpult“ (drei Schieberegler), „Kleiner“ und „Größer“
-  (Lupe mit − bzw. +). Der Haltebogen zeigt nur einen großen Bogen (seit 23.11.2026, rechts
+  (Lupe mit − bzw. +). „Ton höher“ und „Ton tiefer“ zeigen einen Notenkopf zwischen
+  Notenlinien mit Pfeil nach oben bzw. unten. Der Haltebogen zeigt nur einen großen Bogen (seit 23.11.2026, rechts
   neben „Triole“). Punkt, Triole, Akkord und Löschen behalten ihre
   Beschriftung, ebenso Tempo, Swing, Rückgängig, Wiederholen und Notennamen. Modul 1 bleibt
   beschriftet.
@@ -494,9 +495,9 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Swing, Mischpult | Kleiner, Größer | Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Speichern und teilen, Einstellungen (nur
   Symbole). „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
-  Triole, Haltebogen | Kreuz, Be, Auflösung | Oktave höher, Oktave tiefer | Akkord (nur
-  Klavier), Kopieren, Einfügen, Löschen. Notenwerte, Vorzeichen, Oktave, Haltebogen, Kopieren
-  und Einfügen nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
+  Triole, Haltebogen | Kreuz, Be, Auflösung | Ton höher, Ton tiefer, Oktave höher, Oktave
+  tiefer | Akkord (nur Klavier), Kopieren, Einfügen, Löschen. Notenwerte, Vorzeichen, Ton,
+  Oktave, Haltebogen, Kopieren und Einfügen nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
   einmal zu oft „Rückgängig“ tippt, holt den Schritt zurück).
 - **„+ Takt“** am rechten Ende der Übersichtsleiste. Einen eigenen Button „Takt löschen“ gibt es
   nicht mehr (23.11.2026): Takte über die Taktnummern markieren, dann „Löschen“.
@@ -624,6 +625,15 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   bleibt zusammen). Auf einer Pause ausgegraut, Pausen in einer Markierung werden
   übersprungen. Mit dem Finger lassen sich weiter nur Töne bis eine Oktave über den Umfang
   hinaus eingeben.
+- **Ton höher / Ton tiefer** (beschlossen 23.11.2026, für diatonische Sequenzen: Passage
+  kopieren, einfügen, dann schrittweise versetzen): zwei Buttons vor den Oktav-Buttons, Symbol
+  Notenkopf mit Pfeil. Sie versetzen das Ausgewählte (Note, Akkord, mit „Akkord“ den
+  ausgewählten Ton, oder alle Noten einer Markierung) um eine Linie bzw. einen Zwischenraum.
+  Der neue Ton folgt der Tonart wie beim Ziehen (in C-Dur e → f, fis → g; ein Vorzeichen
+  außerhalb der Tonart fällt weg), so bleibt eine Sequenz diatonisch. Sonst alles wie bei
+  „Oktave“: Markierung bleibt, verbundene Noten wandern mit, Grenze Klaviertastatur,
+  Rückgängig gilt. Bei transponiert angezeigten Instrumenten ergibt der Schritt im gegriffenen
+  und im klingenden Bild dasselbe.
 - **Abspielen ab dem Cursor** (beschlossen 22.11.2026): Die Wiedergabe beginnt bei der
   ausgewählten Note oder Pause und läuft bis zum Ende (alle Instrumente). Folgt dort nichts mehr,
   was klingt (gerade fertig geschrieben), beginnt sie am Anfang. Mit einer Markierung spielt sie

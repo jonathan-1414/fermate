@@ -38,6 +38,17 @@ export const ICONS = {
   zoomOut: svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.2 15.2 20 20"/><path d="M7.5 10.5h6"/>'),
   /** A tie, drawn large: the "Haltebogen" button shows only this (23.11.2026). */
   tieLarge: svg('<path d="M3 10c3.5 6.5 14.5 6.5 18 0"/>'),
+  /** A note head between staff lines with an arrow up / down: "Ton höher / tiefer" (23.11.2026). */
+  stepUp:
+    '<svg viewBox="0 0 40 34" width="36" height="31" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">' +
+    '<path d="M2 12H38M2 20H38M2 28H38" opacity=".5"/>' +
+    '<ellipse cx="14" cy="16" rx="5" ry="3.6" fill="currentColor" stroke="none" transform="rotate(-20 14 16)"/>' +
+    '<path d="M29 24V8M25 12l4-4 4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  stepDown:
+    '<svg viewBox="0 0 40 34" width="36" height="31" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">' +
+    '<path d="M2 8H38M2 16H38M2 24H38" opacity=".5"/>' +
+    '<ellipse cx="14" cy="20" rx="5" ry="3.6" fill="currentColor" stroke="none" transform="rotate(-20 14 20)"/>' +
+    '<path d="M29 10V26M25 22l4 4 4-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   /** Cross: delete (small, in front of the label). */
   cross: svg('<path d="M6 6l12 12"/><path d="M18 6 6 18"/>', 18),
 };

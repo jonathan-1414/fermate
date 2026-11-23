@@ -38,7 +38,7 @@ export interface FullToolbarState {
   canDelete: boolean;
   /** A marking with notes: "Kopieren" works. */
   canCopy: boolean;
-  /** A note or a marking with notes is selected: "Oktave ↑/↓" work. */
+  /** A note or a marking with notes is selected: "Ton" and "Oktave" höher/tiefer work. */
   canOctave: boolean;
   /** Something was copied: "Einfügen" works. */
   canPaste: boolean;
@@ -78,6 +78,8 @@ export interface FullToolbarActions {
   setAccidental(alter: -1 | 0 | 1): void;
   /** "Oktave ↑" (+1) and "Oktave ↓" (-1). */
   octave(direction: 1 | -1): void;
+  /** "Ton höher" (+1) and "Ton tiefer" (-1): one step in the key (diatonic sequences). */
+  step(direction: 1 | -1): void;
   toggleTie(): void;
   toggleChord(): void;
   deleteSelection(): void;
@@ -185,6 +187,9 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
     b.append(arrow);
     return b;
   };
+  // Ton höher / tiefer: a note head with an arrow (23.11.2026).
+  const stepUpButton = iconButton('Ton höher', ICONS.stepUp, () => actions.step(1));
+  const stepDownButton = iconButton('Ton tiefer', ICONS.stepDown, () => actions.step(-1));
   const octaveUpButton = octaveButton(1);
   const octaveDownButton = octaveButton(-1);
   // Haltebogen: only the tie, right of "Triole" (23.11.2026, makes room in the toolbar).
@@ -201,7 +206,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   bottomMain.append(
     group('Notenwert', ...baseButtons.map(({ b }) => b), dotButton, tripletButton, tieButton),
     group('Vorzeichen', ...accidentalButtons.map(({ b }) => b)),
-    group('Oktave', octaveUpButton, octaveDownButton),
+    group('Tonhöhe', stepUpButton, stepDownButton, octaveUpButton, octaveDownButton),
     group('Note', chordButton, copyButton, pasteButton, deleteButton),
   );
   bottom.append(bottomMain);
@@ -221,6 +226,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
         b.disabled = state.alter === null;
         b.setAttribute('aria-pressed', String(state.alter === alter));
       }
+      stepUpButton.disabled = !state.canOctave;
+      stepDownButton.disabled = !state.canOctave;
       octaveUpButton.disabled = !state.canOctave;
       octaveDownButton.disabled = !state.canOctave;
       tieButton.disabled = state.tie === null;

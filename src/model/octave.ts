@@ -1,16 +1,20 @@
 import type { ModuleConfig } from '../modules/types';
 import type { EditResult } from './edit';
 import { sortPitches } from './overwrite';
-import { parsePitch, pitchToMidi } from './pitch';
+import { inKey } from './accidentals';
+import { diatonicIndex, parsePitch, pitchFromDiatonic, pitchToMidi } from './pitch';
 import { type Range, toAbsolute } from './range';
 import { cleanTies, indexAt, samePitch, staffEvents, tieChain } from './sequence';
 import { allStaves } from './staves';
 import type { Pitch, Position, Score } from './types';
 
 /**
- * "Oktave ↑" and "Oktave ↓" (CLAUDE.md, section 5): move the selected note, chord, chord
- * tone or every note of a marking one octave up or down. Accidentals stay (fis stays fis),
- * notes tied to a moved note move along. Allowed up to the module's range (the piano
+ * Moving notes (CLAUDE.md, section 5): the selected note, chord, chord tone or every note
+ * of a marking.
+ * - "Oktave höher / tiefer": one octave; accidentals stay (fis stays fis).
+ * - "Ton höher / tiefer" (diatonic sequences, 23.11.2026): one step on the staff, the new
+ *   tone follows the key (in C major fis → g → a), like dragging a note.
+ * Notes tied to a moved note move along. Allowed up to the module's range (the piano
  * keyboard), also beyond the instrument's range (shown marked). If any tone would leave
  * the module's range, nothing changes: a melody never falls apart.
  */
@@ -18,7 +22,17 @@ import type { Pitch, Position, Score } from './types';
 type Fail = Extract<EditResult, { ok: false }>;
 const fail = (error: Fail['error']): Fail => ({ ok: false, error });
 
-const shifted = (p: Pitch, direction: 1 | -1): Pitch => ({ ...p, octave: p.octave + direction });
+/** How one tone moves. */
+type Move = (p: Pitch) => Pitch;
+
+const octave =
+  (direction: 1 | -1): Move =>
+  (p) => ({ ...p, octave: p.octave + direction });
+
+/** One step up or down on the staff, with the key's sharp or flat for the new step. */
+const step =
+  (direction: 1 | -1, keySignature: number): Move =>
+  (p) => inKey(pitchFromDiatonic(diatonicIndex(p) + direction), keySignature);
 
 function inModuleRange(module: ModuleConfig, p: Pitch): boolean {
   const midi = pitchToMidi(p);
@@ -33,7 +47,7 @@ function withTies(events: ReturnType<typeof staffEvents>, indexes: number[]): nu
 }
 
 /** Moves whole notes (all their tones) on some staves; null if a tone would leave the range. */
-function shiftNotes(score: Score, module: ModuleConfig, picks: Array<{ staff: number; indexes: number[] }>, direction: 1 | -1): EditResult {
+function shiftNotes(score: Score, module: ModuleConfig, picks: Array<{ staff: number; indexes: number[] }>, move: Move): EditResult {
   const copy = structuredClone(score);
   let moved = false;
   for (const { staff: s, indexes } of picks) {
@@ -42,7 +56,8 @@ function shiftNotes(score: Score, module: ModuleConfig, picks: Array<{ staff: nu
     for (const i of withTies(events, indexes)) {
       const event = events[i].event;
       if (event.kind !== 'note') continue;
-      const pitches = event.pitches.map((p) => shifted(p, direction));
+      // (Two tones of a chord on the same step, f and fis, become one.)
+      const pitches = sortPitches(event.pitches.map(move));
       if (!pitches.every((p) => inModuleRange(module, p))) return fail('out-of-range');
       event.pitches = pitches;
       moved = true;
@@ -53,22 +68,22 @@ function shiftNotes(score: Score, module: ModuleConfig, picks: Array<{ staff: nu
 }
 
 /**
- * The note at the cursor one octave up (+1) or down (-1). With `tone` (a chord tone
- * selected while "Akkord" is pressed) only that tone moves, and the same tone in the
- * notes tied to it; otherwise the whole note or chord.
+ * Moves the note at the cursor. With `tone` (a chord tone selected while "Akkord" is
+ * pressed) only that tone moves, and the same tone in the notes tied to it; otherwise
+ * the whole note or chord.
  */
-export function octaveAt(score: Score, module: ModuleConfig, at: Position, direction: 1 | -1, tone: number | null = null): EditResult {
+function moveAt(score: Score, module: ModuleConfig, at: Position, move: Move, tone: number | null): EditResult {
   const staff = allStaves(score)[at.staff];
   if (!staff) return fail('invalid-position');
   const events = staffEvents(staff);
   const index = indexAt(events, at);
   const first = events[index]?.event;
   if (first?.kind !== 'note') return fail('no-note');
-  if (tone === null || first.pitches.length === 1) return shiftNotes(score, module, [{ staff: at.staff, indexes: [index] }], direction);
+  if (tone === null || first.pitches.length === 1) return shiftNotes(score, module, [{ staff: at.staff, indexes: [index] }], move);
 
   const old = first.pitches[tone];
   if (!old) return fail('no-note');
-  const moved = shifted(old, direction);
+  const moved = move(old);
   if (!inModuleRange(module, moved)) return fail('out-of-range');
   if (first.pitches.some((p) => samePitch(p, moved))) return fail('duplicate-tone');
   const copy = structuredClone(score);
@@ -85,8 +100,8 @@ export function octaveAt(score: Score, module: ModuleConfig, at: Position, direc
   return { ok: true, score: copy };
 }
 
-/** Every note that starts in the marking one octave up (+1) or down (-1). */
-export function octaveRange(score: Score, module: ModuleConfig, range: Range, direction: 1 | -1): EditResult {
+/** Moves every note that starts in the marking. */
+function moveRange(score: Score, module: ModuleConfig, range: Range, move: Move): EditResult {
   const picks: Array<{ staff: number; indexes: number[] }> = [];
   for (let s = range.firstStaff; s <= range.lastStaff; s++) {
     const events = staffEvents(allStaves(score)[s]);
@@ -99,5 +114,25 @@ export function octaveRange(score: Score, module: ModuleConfig, range: Range, di
       .map(({ i }) => i);
     picks.push({ staff: s, indexes });
   }
-  return shiftNotes(score, module, picks, direction);
+  return shiftNotes(score, module, picks, move);
+}
+
+/** "Oktave höher" (+1) / "Oktave tiefer" (-1) for the note at the cursor. */
+export function octaveAt(score: Score, module: ModuleConfig, at: Position, direction: 1 | -1, tone: number | null = null): EditResult {
+  return moveAt(score, module, at, octave(direction), tone);
+}
+
+/** "Oktave höher" / "Oktave tiefer" for a marking. */
+export function octaveRange(score: Score, module: ModuleConfig, range: Range, direction: 1 | -1): EditResult {
+  return moveRange(score, module, range, octave(direction));
+}
+
+/** "Ton höher" (+1) / "Ton tiefer" (-1) for the note at the cursor, in the key of the piece. */
+export function stepAt(score: Score, module: ModuleConfig, at: Position, direction: 1 | -1, tone: number | null = null): EditResult {
+  return moveAt(score, module, at, step(direction, score.keySignature), tone);
+}
+
+/** "Ton höher" / "Ton tiefer" for a marking: a diatonic sequence. */
+export function stepRange(score: Score, module: ModuleConfig, range: Range, direction: 1 | -1): EditResult {
+  return moveRange(score, module, range, step(direction, score.keySignature));
 }

@@ -1,6 +1,6 @@
 import { createWordmark } from './wordmark';
 import { inKey } from '../model/accidentals';
-import { octaveAt, octaveRange } from '../model/octave';
+import { octaveAt, octaveRange, stepAt, stepRange } from '../model/octave';
 import { setTransposed, shownTransposition, staffKeys, toSounding, toWritten } from '../model/transpose';
 import { plain } from '../model/duration';
 import { History } from '../model/history';
@@ -455,20 +455,10 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       }
     },
     octave(direction) {
-      // A marking: all its notes move (the marking stays, so it can be moved again).
-      const kept = marked;
-      const pitch = selectedPitch();
-      const result = kept
-        ? octaveRange(score, module, kept, direction)
-        : octaveAt(score, module, cursor, direction, chordMode ? tone : null);
-      if (!result.ok) {
-        if (result.error === 'out-of-range') void showMessage(OCTAVE_LIMIT[direction]);
-        return;
-      }
-      commit(result);
-      marked = kept;
-      if (!kept && chordMode && pitch) followTone(pitch.step, pitch.octave + direction, pitch.alter);
-      render();
+      moveNotes(direction, octaveAt, octaveRange);
+    },
+    step(direction) {
+      moveNotes(direction, stepAt, stepRange);
     },
     toggleTie() {
       const note = selectedNote();
@@ -770,6 +760,35 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   }
 
   /** "Takt löschen" works while more measures remain than the minimum (a pickup can always go). */
+  /**
+   * "Ton" or "Oktave" höher/tiefer: a marking moves all its notes (the marking stays, so it
+   * can be moved again), otherwise the selected note (with "Akkord" only the selected tone).
+   */
+  function moveNotes(
+    direction: 1 | -1,
+    atCursor: typeof octaveAt,
+    inMarking: typeof octaveRange,
+  ): void {
+    const kept = marked;
+    const keptByNumbers = byNumbers;
+    const before = selectedNote();
+    const result = kept ? inMarking(score, module, kept, direction) : atCursor(score, module, cursor, direction, chordMode ? tone : null);
+    if (!result.ok) {
+      if (result.error === 'out-of-range') void showMessage(OCTAVE_LIMIT[direction]);
+      return;
+    }
+    const index = tone;
+    commit(result);
+    marked = kept;
+    byNumbers = keptByNumbers;
+    // The moved chord tone stays selected (the tones are sorted again).
+    if (!kept && chordMode && before) {
+      const moved = selectedNote()?.pitches.findIndex((p) => !before.pitches.some((q) => samePitch(p, q))) ?? -1;
+      tone = moved >= 0 ? moved : index;
+    }
+    render();
+  }
+
   /** "Löschen" on measures marked on their numbers: asks, then the measures go in all instruments. */
   async function deleteMarkedMeasures(range: Range): Promise<void> {
     const first = fromAbsolute(score, range.from).measure;
