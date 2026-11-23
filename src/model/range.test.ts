@@ -122,11 +122,11 @@ group('copy and paste', () => {
     expect(m(ok(pasteClip(withFlute, voll, at(1, 0, 0), clip)), 1, 0)[0]).toBe('n48@0 G4');
   });
 
-  it('a tone outside the input range stops the paste', () => {
+  it('tones outside the instrument\'s range are pasted too (shown marked)', () => {
     const low = note(createEmptyScore(voll), 0, 0, 'C2', Q, 1); // piano, bass staff
     const withFlute = ok(addPart(low, voll, 'flute'));
     const clip = copyRange(withFlute, rangeBetween(withFlute, at(0, 0, 2), at(0, 0, 2)))!;
-    expect(pasteClip(withFlute, voll, at(1, 0, 0), clip)).toEqual({ ok: false, error: 'out-of-range' });
+    expect(m(ok(pasteClip(withFlute, voll, at(1, 0, 0), clip)), 1, 0)[0]).toBe('n48@0 C2');
   });
 
   it('triplet groups are pasted whole, only on a beat; never into the middle of a group', () => {

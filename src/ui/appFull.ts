@@ -1,4 +1,5 @@
 import { inKey } from '../model/accidentals';
+import { octaveAt, octaveRange } from '../model/octave';
 import { plain } from '../model/duration';
 import { History } from '../model/history';
 import { isCompound } from '../model/meter';
@@ -75,10 +76,15 @@ const HOLD_MS = 500;
 const PASTE_ERRORS: Partial<Record<EditError, string>> = {
   'too-many-measures': 'Zu lang: Ein Stück hat höchstens 32 Takte.',
   'not-enough-staves': 'Darunter sind nicht genug Notenzeilen für alles, was kopiert wurde.',
-  'out-of-range': 'Einige Töne liegen außerhalb des Tonumfangs dieses Instruments.',
+  'out-of-range': 'Einige Töne liegen außerhalb der Klaviertastatur.',
   'inside-triplet': 'Mitten in einer Triole lässt sich nichts einfügen.',
   'triplet-position': 'Hier lässt sich nichts einfügen: Eine Triole muss auf einer Zählzeit beginnen.',
 };
+
+const OCTAVE_LIMIT = {
+  1: 'Höher geht es nicht: Einige Töne lägen über der Klaviertastatur.',
+  [-1]: 'Tiefer geht es nicht: Einige Töne lägen unter der Klaviertastatur.',
+} as const;
 
 interface Snapshot {
   score: Score;
@@ -431,6 +437,22 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
         render();
       }
     },
+    octave(direction) {
+      // A marking: all its notes move (the marking stays, so it can be moved again).
+      const kept = marked;
+      const pitch = selectedPitch();
+      const result = kept
+        ? octaveRange(score, module, kept, direction)
+        : octaveAt(score, module, cursor, direction, chordMode ? tone : null);
+      if (!result.ok) {
+        if (result.error === 'out-of-range') void showMessage(OCTAVE_LIMIT[direction]);
+        return;
+      }
+      commit(result);
+      marked = kept;
+      if (!kept && chordMode && pitch) followTone(pitch.step, pitch.octave + direction, pitch.alter);
+      render();
+    },
     toggleTie() {
       const note = selectedNote();
       if (note && commit(setTie(score, module, cursor, !note.tieToNext))) render();
@@ -450,6 +472,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       }
       commit(result);
       checkCursor();
+      // On a note the toolbar always shows its value (the cursor now stands on the pasted notes).
+      duration = selectedNote()?.duration ?? duration;
+      dotOnce = false;
       render();
     },
     toggleChord() {
@@ -687,6 +712,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       chordMode,
       canDelete: note !== null || (marked !== null && rangeHasNotes(score, marked)),
       canCopy: marked !== null && rangeHasNotes(score, marked),
+      canOctave: note !== null || (marked !== null && rangeHasNotes(score, marked)),
       canPaste: clipboard !== null,
       canDeleteMeasure: canDeleteMeasure(),
       canUndo: history.canUndo(),

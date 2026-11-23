@@ -37,6 +37,8 @@ export interface FullToolbarState {
   canDelete: boolean;
   /** A marking with notes: "Kopieren" works. */
   canCopy: boolean;
+  /** A note or a marking with notes is selected: "Oktave ↑/↓" work. */
+  canOctave: boolean;
   /** Something was copied: "Einfügen" works. */
   canPaste: boolean;
   canDeleteMeasure: boolean;
@@ -70,6 +72,8 @@ export interface FullToolbarActions {
   toggleDot(): void;
   toggleTriplet(): void;
   setAccidental(alter: -1 | 0 | 1): void;
+  /** "Oktave ↑" (+1) and "Oktave ↓" (-1). */
+  octave(direction: 1 | -1): void;
   toggleTie(): void;
   toggleChord(): void;
   deleteSelection(): void;
@@ -139,7 +143,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   corner.classList.add('corner');
   top.append(topMain, corner);
 
-  // Bottom: note values, dot, triplet | accidentals | tie, delete.
+  // Bottom: note values, dot, triplet | accidentals | octave | tie, chord, copy, paste, delete.
   const bases: BaseValue[] = [192, 96, 48, 24, 12];
   const baseButtons = bases.map((base) => {
     const b = button(DURATION_NAMES[base], () => actions.selectBase(base), { music: DURATION_GLYPHS[base] });
@@ -161,6 +165,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
     symbolOnly(b, label);
     return { alter, b };
   });
+  const octaveUpButton = button('Oktave ↑', () => actions.octave(1));
+  const octaveDownButton = button('Oktave ↓', () => actions.octave(-1));
   const tieButton = button('Haltebogen', actions.toggleTie, { svg: ICONS.tie });
   // Akkord: while pressed, a tap adds a tone to the selected note instead of moving it.
   const chordButton = button('Akkord', actions.toggleChord);
@@ -173,6 +179,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   bottomMain.append(
     group('Notenwert', ...baseButtons.map(({ b }) => b), dotButton, tripletButton),
     group('Vorzeichen', ...accidentalButtons.map(({ b }) => b)),
+    group('Oktave', octaveUpButton, octaveDownButton),
     group('Note', tieButton, chordButton, copyButton, pasteButton, deleteButton),
   );
   bottom.append(bottomMain);
@@ -192,6 +199,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
         b.disabled = state.alter === null;
         b.setAttribute('aria-pressed', String(state.alter === alter));
       }
+      octaveUpButton.disabled = !state.canOctave;
+      octaveDownButton.disabled = !state.canOctave;
       tieButton.disabled = state.tie === null;
       chordButton.hidden = !state.chordShown;
       chordButton.setAttribute('aria-pressed', String(state.chordMode));

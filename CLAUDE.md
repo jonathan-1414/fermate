@@ -83,7 +83,7 @@ Teil des Bildschirms ein, alles andere tritt zurück.
   Zweite Ausnahme (nur Vollversion, beschlossen 22.11.2026): Die Notenwerte (Ganze bis
   Sechzehntel) und Kreuz, Be, Auflösung zeigen nur ihr Zeichen aus der Notenschrift, groß
   gezeichnet, Tippfläche weiter mindestens 44 × 44 pt, Name als Tooltip und für
-  Screenreader. Die Zeichen sind hier selbst der Lerninhalt. Punkt, Triole, Haltebogen, Akkord
+  Screenreader. Die Zeichen sind hier selbst der Lerninhalt. Punkt, Triole, Oktave ↑/↓, Haltebogen, Akkord
   und Löschen behalten ihre Beschriftung, ebenso die obere Leiste. Modul 1 bleibt beschriftet.
 - Kein dunkler Modus in Modul 1.
 
@@ -477,7 +477,7 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Speichern und teilen, Einstellungen (nur
   Symbole). „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
-  Triole | Kreuz, Be, Auflösung | Haltebogen, Akkord (nur Klavier), Löschen. Notenwerte und
+  Triole | Kreuz, Be, Auflösung | Oktave ↑, Oktave ↓ | Haltebogen, Akkord (nur Klavier), Löschen. Notenwerte und
   Vorzeichen nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
   einmal zu oft „Rückgängig“ tippt, holt den Schritt zurück).
 - **„+ Takt“** am rechten Ende der Übersichtsleiste, **„Takt löschen“** in der oberen Leiste
@@ -584,8 +584,20 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
     landen ab der Cursor-Zeile nach unten. Nicht mitten in einer Triole. Passt es nicht bis zum
     Ende, hängt die App leere Takte an (Ausnahme von „Takte entstehen nie automatisch“), höchstens
     bis 32 Takte, sonst passiert nichts mit kurzem Hinweis. In ein Instrument ohne Akkorde nur der
-    höchste Ton; Töne außerhalb des Eingabebereichs verhindern das Einfügen mit Hinweis.
-    Rückgängig nimmt alles zurück, auch angehängte Takte.
+    höchste Ton. Töne außerhalb des Tonumfangs werden mit eingefügt und farbig markiert
+    (geändert 23.11.2026, Anwendungsfall Kanon: die Flötenmelodie kommt in die Posaune und wird
+    dort mit „Oktave ↓“ versetzt); nur Töne außerhalb der Klaviertastatur verhindern das
+    Einfügen mit Hinweis. Rückgängig nimmt alles zurück, auch angehängte Takte.
+- **Oktave ↑ / Oktave ↓** (beschlossen 23.11.2026): zwei beschriftete Buttons in der unteren
+  Leiste nach den Vorzeichen. Sie versetzen das Ausgewählte um eine Oktave: eine Note, einen
+  Akkord (ist „Akkord“ gedrückt, nur den ausgewählten Akkordton) oder alle Noten einer
+  Markierung (die Markierung bleibt, man kann also mehrmals tippen). Vorzeichen bleiben (fis
+  bleibt fis), verbundene Noten wandern mit, Rückgängig gilt. Erlaubt bis zur Klaviertastatur,
+  auch über den Tonumfang des Instruments hinaus (dann farbig markiert). Würde auch nur ein
+  Ton die Klaviertastatur verlassen, ändert sich nichts, mit kurzem Hinweis (die Melodie
+  bleibt zusammen). Auf einer Pause ausgegraut, Pausen in einer Markierung werden
+  übersprungen. Mit dem Finger lassen sich weiter nur Töne bis eine Oktave über den Umfang
+  hinaus eingeben.
 - **Abspielen ab dem Cursor** (beschlossen 22.11.2026): Die Wiedergabe beginnt bei der
   ausgewählten Note oder Pause und läuft bis zum Ende (alle Instrumente). Folgt dort nichts mehr,
   was klingt (gerade fertig geschrieben), beginnt sie am Anfang. Mit einer Markierung spielt sie

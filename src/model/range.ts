@@ -1,12 +1,12 @@
 import type { ModuleConfig } from '../modules/types';
 import { durationTicks } from './duration';
 import type { EditResult } from './edit';
-import { entryRange, instrumentById } from './instruments';
+import { instrumentById } from './instruments';
 import { clearSpan, groupAt, itemEnd, type Item, type NoteEvent, type TripletUnit } from './items';
 import { insertMeasure } from './measures';
 import { beatLength, measureLengths } from './meter';
 import { readItems, sortPitches, type StaffContext, writeItems, writeNote } from './overwrite';
-import { pitchToMidi } from './pitch';
+import { parsePitch, pitchToMidi } from './pitch';
 import { cleanTies, eventAtPosition } from './sequence';
 import { allStaves, partOfStaff } from './staves';
 import type { Pitch, Position, Score } from './types';
@@ -185,7 +185,9 @@ function clipEnd(clip: Clip): number {
  * "Einfügen": writes the clip from the cursor on, overwriting like a long note; several
  * staves go from the cursor's staff downwards. Empty measures are added at the end if
  * needed (up to the module's maximum). Where chords are not allowed only the highest tone
- * is taken; a tone outside the instrument's input range stops the whole paste.
+ * is taken. Tones outside the instrument's range are pasted too (they are shown marked and
+ * can be moved with "Oktave ↑/↓", e.g. a flute melody for the trombone in a canon); only a
+ * tone outside the module's range (the piano keyboard) stops the whole paste.
  */
 export function pasteClip(score: Score, module: ModuleConfig, at: Position, clip: Clip): EditResult {
   if (at.staff + clip.staves.length > allStaves(score).length) return fail('not-enough-staves');
@@ -212,7 +214,7 @@ export function pasteClip(score: Score, module: ModuleConfig, at: Position, clip
     const index = at.staff + k;
     const staff = allStaves(copy)[index];
     const ctx: StaffContext = { copy, staff, lengths };
-    const range = entryRange(module, partOfStaff(copy, index));
+    const range = { low: pitchToMidi(parsePitch(module.range.low)), high: pitchToMidi(parsePitch(module.range.high)) };
     const chords = instrumentById(partOfStaff(copy, index)?.instrument ?? '')?.chords === true;
     const fitPitches = (pitches: Pitch[]): Pitch[] | null => {
       const sorted = sortPitches(pitches);
