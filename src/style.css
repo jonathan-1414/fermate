@@ -782,11 +782,11 @@ body {
   font-size: 30px;
 }
 /* Each sign in the middle of its button (measured 23.11.2026: the music font puts note
-   values with stems high, sharp and natural low). */
+   values with stems high, sharp and natural low). All note heads, the whole note's too,
+   on one height. */
 .tool.duration .glyph.music {
   top: 11px;
 }
-.tool.duration[data-value='192'] .glyph.music,
 .tool.accidental .glyph.music {
   top: 0;
 }

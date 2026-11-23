@@ -21,8 +21,6 @@ export const ICONS = {
   undo: svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', 18),
   /** Arrow turning forward: redo (small, in front of the label). */
   redo: svg('<path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>', 18),
-  /** A tie between two notes (small, in front of the label). */
-  tie: svg('<path d="M4 9c3 6 13 6 16 0"/>', 18),
   /** Two overlapping sheets: copy (as known from other apps). */
   copy: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
   /** Clipboard: paste (as known from other apps). */
@@ -38,6 +36,8 @@ export const ICONS = {
   /** Magnifying glass with plus / minus: larger or smaller music. */
   zoomIn: svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.2 15.2 20 20"/><path d="M10.5 7.5v6M7.5 10.5h6"/>'),
   zoomOut: svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.2 15.2 20 20"/><path d="M7.5 10.5h6"/>'),
+  /** A tie, drawn large: the "Haltebogen" button shows only this (23.11.2026). */
+  tieLarge: svg('<path d="M3 10c3.5 6.5 14.5 6.5 18 0"/>'),
   /** Cross: delete (small, in front of the label). */
   cross: svg('<path d="M6 6l12 12"/><path d="M18 6 6 18"/>', 18),
 };

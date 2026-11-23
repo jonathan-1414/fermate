@@ -187,7 +187,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   };
   const octaveUpButton = octaveButton(1);
   const octaveDownButton = octaveButton(-1);
-  const tieButton = button('Haltebogen', actions.toggleTie, { svg: ICONS.tie });
+  // Haltebogen: only the tie, right of "Triole" (23.11.2026, makes room in the toolbar).
+  const tieButton = iconButton('Haltebogen', ICONS.tieLarge, actions.toggleTie);
   // Akkord: while pressed, a tap adds a tone to the selected note instead of moving it.
   const chordButton = button('Akkord', actions.toggleChord);
   // Kopieren and Einfügen: only their well-known symbols (chosen 23.11.2026, saves room).
@@ -198,10 +199,10 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   const bottomMain = document.createElement('div');
   bottomMain.className = 'toolbar-main';
   bottomMain.append(
-    group('Notenwert', ...baseButtons.map(({ b }) => b), dotButton, tripletButton),
+    group('Notenwert', ...baseButtons.map(({ b }) => b), dotButton, tripletButton, tieButton),
     group('Vorzeichen', ...accidentalButtons.map(({ b }) => b)),
     group('Oktave', octaveUpButton, octaveDownButton),
-    group('Note', tieButton, chordButton, copyButton, pasteButton, deleteButton),
+    group('Note', chordButton, copyButton, pasteButton, deleteButton),
   );
   bottom.append(bottomMain);
 

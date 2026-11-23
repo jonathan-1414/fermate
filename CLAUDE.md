@@ -88,7 +88,8 @@ Teil des Bildschirms ein, alles andere tritt zurück.
   nur ihre bekannten Symbole (zwei Blätter, Klemmbrett; seit 23.11.2026, spart Platz in der
   Leiste). Ebenso in der oberen Leiste (seit 23.11.2026): „Abspielen“ (Dreieck, beim Spielen
   Quadrat, beim Laden drei Punkte), „Mischpult“ (drei Schieberegler), „Kleiner“ und „Größer“
-  (Lupe mit − bzw. +). Punkt, Triole, Haltebogen, Akkord und Löschen behalten ihre
+  (Lupe mit − bzw. +). Der Haltebogen zeigt nur einen großen Bogen (seit 23.11.2026, rechts
+  neben „Triole“). Punkt, Triole, Akkord und Löschen behalten ihre
   Beschriftung, ebenso Tempo, Swing, Rückgängig, Wiederholen und Notennamen. Modul 1 bleibt
   beschriftet.
 - **Wortmarke** (23.11.2026, Entwurf aus Jonathans Logo-Projekt): ganz links in der oberen
@@ -493,8 +494,9 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Swing, Mischpult | Kleiner, Größer | Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Speichern und teilen, Einstellungen (nur
   Symbole). „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
-  Triole | Kreuz, Be, Auflösung | Oktave höher, Oktave tiefer | Haltebogen, Akkord (nur Klavier), Löschen. Notenwerte,
-  Vorzeichen, Oktave, Kopieren und Einfügen nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
+  Triole, Haltebogen | Kreuz, Be, Auflösung | Oktave höher, Oktave tiefer | Akkord (nur
+  Klavier), Kopieren, Einfügen, Löschen. Notenwerte, Vorzeichen, Oktave, Haltebogen, Kopieren
+  und Einfügen nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
   einmal zu oft „Rückgängig“ tippt, holt den Schritt zurück).
 - **„+ Takt“** am rechten Ende der Übersichtsleiste. Einen eigenen Button „Takt löschen“ gibt es
   nicht mehr (23.11.2026): Takte über die Taktnummern markieren, dann „Löschen“.
