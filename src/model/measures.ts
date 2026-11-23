@@ -78,6 +78,23 @@ export function deleteMeasure(score: Score, module: ModuleConfig, index: number)
 }
 
 /**
+ * Deletes the measures from `first` to `last` (both included) with their notes, in all
+ * staves ("Löschen" after marking measures on their numbers). Nothing changes if not
+ * at least one measure (two with a pickup) would be left.
+ */
+export function deleteMeasures(score: Score, module: ModuleConfig, first: number, last: number): EditResult {
+  if (first > last || first < 0 || last >= measureCount(score)) return fail('invalid-position');
+  let work = score;
+  // From the back, so that the indexes still fit (the pickup measure, index 0, comes last).
+  for (let index = last; index >= first; index--) {
+    const result = deleteMeasure(work, module, index);
+    if (!result.ok) return result;
+    work = result.score;
+  }
+  return { ok: true, score: work };
+}
+
+/**
  * Switches the pickup on or off or changes its length (in ticks, 0 = none).
  * On: an empty pickup measure comes before measure 1. Off: the pickup measure goes,
  * with its notes. The last measure is shortened or filled at the end.

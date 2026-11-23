@@ -1,3 +1,4 @@
+import { createWordmark } from './wordmark';
 import { advanceCursor, initialCursor, positionForTap } from '../model/cursor';
 import { isMetaComplete } from '../model/meta';
 import { canPlace, changeDuration, changePitch, deleteEvent, setNote, setRest } from '../model/edit';
@@ -79,6 +80,8 @@ export function startApp(root: HTMLElement, module: ModuleConfig): void {
   }
 
 
+  // The word mark first, at the top left; the toolbar adds its buttons after it.
+  root.querySelector('.toolbar')!.prepend(createWordmark());
   const toolbar = createToolbar(root.querySelector('.toolbar')!, module.durations, module.manualRests, {
     togglePlay() {
       if (player.isPlaying() || playedScore) {

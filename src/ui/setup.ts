@@ -180,8 +180,9 @@ export function askMeter(module: ModuleConfig, current: MeterChoice): Promise<Me
       body.replaceChildren(
         el('div', { className: 'field' }, el('span', { textContent: 'Taktart' }), meters),
         key.field,
-        pickup,
+        // Tempo matters for everyone, a pickup not always: the pickup comes last (23.11.2026).
         el('div', { className: 'field' }, el('span', { textContent: 'Tempo' }), el('p', { className: 'tempo-line' }, glyph, tempoValue), slider),
+        pickup,
       );
     }
     draw();

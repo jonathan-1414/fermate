@@ -1,3 +1,4 @@
+import { createWordmark } from './wordmark';
 import { inKey } from '../model/accidentals';
 import { octaveAt, octaveRange } from '../model/octave';
 import { setTransposed, shownTransposition, staffKeys, toSounding, toWritten } from '../model/transpose';
@@ -59,7 +60,7 @@ import { showMixer, showTempo } from './mixer';
 import { askInstruments, askMeter, showSettings, type MeterChoice } from './setup';
 import { createConfiguredScore } from '../model/setup';
 import { addPart, movePart, removePart } from '../model/instruments';
-import { deleteMeasure, insertMeasure, setKeySignature, setPickup, setTimeSignature } from '../model/measures';
+import { deleteMeasures, insertMeasure, setKeySignature, setPickup, setTimeSignature } from '../model/measures';
 import { createOverview, createVerticalOverview } from './overview';
 
 const NOTE_NAMES_SHOW_MS = 5000;
@@ -114,8 +115,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   /** Abspielen was tapped while the samples were still loading. */
   let loadingSound = false;
   /** Size of the music (screen pixels per drawing unit), changed with two fingers; kept on the device. */
+  /** One tap on Lupe + or Lupe −: the music a quarter larger or smaller. */
+  const ZOOM_STEP = 1.25;
   let zoom = clampZoom(loadZoom() ?? ZOOM, MIN_ZOOM, MAX_ZOOM);
-  let pinchFrom = zoom;
   let beforeDown: {
     cursor: Position;
     selectedByTap: boolean;
@@ -179,6 +181,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   let dotOnce = false;
   /** Several notes marked (hold, Shift + click, measure numbers); null = none. */
   let marked: Range | null = null;
+  /** The marking was made on the measure numbers: "Löschen" then removes the measures. */
+  let byNumbers = false;
   /** What "Kopieren" took (until the next copy or reloading the page). */
   let clipboard: Clip | null = null;
   /** A finger rests on another place: after HOLD_MS it marks from `from` up to there. */
@@ -284,14 +288,14 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     if (file) void openFile(file);
   });
 
+  // The word mark first, at the top left; the toolbar adds its buttons after it.
+  root.querySelector('header.toolbar')!.prepend(createWordmark());
   const toolbar = createFullToolbar(root.querySelector('header.toolbar')!, root.querySelector('.toolbar-bottom')!, {
-    deleteMeasure() {
-      if (!commit(deleteMeasure(score, module, cursor.measure))) return;
-      const count = staffAt(score, cursor.staff)!.measures.length;
-      cursor = { staff: cursor.staff, measure: Math.min(cursor.measure, count - 1), tick: 0 };
-      selectedByTap = false;
-      noValueAt = null;
-      render();
+    zoomIn() {
+      zoomStep(ZOOM_STEP);
+    },
+    zoomOut() {
+      zoomStep(1 / ZOOM_STEP);
     },
     togglePlay() {
       if (player.isPlaying() || playedScore) {
@@ -495,6 +499,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       render();
     },
     deleteSelection() {
+      // Measures marked on their numbers: the measures go, after asking (23.11.2026).
+      if (marked && byNumbers) {
+        void deleteMarkedMeasures(marked);
+        return;
+      }
       // A marking: all its notes become rests (the marking stays to be seen).
       if (marked) {
         const kept = marked;
@@ -705,6 +714,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       selectedTone: tone,
       playingList,
       zoom,
+      markedMeasures:
+        marked && byNumbers ? { first: fromAbsolute(score, marked.from).measure, last: fromAbsolute(score, marked.to - 1).measure } : null,
       marked: marked && {
         firstStaff: marked.firstStaff,
         lastStaff: marked.lastStaff,
@@ -730,11 +741,10 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       tie: note && module.ties ? note.tieToNext === true : null,
       chordShown: chordsOn(cursor.staff),
       chordMode,
-      canDelete: note !== null || (marked !== null && rangeHasNotes(score, marked)),
+      canDelete: note !== null || (marked !== null && (byNumbers || rangeHasNotes(score, marked))),
       canCopy: marked !== null && rangeHasNotes(score, marked),
       canOctave: note !== null || (marked !== null && rangeHasNotes(score, marked)),
       canPaste: clipboard !== null,
-      canDeleteMeasure: canDeleteMeasure(),
       canUndo: history.canUndo(),
       canRedo: history.canRedo(),
       playing: playedScore !== null,
@@ -743,6 +753,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       tempo: Math.round(score.tempo / tempoUnit().factor),
       swing: score.swing,
       canSwing: !isCompound(ts),
+      canZoomIn: zoom < MAX_ZOOM - 0.001,
+      canZoomOut: zoom > MIN_ZOOM + 0.001,
     });
   }
 
@@ -758,9 +770,30 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   }
 
   /** "Takt löschen" works while more measures remain than the minimum (a pickup can always go). */
-  function canDeleteMeasure(): boolean {
-    const count = allStaves(score)[0].measures.length;
-    return count > Math.max(module.minMeasures, score.pickup > 0 ? 2 : 1) || score.pickup > 0;
+  /** "Löschen" on measures marked on their numbers: asks, then the measures go in all instruments. */
+  async function deleteMarkedMeasures(range: Range): Promise<void> {
+    const first = fromAbsolute(score, range.from).measure;
+    const last = fromAbsolute(score, range.to - 1).measure;
+    const number = (m: number) => (score.pickup > 0 ? m : m + 1);
+    const name = (m: number) => (number(m) === 0 ? 'Auftakt' : `Takt ${number(m)}`);
+    // "Takt 3 löschen?", "Takte 3 bis 5 löschen?", "Auftakt bis Takt 2 löschen?"
+    const question =
+      first === last
+        ? `${name(first)} löschen?`
+        : number(first) === 0
+          ? `Auftakt bis ${name(last)} löschen?`
+          : `Takte ${number(first)} bis ${number(last)} löschen?`;
+    const yes = await confirm(`${question} Die Noten darin gehen in allen Instrumenten verloren.`, 'Löschen');
+    if (!yes) return;
+    if (!commit(deleteMeasures(score, module, first, last))) {
+      void showMessage('So viele Takte lassen sich nicht löschen: Ein Stück braucht mindestens einen Takt.');
+      return;
+    }
+    const count = staffAt(score, cursor.staff)!.measures.length;
+    cursor = { staff: cursor.staff, measure: Math.min(first, count - 1), tick: 0 };
+    selectedByTap = false;
+    noValueAt = null;
+    render();
   }
 
   function scroller(): HTMLElement | null {
@@ -947,6 +980,21 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
 
   // The measure numbers: a tap marks the measure in all staves, dragging several.
   let numbersFrom: number | null = null;
+  /**
+   * A new marking: the cursor goes to its first note or rest (on the marking's top staff,
+   * or for whole measures on the cursor's staff), so that the end of the marking is never
+   * the selected note (23.11.2026). The toolbar shows the value of what is selected there.
+   */
+  function mark(range: Range, staff = range.firstStaff): void {
+    marked = range;
+    byNumbers = false;
+    const at = fromAbsolute(score, range.from);
+    cursor = { staff, ...at };
+    selectedByTap = false;
+    tone = 0;
+    takeValueOfSelection(eventAtPosition(shownScore(), cursor));
+  }
+
   const measureAtX = (clientX: number): number | null => {
     const svg = scoreElement.querySelector<SVGSVGElement>('.score-numbers svg');
     const matrix = svg?.getScreenCTM();
@@ -961,7 +1009,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     const measure = measureAtX(event.clientX);
     if (measure === null) return;
     numbersFrom = measure;
-    marked = measureRange(score, measure, measure);
+    mark(measureRange(score, measure, measure), cursor.staff);
+    byNumbers = true;
     render();
   });
   scoreElement.addEventListener('pointermove', (event) => {
@@ -970,7 +1019,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     if (measure === null) return;
     const next = measureRange(score, numbersFrom, measure);
     if (marked && next.from === marked.from && next.to === marked.to) return;
-    marked = next;
+    mark(next, cursor.staff);
+    byNumbers = true;
     render();
   });
   for (const type of ['pointerup', 'pointercancel'] as const) {
@@ -1002,7 +1052,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       const otherTone = tappedTone !== null && tappedTone !== tone && !chordMode;
       // Shift + click (computer): mark from the cursor up to here.
       if (shift && (eventAtPosition(score, spot) || isOnRest(score, spot))) {
-        marked = rangeBetween(score, cursor, markablePosition(spot));
+        mark(rangeBetween(score, cursor, markablePosition(spot)));
         render();
         return;
       }
@@ -1021,7 +1071,7 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
             y,
             timer: setTimeout(() => {
               hold = null;
-              marked = rangeBetween(score, from, markablePosition(spot));
+              mark(rangeBetween(score, from, markablePosition(spot)));
               render();
             }, HOLD_MS),
           };
@@ -1100,7 +1150,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       render();
     },
   }, {
-    // Two fingers on the music: only the music gets larger or smaller.
+    // Two fingers on the music do nothing (23.11.2026: pinching often marked by mistake;
+    // zoom is now "Lupe +" and "Lupe −"). What the first finger began is undone.
     start() {
       if (beforeDown) {
         ({ cursor, selectedByTap, tone, duration, noValueAt, dotOnce, marked } = beforeDown);
@@ -1108,15 +1159,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
         beforeDown = null;
         render();
       }
-      pinchFrom = zoom;
     },
-    change(ratio, centerX, centerY) {
-      zoomTo(pinchFrom * ratio, centerX, centerY);
-    },
-    end() {
-      saveZoom(zoom);
-      render();
-    },
+    change() {},
+    end() {},
   });
 
   // Ctrl + mouse wheel, or two fingers on a trackpad: the same on a computer.
@@ -1138,6 +1183,19 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   // Safari zooms the page with its own gesture events: not on the music.
   for (const type of ['gesturestart', 'gesturechange']) {
     scoreElement.addEventListener(type, (event) => event.preventDefault());
+  }
+
+  /**
+   * Lupe + / Lupe −: one step larger or smaller; the middle of the visible music stays in
+   * its place (the view then follows the cursor if it left the picture).
+   */
+  function zoomStep(factor: number): void {
+    const sc = scroller();
+    if (!sc) return;
+    const view = sc.getBoundingClientRect();
+    zoomTo(zoom * factor, view.left + view.width / 2, view.top + view.height / 2);
+    saveZoom(zoom);
+    render();
   }
 
   /**

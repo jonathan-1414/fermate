@@ -46,6 +46,27 @@ body {
      page became a little higher than the screen and could be moved on the iPad. */
   overflow: hidden;
 }
+/* The word mark "fermate" at the top left */
+.wordmark {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  align-self: center;
+  margin-right: 4px;
+  font-family: var(--font);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  line-height: 1;
+  color: var(--text);
+  user-select: none;
+}
+.wordmark svg {
+  height: 13.6px;
+  width: auto;
+  margin: 0 1px 0 1px;
+  fill: var(--accent);
+}
 .toolbar-main {
   flex: 1;
   display: flex;
@@ -310,6 +331,22 @@ body {
 #score.full-score svg {
   width: auto;
   max-width: none;
+}
+/* Measure numbers as small buttons: tap to mark the measure */
+#score .vf-measure-number rect {
+  fill: var(--surface);
+  stroke: var(--muted);
+  stroke-width: 0.8;
+}
+#score .vf-measure-number.marked rect {
+  fill: var(--accent-soft);
+  stroke: var(--accent-text);
+}
+#score .vf-measure-number text {
+  font-size: 11px;
+}
+.score-numbers {
+  cursor: pointer;
 }
 #score .vf-measure-number text,
 #score .vf-instrument-name text {
@@ -744,13 +781,25 @@ body {
 .tool.symbol .glyph.music {
   font-size: 30px;
 }
+/* Each sign in the middle of its button (measured 23.11.2026: the music font puts note
+   values with stems high, sharp and natural low). */
+.tool.duration .glyph.music {
+  top: 11px;
+}
+.tool.duration[data-value='192'] .glyph.music,
+.tool.accidental .glyph.music {
+  top: 0;
+}
+.tool.accidental[data-alter='-1'] .glyph.music {
+  top: 4px;
+}
 /* Oktave höher / tiefer: "8va" with an arrow next to it */
 .tool.symbol.octave {
   gap: 1px;
 }
 .tool.symbol.octave .glyph.music {
   font-size: 24px;
-  top: 0;
+  top: 5px;
 }
 .tool.symbol.octave .arrow {
   font-size: 18px;

@@ -42,7 +42,6 @@ export interface FullToolbarState {
   canOctave: boolean;
   /** Something was copied: "Einfügen" works. */
   canPaste: boolean;
-  canDeleteMeasure: boolean;
   canUndo: boolean;
   canRedo: boolean;
   playing: boolean;
@@ -52,6 +51,9 @@ export interface FullToolbarState {
   tempoGlyph: string;
   tempo: number;
   swing: boolean;
+  /** The music can get larger / smaller (Lupe + / −). */
+  canZoomIn: boolean;
+  canZoomOut: boolean;
   /** Swing can be switched (not in 6/8: greyed out). */
   canSwing: boolean;
 }
@@ -61,7 +63,8 @@ export interface FullToolbarActions {
   openTempo(): void;
   toggleSwing(): void;
   openMixer(): void;
-  deleteMeasure(): void;
+  zoomIn(): void;
+  zoomOut(): void;
   undo(): void;
   redo(): void;
   showNoteNames(): void;
@@ -110,10 +113,9 @@ function group(label: string, ...buttons: HTMLButtonElement[]): HTMLDivElement {
 
 export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions: FullToolbarActions): FullToolbar {
   // Top: playing, delete measure, undo/redo, note names; new and hand in in the corner.
-  const playButton = button('Abspielen', actions.togglePlay, { text: '▶' });
-  playButton.classList.add('play');
-  const playLabel = playButton.querySelector('span:not(.glyph)')!;
-  const playGlyph = playButton.querySelector('.glyph')!;
+  // Abspielen and Mischpult only as symbols (23.11.2026), the name as tooltip.
+  const playButton = iconButton('Abspielen', ICONS.play, actions.togglePlay);
+  let playIcon = 'play';
   // Tempo: shows "♩ = 90" and opens a slider.
   const tempoButton = button('', actions.openTempo, { music: '' });
   tempoButton.setAttribute('aria-label', 'Tempo');
@@ -121,8 +123,10 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   const tempoLabel = tempoButton.querySelector('span:not(.glyph)')!;
   // Swing: one tap switches, also to compare while listening.
   const swingButton = button('Swing', actions.toggleSwing);
-  const mixerButton = button('Mischpult', actions.openMixer);
-  const deleteMeasureButton = button('Takt löschen', actions.deleteMeasure, { svg: ICONS.cross });
+  const mixerButton = iconButton('Mischpult', ICONS.mixer, actions.openMixer);
+  // Lupe + / Lupe −: the music larger or smaller (instead of two fingers, 23.11.2026).
+  const zoomInButton = iconButton('Größer', ICONS.zoomIn, actions.zoomIn);
+  const zoomOutButton = iconButton('Kleiner', ICONS.zoomOut, actions.zoomOut);
   const undoButton = button('Rückgängig', actions.undo, { svg: ICONS.undo });
   const redoButton = button('Wiederholen', actions.redo, { svg: ICONS.redo });
   const namesButton = button('Notennamen', actions.showNoteNames);
@@ -134,7 +138,8 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
 
   const topMain = document.createElement('div');
   topMain.className = 'toolbar-main';
-  topMain.append(group('Wiedergabe', playButton, tempoButton, swingButton, mixerButton), group('Bearbeiten', deleteMeasureButton, undoButton, redoButton, namesButton));
+  topMain.append(group('Wiedergabe', playButton, tempoButton, swingButton, mixerButton),
+    group('Ansicht', zoomOutButton, zoomInButton), group('Bearbeiten', undoButton, redoButton, namesButton));
   const corner = group(
     'Partitur',
     iconButton('Neu oder öffnen', ICONS.plus, actions.openScoreMenu),
@@ -149,6 +154,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   const baseButtons = bases.map((base) => {
     const b = button(DURATION_NAMES[base], () => actions.selectBase(base), { music: DURATION_GLYPHS[base] });
     b.classList.add('duration');
+    b.dataset.value = String(base); // for the position of its sign (style.css)
     symbolOnly(b, DURATION_NAMES[base]);
     return { base, b };
   });
@@ -163,6 +169,7 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   ).map(([alter, label, glyph]) => {
     const b = button(label, () => actions.setAccidental(alter), { music: glyph });
     b.classList.add('accidental');
+    b.dataset.alter = String(alter);
     symbolOnly(b, label);
     return { alter, b };
   });
@@ -222,12 +229,19 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
       deleteButton.disabled = !state.canDelete;
       copyButton.disabled = !state.canCopy;
       pasteButton.disabled = !state.canPaste;
-      deleteMeasureButton.disabled = !state.canDeleteMeasure;
       undoButton.disabled = !state.canUndo;
       redoButton.disabled = !state.canRedo;
-      playLabel.textContent = state.loading ? 'Lädt …' : state.playing ? 'Stopp' : 'Abspielen';
-      playGlyph.textContent = state.playing ? '■' : '▶';
+      const playName = state.loading ? 'Lädt …' : state.playing ? 'Stopp' : 'Abspielen';
+      const icon = state.loading ? 'loading' : state.playing ? 'stop' : 'play';
+      if (icon !== playIcon) {
+        playButton.innerHTML = ICONS[icon]; // our own SVG
+        playIcon = icon;
+      }
+      playButton.setAttribute('aria-label', playName);
+      playButton.title = playName;
       playButton.setAttribute('aria-pressed', String(state.playing));
+      zoomInButton.disabled = !state.canZoomIn;
+      zoomOutButton.disabled = !state.canZoomOut;
       tempoGlyph.textContent = state.tempoGlyph;
       tempoLabel.textContent = `= ${state.tempo}`;
       tempoButton.setAttribute('aria-label', `Tempo ${state.tempo}`);

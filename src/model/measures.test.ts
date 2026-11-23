@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { voll } from '../modules/voll';
 import { describe as show, ok, p } from '../test/helpers';
 import { plain } from './duration';
-import { deleteMeasure, insertMeasure, setKeySignature, setPickup, setTimeSignature } from './measures';
+import { deleteMeasure, deleteMeasures, insertMeasure, setKeySignature, setPickup, setTimeSignature } from './measures';
 import { writeNoteAt } from './overwrite';
 import { createEmptyScore } from './score';
 import type { Score } from './types';
@@ -22,6 +22,16 @@ describe('inserting and deleting measures', () => {
   it('deletes a measure with its notes', () => {
     const score = ok(deleteMeasure(write(createEmptyScore(voll), 1, 0, 'D4'), voll, 1));
     expect(measures(score)).toEqual(Array(7).fill(['r192@0']));
+  });
+
+  it('deletes several measures at once (marked on their numbers)', () => {
+    const score = write(write(createEmptyScore(voll), 1, 0, 'D4'), 4, 0, 'E4');
+    const fewer = ok(deleteMeasures(score, voll, 1, 3));
+    expect(measures(fewer)).toHaveLength(5);
+    expect(measures(fewer)[1]).toEqual(['n48@0 E4', 'r48@48', 'r96@96']);
+    expect(deleteMeasures(score, voll, 0, 7)).toEqual(fail('too-few-measures'));
+    const withPickup = ok(setPickup(score, voll, 48));
+    expect(ok(deleteMeasures(withPickup, voll, 0, 1)).pickup).toBe(0);
   });
 
   it('keeps between 1 and 32 measures', () => {

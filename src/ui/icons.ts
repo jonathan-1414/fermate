@@ -27,6 +27,17 @@ export const ICONS = {
   copy: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
   /** Clipboard: paste (as known from other apps). */
   paste: svg('<path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M9 11h6M9 15h4"/>'),
+  /** Triangle: play (filled). */
+  play: svg('<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>'),
+  /** Square: stop (filled). */
+  stop: svg('<rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/>'),
+  /** Three dots: the sounds are still loading. */
+  loading: svg('<circle cx="6" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18" cy="12" r="1.6" fill="currentColor"/>'),
+  /** Three faders, as on a mixing desk: the mixer. */
+  mixer: svg('<path d="M6 4v16M12 4v16M18 4v16"/><rect x="3.5" y="13" width="5" height="3" rx="1" fill="currentColor"/><rect x="9.5" y="7" width="5" height="3" rx="1" fill="currentColor"/><rect x="15.5" y="11" width="5" height="3" rx="1" fill="currentColor"/>'),
+  /** Magnifying glass with plus / minus: larger or smaller music. */
+  zoomIn: svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.2 15.2 20 20"/><path d="M10.5 7.5v6M7.5 10.5h6"/>'),
+  zoomOut: svg('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.2 15.2 20 20"/><path d="M7.5 10.5h6"/>'),
   /** Cross: delete (small, in front of the label). */
   cross: svg('<path d="M6 6l12 12"/><path d="M18 6 6 18"/>', 18),
 };

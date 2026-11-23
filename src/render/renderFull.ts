@@ -58,7 +58,7 @@ const STAVE_OFFSET = 30;
 /** Extra room above the first staff when the swing mark is shown. */
 const SWING_ROOM = 12;
 const STAVE_OPTIONS = { spaceAboveStaffLn: 0, spaceBelowStaffLn: 0 };
-const NUMBERS_HEIGHT = 18;
+const NUMBERS_HEIGHT = 22;
 const MIN_MEASURE_WIDTH = 90;
 const MEASURE_PADDING = 36;
 
@@ -112,6 +112,8 @@ export interface FullRenderOptions extends RenderOptions {
   /** Screen pixels per drawing unit. */
   zoom: number;
   /** A marking (several notes): staves and the stretch from `from` up to `to` (not incl.). */
+  /** Measures marked on their numbers: their number buttons are shown light orange. */
+  markedMeasures?: { first: number; last: number } | null;
   marked?: { firstStaff: number; lastStaff: number; from: { measure: number; tick: number }; to: { measure: number; tick: number } } | null;
 }
 
@@ -219,11 +221,14 @@ function naturalWidths(score: Score, formatters: Array<{ minWidth: number }>): n
   return formatters.map((f, i) => Math.max((MIN_MEASURE_WIDTH * lengths[i]) / full, f.minWidth + MEASURE_PADDING));
 }
 
-/** Top of each staff's band (drawing units), with extra room between instruments. */
-function staffTops(score: Score): number[] {
+/**
+ * Top of each staff's band (drawing units), with extra room between instruments. In the
+ * PDF with swing, a little room above the first staff for the swing mark (on the screen
+ * the pressed "Swing" button is enough, 23.11.2026).
+ */
+function staffTops(score: Score, print = false): number[] {
   const tops: number[] = [];
-  // With swing, a little room above the first staff for the swing mark.
-  let y = score.swing && !isCompound(score.timeSignature) ? SWING_ROOM : 0;
+  let y = print && score.swing && !isCompound(score.timeSignature) ? SWING_ROOM : 0;
   allStaves(score).forEach((_, i) => {
     if (i > 0 && partOfStaff(score, i) !== partOfStaff(score, i - 1)) y += PART_GAP;
     tops.push(y);
@@ -335,7 +340,8 @@ export function renderFullScore(container: HTMLElement, sounding: Score, options
 
   const marginWidth = drawMargin(margin, score, keys, tops, height, options.zoom);
   numbersSpacer.style.width = `${Math.round(marginWidth * options.zoom)}px`;
-  const numbersCtx = newDrawing(numbersDrawing, total, NUMBERS_HEIGHT, options.zoom);
+  newDrawing(numbersDrawing, total, NUMBERS_HEIGHT, options.zoom);
+  const numbersSvg = numbersDrawing.querySelector('svg');
   const ctx = newDrawing(drawing, total, height, options.zoom);
   drawing.querySelector('svg')?.classList.add('music');
 
@@ -364,8 +370,7 @@ export function renderFullScore(container: HTMLElement, sounding: Score, options
       }
       first += part.staves.length;
     }
-    drawMeasureNumber(numbersCtx, score, m, x);
-    if (m === 0) drawSwingMark(ctx, score, x + 4, tops[0] + STAVE_OFFSET - 7);
+    drawMeasureNumber(numbersSvg, score, m, x, options.markedMeasures != null && m >= options.markedMeasures.first && m <= options.markedMeasures.last);
     formatters[m].formatter.formatToStave(
       column.map((p) => p.voice),
       drawnStaves[0],
@@ -489,7 +494,7 @@ function drawMarking(svg: SVGSVGElement | null, layout: FullLayout, marked: NonN
 
 /**
  * The swing mark above the first staff at the start: two eighths = triplet quarter and
- * triplet eighth (♫ = ♩³♪). Only when swing is on (never in 6/8). `y` is the baseline.
+ * triplet eighth (♫ = ♩³♪). Only in the PDF, when swing is on (never in 6/8). `y` is the baseline.
  */
 function drawSwingMark(ctx: RenderContext, score: Score, x: number, y: number): void {
   if (!score.swing || isCompound(score.timeSignature)) return;
@@ -517,13 +522,28 @@ function drawSwingMark(ctx: RenderContext, score: Score, x: number, y: number): 
  * Measure numbers above every measure. With a pickup, the pickup measure has no number
  * and the first full measure is 1.
  */
-function drawMeasureNumber(ctx: RenderContext, score: Score, index: number, x: number): void {
+/**
+ * A measure number as a small button (23.11.2026: it should look tappable): a rounded
+ * field with a frame, light orange while its measure is marked on the numbers.
+ */
+function drawMeasureNumber(svg: SVGSVGElement | null, score: Score, index: number, x: number, marked: boolean): void {
   const number = score.pickup > 0 ? index : index + 1;
-  if (number < 1) return;
-  ctx.openGroup('measure-number');
-  ctx.setFont('sans-serif', 11);
-  ctx.fillText(String(number), x + 3, NUMBERS_HEIGHT - 4);
-  ctx.closeGroup();
+  if (!svg || number < 1) return;
+  const ns = 'http://www.w3.org/2000/svg';
+  const group = document.createElementNS(ns, 'g');
+  group.setAttribute('class', `vf-measure-number${marked ? ' marked' : ''}`);
+  const width = 8 + 7 * String(number).length;
+  const rect = document.createElementNS(ns, 'rect');
+  for (const [key, value] of Object.entries({ x: x + 1, y: 2, width, height: NUMBERS_HEIGHT - 4, rx: 4 })) {
+    rect.setAttribute(key, String(value));
+  }
+  const text = document.createElementNS(ns, 'text');
+  text.setAttribute('x', String(x + 1 + width / 2));
+  text.setAttribute('y', String(NUMBERS_HEIGHT / 2 + 4));
+  text.setAttribute('text-anchor', 'middle');
+  text.textContent = String(number);
+  group.append(rect, text);
+  svg.append(group);
 }
 
 /** For each event of a staff (in order), its drawn note. */
@@ -592,7 +612,7 @@ export function renderFullSystemsToCanvases(sounding: Score, width: number, scal
   const score = writtenView(sounding);
   const staves = allStaves(score);
   const parts = staves.map((_, i) => partOfStaff(score, i));
-  const tops = staffTops(score).map((t) => t + PRINT_NUMBER_ROOM);
+  const tops = staffTops(score, true).map((t) => t + PRINT_NUMBER_ROOM);
   const height = tops[tops.length - 1] + ROW;
   const ts = score.timeSignature;
   const signs = staves.map((staff, s) => accidentalsForStaff(staff, keys[s]));

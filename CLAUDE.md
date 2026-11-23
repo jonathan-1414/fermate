@@ -86,8 +86,14 @@ Teil des Bildschirms ein, alles andere tritt zurück.
   gezeichnet, Tippfläche weiter mindestens 44 × 44 pt, Name als Tooltip und für
   Screenreader. Die Zeichen sind hier selbst der Lerninhalt. „Kopieren“ und „Einfügen“ zeigen
   nur ihre bekannten Symbole (zwei Blätter, Klemmbrett; seit 23.11.2026, spart Platz in der
-  Leiste). Punkt, Triole, Haltebogen, Akkord
-  und Löschen behalten ihre Beschriftung, ebenso die obere Leiste. Modul 1 bleibt beschriftet.
+  Leiste). Ebenso in der oberen Leiste (seit 23.11.2026): „Abspielen“ (Dreieck, beim Spielen
+  Quadrat, beim Laden drei Punkte), „Mischpult“ (drei Schieberegler), „Kleiner“ und „Größer“
+  (Lupe mit − bzw. +). Punkt, Triole, Haltebogen, Akkord und Löschen behalten ihre
+  Beschriftung, ebenso Tempo, Swing, Rückgängig, Wiederholen und Notennamen. Modul 1 bleibt
+  beschriftet.
+- **Wortmarke** (23.11.2026, Entwurf aus Jonathans Logo-Projekt): ganz links in der oberen
+  Leiste, in Modul 1 und der Vollversion, „ferm“, statt des „a“ ein Fermaten-Zeichen in
+  `--accent`, „te“; Nunito 800 in `--text`, aus der eigenen Schriftdatei.
 - Kein dunkler Modus in Modul 1.
 
 ## 3. Architektur
@@ -403,7 +409,9 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
   kleine Kästchen, Tippen springt zur Stelle). Wischen mit einem oder zwei Fingern scrollt nicht,
   ein Finger ist immer für die Eingabe da. Automatisch folgt die Ansicht dem Cursor, wenn er aus
   dem Bild wandert, und bei der Wiedergabe (Mitscrollen).
-- **Taktnummern:** auf dem Bildschirm klein über jedem Takt, im PDF am Zeilenanfang.
+- **Taktnummern:** auf dem Bildschirm klein über jedem Takt, im PDF am Zeilenanfang. Auf dem
+  Bildschirm als kleine Knöpfe (abgerundetes Kästchen mit Rahmen, seit 23.11.2026), damit man
+  sieht, dass man sie antippen kann; über die Nummern markierte Takte sind hell-orange.
 - **Keine Kopfzeile** über den Noten (wie in Modul 1, geändert 22.11.2026); die Angaben
   ändert man im Einstellungsmenü.
 - Passen nicht alle Notenzeilen in die Höhe, bleiben die Noten groß, und eine zweite
@@ -412,8 +420,11 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
   Abschnitt pro Instrument (so hoch wie seine Zeilen) mit kleinem Kurznamen, hell-orange
   hinterlegt, wenn es Noten hat, grauer Name, wenn es gerade nicht klingt; dazu der Rahmen für
   den sichtbaren Teil. Der Rand links und die Taktnummern bleiben dabei stehen.
-- **Zoom** bleibt mit zwei Fingern auf dem Notenblatt (geprüft 22.11.2026 nach der ersten
-  Testrunde; Pinch auf den Leisten und Lupen-Buttons verworfen).
+- **Zoom mit Lupen** (geändert 23.11.2026 nach der zweiten Testrunde, zum Ausprobieren): Buttons
+  „Kleiner“ und „Größer“ (Lupe − und +) in der oberen Leiste, je ein Viertel kleiner bzw. größer,
+  die Mitte des sichtbaren Notenblatts bleibt stehen. Zwei Finger auf dem Notenblatt tun nichts
+  mehr (das Pinchen markierte oft versehentlich); kommt ein zweiter Finger dazu, verwirft die
+  App, was der erste begonnen hat.
 - **Neue Partitur** (neu, geöffnet, aus dem Startassistenten): Die Ansicht beginnt am Anfang.
 - **„Datei öffnen“ auf dem iPad** öffnet direkt die Dateien-App, ohne Kamera und
   Fotomediathek: Die Dateiauswahl gibt `.fermate,application/octet-stream` an. Auf dem iPad
@@ -424,8 +435,8 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 - **Lädt …** (22.11.2026): Tippt man auf „Abspielen“, während die Klänge noch laden, zeigt der
   Button „Lädt …“ und die Wiedergabe startet von selbst, sobald sie da sind. Die Klangdateien
   bleiben in 192 kbit/s (verkleinern abgelehnt).
-- **Zoom nur für die Noten** (beschlossen 22.11.2026, Teil von Beta-Schritt 10): Zwei Finger auf dem
-  Notenblatt vergrößern oder verkleinern nur das Notenblatt (Noten, Rand links, Taktnummern), von
+- **Zoom nur für die Noten** (beschlossen 22.11.2026, Teil von Beta-Schritt 10; seit 23.11.2026 mit
+  den Lupen statt zwei Fingern, siehe oben): Der Zoom vergrößert oder verkleinert nur das Notenblatt (Noten, Rand links, Taktnummern), von
   halber bis doppelter Normalgröße; die Stelle unter den Fingern bleibt stehen. Leisten und
   Übersichtsleisten bleiben gleich groß, die Seite selbst zoomt dort nicht. Am Rechner: Strg +
   Mausrad bzw. zwei Finger auf dem Trackpad. Die Größe merkt sich das Gerät. Kommt beim Zoomen
@@ -439,8 +450,9 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
    einmal, gleiche Instrumente werden nummeriert. Schlüssel setzt die App, die Reihenfolge ist
    automatisch die übliche Partiturordnung (Holz, Blech, Klavier, Streicher); umsortieren
    danach im Einstellungsmenü.
-3. *Takt und Tonart:* Taktart, Tonart (Dur/Moll bis 4 Vorzeichen), Auftakt (an/aus, Länge),
-   Tempo; mit Voreinstellung 4/4, C-Dur, kein Auftakt, ♩ = 90.
+3. *Takt und Tonart:* Taktart, Tonart (Dur/Moll bis 4 Vorzeichen), Tempo, Auftakt (an/aus,
+   Länge; seit 23.11.2026 unter dem Tempo, das alle brauchen); mit Voreinstellung 4/4, C-Dur,
+   kein Auftakt, ♩ = 90.
 
 **Einstellungsmenü (beschlossen 21.11.2026):** nur ein Zahnrad-Symbol oben rechts neben „Neu“
 und „Speichern und teilen“ (Name „Einstellungen“ als Tooltip und für Screenreader). Inhalt: oben der Button
@@ -477,15 +489,15 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Kopf), wird verkleinert, bis sie passt; keine Seite bleibt ohne Noten (22.11.2026).
 
 **Leisten (beschlossen 21.11.2026):**
-- **Oben** (alles, was das ganze Stück betrifft): Abspielen, Tempo, Swing, Mischpult | Takt löschen,
-  Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Speichern und teilen, Einstellungen (nur
+- **Oben** (alles, was das ganze Stück betrifft): ganz links die Wortmarke | Abspielen, Tempo,
+  Swing, Mischpult | Kleiner, Größer | Rückgängig, Wiederholen, Notennamen | ganz rechts Neu (+), Speichern und teilen, Einstellungen (nur
   Symbole). „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
   Triole | Kreuz, Be, Auflösung | Oktave höher, Oktave tiefer | Haltebogen, Akkord (nur Klavier), Löschen. Notenwerte,
   Vorzeichen, Oktave, Kopieren und Einfügen nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
   einmal zu oft „Rückgängig“ tippt, holt den Schritt zurück).
-- **„+ Takt“** am rechten Ende der Übersichtsleiste, **„Takt löschen“** in der oberen Leiste
-  links neben „Rückgängig“ (geändert 22.11.2026).
+- **„+ Takt“** am rechten Ende der Übersichtsleiste. Einen eigenen Button „Takt löschen“ gibt es
+  nicht mehr (23.11.2026): Takte über die Taktnummern markieren, dann „Löschen“.
 - **Tempo:** Button „♩ = 90“ öffnet einen Regler (40 bis 200).
 - Im Hochformat dürfen die Leisten in zwei Zeilen umbrechen.
 - **Mischpult:** Button „Mischpult“ öffnet ein Fenster über den Noten (wie „Angaben“), eine
@@ -558,8 +570,12 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   gilt bis zum Taktende, danach nötige Auflösungszeichen kommen automatisch, keine
   Hinweis-Vorzeichen im nächsten Takt. Enharmonische Verwechslung erst nach der Beta.
 - **Takte:** Eine neue Partitur hat 8 leere Takte, erlaubt sind 1 bis 32. Button „+ Takt“ fügt
-  hinter dem Takt mit der Auswahl einen leeren Takt ein (im letzten Takt: anhängen), Button
-  „Takt löschen“ entfernt den Takt mit der Auswahl samt Noten (Rückgängig holt ihn zurück).
+  hinter dem Takt mit der Auswahl einen leeren Takt ein (im letzten Takt: anhängen). Takte
+  löschen (seit 23.11.2026): einen oder mehrere Takte über die Taktnummern markieren, dann
+  „Löschen“; nach der Rückfrage („Takte 2 bis 3 löschen? Die Noten darin gehen in allen
+  Instrumenten verloren.“) verschwinden die Takte samt Noten (Rückgängig holt sie zurück).
+  Mindestens ein Takt bleibt (mit Auftakt zwei); der Auftakttakt mitgelöscht schaltet den
+  Auftakt aus.
   Beides gilt für alle Instrumente. Neue Takte entstehen nie automatisch, auch nicht beim
   Verlängern über den letzten Taktstrich (dann ändert sich nichts).
 - **Auftakt:** Länge in Vierteln (im 6/8 in Achteln), gewählt beim Anlegen und nachträglich im
@@ -580,8 +596,12 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
     **Taktnummer** markiert den ganzen Takt in allen Instrumenten, Ziehen über mehrere Nummern
     mehrere Takte. Am Rechner zusätzlich Shift + Klick. Eine angeschnittene Triolengruppe wird
     ganz mitmarkiert. Die Markierung ist eine hell-orange Fläche hinter den Noten; ein normaler
-    Tipp hebt sie auf.
-  - *Löschen* mit Markierung: alle markierten Noten werden zu Pausen, nichts rückt nach.
+    Tipp hebt sie auf. Nach dem Markieren steht der Cursor immer auf der ersten Note bzw. Pause
+    der Markierung (in ihrer obersten Zeile; bei Takten über die Nummern in der Zeile des
+    Cursors), nie auf der Stelle, auf der man gehalten hat (23.11.2026).
+  - *Löschen* mit Markierung: alle markierten Noten werden zu Pausen, nichts rückt nach. Über
+    die Taktnummern markierte Takte werden dagegen samt Noten gelöscht (mit Rückfrage, siehe
+    „Takte“); eine Markierung mit Halten löscht nur Noten, auch wenn sie ganze Takte umfasst.
   - *Kopieren* (Button in der unteren Leiste bei „Löschen“) merkt sich die markierten Noten
     (bis zum nächsten Kopieren oder Neuladen der Seite).
   - *Einfügen* schreibt ab dem Cursor und überschreibt wie eine lange Note; mehrere Zeilen
@@ -672,7 +692,8 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Tempo (gedrückt = an, im 6/8 ausgegraut), ein Tipp schaltet um; wie beim Tempo kein
   Rückgängig-Schritt, die Wiedergabe hält an. Es swingen nur zwei einfache Achtel (Noten oder
   Pausen) auf einer Viertel; Sechzehntel, Punktierungen und Triolen bleiben. Ist Swing an,
-  steht über der ersten Zeile am Anfang „♫ = ♩³♪“ (Bildschirm und PDF).
+  steht im PDF über der ersten Zeile am Anfang „♫ = ♩³♪“; auf dem Bildschirm reicht der
+  gedrückte Button (geändert 23.11.2026).
 - Notenwerte Ganze bis Sechzehntel, punktierte Halbe, Viertel und Achtel, Achtel- und
   Vierteltriolen, alle auch als Pausen (siehe 3.1).
 - Dur und Moll bis 4 Vorzeichen, 6/8 und 2/2, Auflösungszeichen,
