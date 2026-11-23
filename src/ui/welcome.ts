@@ -59,7 +59,7 @@ export function showWelcome(buttonLabel = 'Los geht’s'): Promise<void> {
         'p',
         { className: 'welcome-test' },
         el('strong', { textContent: 'Testversion: ' }),
-        'Fermate wird gerade im Unterricht erprobt. Manches ändert sich noch, Rückmeldungen sind willkommen.',
+        'Fermate wird gerade erprobt. Manches ändert sich noch, Rückmeldungen sind willkommen.',
       ),
       el(
         'ul',

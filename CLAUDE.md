@@ -449,8 +449,8 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 Vollversion, beim allerersten Start auf einem Gerät vor dem Startassistenten (gemerkt im
 Browser, ohne `localStorage` jedes Mal), später über den Link „Kurzanleitung“ unten im
 Einstellungsmenü. Inhalt: große Wortmarke, Unterzeile „Notensatz für den Musikunterricht,
-schlicht, fürs iPad gemacht“, hell-orange hinterlegt „Testversion: Fermate wird gerade im
-Unterricht erprobt. Manches ändert sich noch, Rückmeldungen sind willkommen.“, vier
+schlicht, fürs iPad gemacht“, hell-orange hinterlegt „Testversion: Fermate wird gerade erprobt.
+Manches ändert sich noch, Rückmeldungen sind willkommen.“, vier
 Kernpunkte (Schreiben und hören, Bewusst reduziert, Ruhig gestaltet, Ohne Konto; Export als
 Audiodatei folgt), „So geht’s“ mit drei Sätzen und für das Markieren ein ruhendes Bild in drei
 Schritten (erste Note antippen, auf der letzten den Finger kurz liegen lassen, markiert) plus
