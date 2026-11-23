@@ -4,7 +4,8 @@ import { createWordmark } from './wordmark';
 /**
  * The welcome page of the full version (23.11.2026): what Fermate is, that it is a test
  * version, and the few things to know about using it, with a picture for marking.
- * Shown at the very first start on a device, later via "Kurzanleitung" in the settings.
+ * Shown every time the page is opened (for now, while it is a test version), and via
+ * "Kurzanleitung" in the settings.
  */
 
 /** Three small pictures: tap the first note, hold on the last one, marked. */
@@ -85,6 +86,8 @@ export function showWelcome(buttonLabel = 'Los geht’s'): Promise<void> {
       close();
       resolve();
     });
-    go.focus();
+    // Start at the top (focusing the button at the bottom would scroll to the end).
+    go.focus({ preventScroll: true });
+    dialog.scrollTop = 0;
   });
 }

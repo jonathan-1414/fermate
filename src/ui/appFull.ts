@@ -1,6 +1,5 @@
 import { createWordmark } from './wordmark';
 import { showWelcome } from './welcome';
-import { markWelcomeSeen, welcomeSeen } from '../storage/welcome';
 import { inKey } from '../model/accidentals';
 import { octaveAt, octaveRange, stepAt, stepRange } from '../model/octave';
 import { setTransposed, shownTransposition, staffKeys, toSounding, toWritten } from '../model/transpose';
@@ -1245,11 +1244,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   window.addEventListener('resize', () => render());
   render();
   void (async () => {
-    // At the very first start on this device: the welcome page, then the start wizard.
-    if (!welcomeSeen()) {
-      await showWelcome();
-      markWelcomeSeen();
-    }
+    // Every time the page is opened (23.11.2026, while it is a test version): the welcome
+    // page, then (for a new score) the start wizard.
+    await showWelcome();
     if (!isMetaComplete(score.meta)) await runWizard();
   })();
 }
