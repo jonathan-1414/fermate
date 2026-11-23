@@ -81,13 +81,22 @@ export function showWelcome(buttonLabel = 'Los geht’s'): Promise<void> {
       markingPicture(),
       el('div', { className: 'dialog-actions' }, go),
     );
+    // Start at the top: opening a dialog focuses its first button ("Los geht’s" at the
+    // bottom), and Safari then scrolls down to it. With `autofocus` on the dialog itself
+    // the dialog gets the focus instead (no marked button); once drawn, back to the top.
+    dialog.autofocus = true;
+    dialog.tabIndex = -1;
     const close = showDialog(dialog, null);
     go.addEventListener('click', () => {
       close();
       resolve();
     });
-    // Start at the top (focusing the button at the bottom would scroll to the end).
-    go.focus({ preventScroll: true });
-    dialog.scrollTop = 0;
+    dialog.focus({ preventScroll: true }); // not every browser honours `autofocus` here
+    const toTop = () => (dialog.scrollTop = 0);
+    toTop();
+    requestAnimationFrame(() => {
+      toTop();
+      setTimeout(toTop, 100);
+    });
   });
 }
