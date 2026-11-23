@@ -16,6 +16,7 @@ const GLYPH = {
   sharp: '',
   flat: '',
   natural: '',
+  ottava: '\uE511', // "8va"
 };
 
 export interface FullToolbarState {
@@ -165,8 +166,20 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
     symbolOnly(b, label);
     return { alter, b };
   });
-  const octaveUpButton = button('Oktave ↑', () => actions.octave(1));
-  const octaveDownButton = button('Oktave ↓', () => actions.octave(-1));
+  // Oktave: the sign "8va" with an arrow, like the note values only the sign (chosen 23.11.2026).
+  const octaveButton = (direction: 1 | -1) => {
+    const name = direction === 1 ? 'Oktave höher' : 'Oktave tiefer';
+    const b = symbolOnly(button(name, () => actions.octave(direction), { music: GLYPH.ottava }), name);
+    b.classList.add('octave');
+    const arrow = document.createElement('span');
+    arrow.className = 'arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = direction === 1 ? '↑' : '↓';
+    b.append(arrow);
+    return b;
+  };
+  const octaveUpButton = octaveButton(1);
+  const octaveDownButton = octaveButton(-1);
   const tieButton = button('Haltebogen', actions.toggleTie, { svg: ICONS.tie });
   // Akkord: while pressed, a tap adds a tone to the selected note instead of moving it.
   const chordButton = button('Akkord', actions.toggleChord);

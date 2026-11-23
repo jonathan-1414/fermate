@@ -744,4 +744,17 @@ body {
 .tool.symbol .glyph.music {
   font-size: 30px;
 }
+/* Oktave höher / tiefer: "8va" with an arrow next to it */
+.tool.symbol.octave {
+  gap: 1px;
+}
+.tool.symbol.octave .glyph.music {
+  font-size: 24px;
+  top: 0;
+}
+.tool.symbol.octave .arrow {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
 
