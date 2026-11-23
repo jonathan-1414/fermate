@@ -158,6 +158,7 @@ interface Part {          // ein Instrument
   volume: number;         // 0..1, Lautstärke pro Instrument (Mischpult)
   mute: boolean;
   solo: boolean;
+  transposed?: boolean;   // nur Anzeige: transponiert statt klingend (Abschnitt 5)
 }
 
 interface Score {
@@ -607,16 +608,21 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   nur den markierten Ausschnitt (nur die markierten Zeilen).
 
 **Transponierende Instrumente (beschlossen 22.11.2026 nach der ersten Testrunde, gebaut
-nach Block F als eigener Schritt):**
+23.11.2026):**
 - Das Modell bleibt klingend (Wiedergabe, Tonumfang, Datei unverändert). „Transponiert“ ist nur
   eine Anzeige-Einstellung pro Instrument.
 - Schalter im Einstellungsmenü neben dem Instrument, Voreinstellung „klingend“: Klarinette
   „in B“ (große Sekunde höher), Saxofon „in Es“ (große Sexte höher), Trompete „in B“, Horn
   „in F“ (Quinte höher), Kontrabass „Oktave“ (eine Oktave höher). Andere Instrumente haben
-  keinen Schalter.
-- Kurzname zeigt die Stimmung („Klar. (B)“). Die Vorzeichnung wird mittransponiert (C-Dur →
+  keinen Schalter. Der Schalter ist ein Button mit der Stimmung („in B“), gedrückt =
+  transponiert. Umschalten ist ein Rückgängig-Schritt.
+- Kurzname zeigt die Stimmung („Klar. (B)“, im Rand zweizeilig; in der senkrechten
+  Übersichtsleiste ohne Stimmung, dort ist kein Platz). Die Vorzeichnung wird mittransponiert (C-Dur →
   D-Dur bei der B-Klarinette); entstehen mehr als 4 Vorzeichen, ist das erlaubt, die App wählt
-  die Schreibweise mit weniger Vorzeichen (H-Dur statt Ces-Dur).
+  die Schreibweise mit weniger Vorzeichen (H-Dur statt Ces-Dur, Des-Dur statt Cis-Dur; bei
+  sechs Vorzeichen bleibt Fis-Dur). Doppelkreuze und Doppel-Be gibt es nicht: Bräuchte ein Ton
+  beim Umrechnen eins, nimmt die App den gleich klingenden Ton (beschlossen 23.11.2026, z. B.
+  fes bei der B-Klarinette wird klingend d, im Notenbild steht dann e).
 - Eingabe, Ziehen und Vorzeichen-Buttons arbeiten im angezeigten (gegriffenen) Bild, die App
   rechnet um. „Notennamen“ zeigt die gegriffenen Namen.
 - Das PDF zeigt jedes Instrument so, wie es eingestellt ist.

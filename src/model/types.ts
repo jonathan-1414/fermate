@@ -49,6 +49,8 @@ export interface Part {
   volume: number; // 0..1
   mute: boolean;
   solo: boolean;
+  /** Shown transposed (written pitch), only for transposing instruments; missing = sounding. */
+  transposed?: boolean;
 }
 
 export interface TimeSignature {

@@ -1,5 +1,6 @@
 import { inKey } from '../model/accidentals';
 import { octaveAt, octaveRange } from '../model/octave';
+import { setTransposed, shownTransposition, staffKeys, toSounding, toWritten } from '../model/transpose';
 import { plain } from '../model/duration';
 import { History } from '../model/history';
 import { isCompound } from '../model/meter';
@@ -387,6 +388,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
           if (staff >= 0) cursor = { ...cursor, staff };
           render();
         },
+        setTransposed(index, on) {
+          if (commit(setTransposed(score, index, on))) render();
+        },
         setKey(key) {
           if (commit(setKeySignature(score, module, key))) render();
         },
@@ -432,8 +436,17 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       applyDuration({ ...duration, triplet: !duration.triplet, dotted: false });
     },
     setAccidental(alter) {
-      if (commit(setAccidental(score, module, cursor, alter, tone))) {
-        followTone(selectedPitch()?.step, selectedPitch()?.octave, alter);
+      const pitch = selectedPitch();
+      const part = partOfStaff(score, cursor.staff);
+      if (!pitch) return;
+      // The buttons work on the note as shown: on a transposed staff the written note gets
+      // the sign, the app converts (a double flat sounding becomes the same sound, e.g. d).
+      const sounding = toSounding({ ...toWritten(pitch, part, score.keySignature), alter }, part, score.keySignature);
+      const result = shownTransposition(part)
+        ? changeNotePitch(score, module, cursor, sounding, tone)
+        : setAccidental(score, module, cursor, alter, tone);
+      if (commit(result)) {
+        followTone(sounding.step, sounding.octave, sounding.alter);
         render();
       }
     },
@@ -638,6 +651,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     return note.pitches[tone];
   }
 
+  /** The selected tone as it is shown (written on a transposed staff). */
+  function shownPitch(): Pitch | null {
+    const pitch = selectedPitch();
+    return pitch && toWritten(pitch, partOfStaff(score, cursor.staff), score.keySignature);
+  }
+
   /** After a change the tones are sorted again: find the selected tone by its pitch. */
   function followTone(step: Pitch['step'] | undefined, octave: number | undefined, alter: number): void {
     const index = selectedNote()?.pitches.findIndex((p) => p.step === step && p.octave === octave && p.alter === alter) ?? -1;
@@ -706,7 +725,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
       canDot: !none && fits({ base: duration.base, dotted: true, triplet: false }),
       tripletsShown: module.triplets && !isCompound(ts),
       canTriplet: !none && fits({ base: duration.base, dotted: false, triplet: true }),
-      alter: note ? (selectedPitch()?.alter ?? null) : null,
+      // As shown: on a transposed staff the written note's sign.
+      alter: note ? (shownPitch()?.alter ?? null) : null,
       tie: note && module.ties ? note.tieToNext === true : null,
       chordShown: chordsOn(cursor.staff),
       chordMode,
@@ -843,7 +863,8 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     // One box per instrument, as high as its staves (with the room up to the next one).
     const bands = layout?.staves ?? [];
     const height = layout?.height || 1;
-    const shortNames = partNames(score, true);
+    // The narrow bar has no room for the tuning ("Kb. (Oktave)"): it stands in the margin.
+    const shortNames = partNames(score, true).map((name) => name.replace(/ \(.*\)$/, ''));
     const sounding = soundingParts(score.parts);
     let firstStaff = 0;
     const parts = score.parts.map((part, p) => {
@@ -882,8 +903,11 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
     const band = layout?.staves[cursor.staff];
     if (!band) return null;
     const clef = staffAt(score, cursor.staff)!.clef;
-    const pitch = inKey(pitchAtStaffPosition(clef, staffPositionAt(band, y)), score.keySignature);
-    const range = entryRange(module, partOfStaff(score, cursor.staff));
+    const part = partOfStaff(score, cursor.staff);
+    // On a transposed staff the finger points at a written note (in the written key).
+    const shown = inKey(pitchAtStaffPosition(clef, staffPositionAt(band, y)), staffKeys(score)[cursor.staff]);
+    const pitch = toSounding(shown, part, score.keySignature);
+    const range = entryRange(module, part);
     const midi = pitchToMidi(pitch);
     return midi >= range.low && midi <= range.high ? pitch : null;
   }

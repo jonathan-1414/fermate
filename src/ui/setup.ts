@@ -1,3 +1,4 @@
+import { TRANSPOSITIONS } from '../model/transpose';
 import { INSTRUMENTS, instrumentById, partNames } from '../model/instruments';
 import { fullMeasureLength, isCompound, pickupUnit } from '../model/meter';
 import { parseTimeSignature } from '../model/score';
@@ -229,6 +230,8 @@ export interface SettingsActions {
   removeInstrument(index: number): Promise<void>;
   /** One place up (-1) or down (+1). */
   moveInstrument(index: number, direction: -1 | 1): void;
+  /** Show a transposing instrument transposed (written) or sounding. */
+  setTransposed(index: number, on: boolean): void;
   setKey(key: number): void;
   setTimeSignature(text: string): void;
   setPickup(ticks: number): void;
@@ -280,7 +283,24 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
           await actions.removeInstrument(index);
           draw();
         });
-        return el('li', {}, el('span', { textContent: name }), arrow(-1), arrow(1), remove);
+        // Transposing instruments: a switch with the tuning ("in B"), pressed = shown transposed.
+        const part = score.parts[index];
+        const t = TRANSPOSITIONS[part.instrument];
+        const switches: HTMLButtonElement[] = [];
+        if (t) {
+          const tuning = t.label === 'Oktave' ? 'Oktave' : `in ${t.label}`;
+          const b = textButton(tuning, 'tool transpose');
+          const on = part.transposed === true;
+          b.setAttribute('aria-pressed', String(on));
+          b.title = `${name}: ${on ? 'transponiert' : 'klingend'} (tippen zum Umschalten)`;
+          b.setAttribute('aria-label', `${name} transponiert anzeigen (${tuning})`);
+          b.addEventListener('click', () => {
+            actions.setTransposed(index, !on);
+            draw();
+          });
+          switches.push(b);
+        }
+        return el('li', {}, el('span', { textContent: name }), ...switches, arrow(-1), arrow(1), remove);
       }),
     );
     const staffCount = score.parts.reduce((n, p) => n + p.staves.length, 0);

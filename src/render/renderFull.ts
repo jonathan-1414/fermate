@@ -17,7 +17,8 @@ import {
 } from 'vexflow/bravura';
 import { accidentalsForStaff, type AccidentalSign } from '../model/accidentals';
 import { eventTicks } from '../model/duration';
-import { isOutsideRange, partNames } from '../model/instruments';
+import { partNames } from '../model/instruments';
+import { isWrittenOutsideRange, staffKeys, writtenView } from '../model/transpose';
 import { toItems } from '../model/items';
 import { soundingParts } from '../model/mix';
 import { placeEvents } from '../model/measure';
@@ -63,7 +64,31 @@ const MEASURE_PADDING = 36;
 
 const DURATION_CODES: Record<number, string> = { 192: 'w', 96: 'h', 48: 'q', 24: '8', 12: '16' };
 const ACCIDENTAL_CODES: Record<AccidentalSign, string> = { sharp: '#', flat: 'b', natural: 'n' };
-const KEY_NAMES: Record<number, string> = { [-4]: 'Ab', [-3]: 'Eb', [-2]: 'Bb', [-1]: 'F', 0: 'C', 1: 'G', 2: 'D', 3: 'A', 4: 'E' };
+// Up to six accidentals: a transposed staff may need more than the 4 of the piece.
+const KEY_NAMES: Record<number, string> = {
+  [-6]: 'Gb', [-5]: 'Db', [-4]: 'Ab', [-3]: 'Eb', [-2]: 'Bb', [-1]: 'F', 0: 'C',
+  1: 'G', 2: 'D', 3: 'A', 4: 'E', 5: 'B', 6: 'F#',
+};
+const keyName = (key: number) => KEY_NAMES[key] ?? 'C';
+
+/** The widest of the keys (most accidentals): the margin is made wide enough for it. */
+const widestKey = (keys: number[]) => keys.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a), 0);
+
+/**
+ * A short name in the margin; the tuning of a transposed part goes on a second line
+ * ("Klar. 1" over "(B)"), so that the name stays narrow.
+ */
+function drawName(ctx: RenderContext, name: string, middle: number): void {
+  const split = name.indexOf(' (');
+  if (split < 0) {
+    ctx.fillText(name, 2, middle + 4);
+    return;
+  }
+  ctx.fillText(name.slice(0, split), 2, middle - 3);
+  ctx.setFont('sans-serif', 11); // a little smaller, so that "(Oktave)" fits
+  ctx.fillText(name.slice(split + 1), 2, middle + 11);
+  ctx.setFont('sans-serif', 13);
+}
 
 /** Where one staff was drawn, for the input: its band from top to bottom and its measures. */
 export interface StaffLayout extends ScoreLayout {
@@ -102,7 +127,7 @@ function cssColor(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#000';
 }
 
-function toStaveNote(event: ScoreEvent, staff: Staff, part: Part | undefined, wholeMeasureRest: boolean): StaveNote {
+function toStaveNote(event: ScoreEvent, staff: Staff, part: Part | undefined, keySignature: number, wholeMeasureRest: boolean): StaveNote {
   const { base, dotted } = event.duration;
   const dots = dotted ? 1 : 0;
   let note: StaveNote;
@@ -119,9 +144,9 @@ function toStaveNote(event: ScoreEvent, staff: Staff, part: Part | undefined, wh
       clef: staff.clef,
       autoStem: true,
     });
-    // Notes outside the instrument's range are marked.
+    // Notes outside the instrument's range are marked (pitches are as shown: written).
     event.pitches.forEach((pitch, k) => {
-      if (isOutsideRange(part, pitch)) {
+      if (isWrittenOutsideRange(part, pitch, keySignature)) {
         note.setKeyStyle(k, { fillStyle: cssColor('--out-of-range'), strokeStyle: cssColor('--out-of-range') });
       }
     });
@@ -152,13 +177,14 @@ function prepareStaff(
   measure: ScoreEvent[],
   staff: Staff,
   part: Part | undefined,
+  keySignature: number, // of the piece (sounding), to check the range
   ts: TimeSignature,
   signs: Array<Array<AccidentalSign | null>>,
   selection: { tick: number; tone: number } | null,
 ): PreparedStaff {
   const full = fullMeasureLength(ts);
   const onlyRest = measure.length === 1 && measure[0].kind === 'rest' && eventTicks(measure[0]) === full;
-  const notes = measure.map((event) => toStaveNote(event, staff, part, onlyRest));
+  const notes = measure.map((event) => toStaveNote(event, staff, part, keySignature, onlyRest));
   const starts = placeEvents(measure).map((p) => p.start);
   measure.forEach((event, i) => {
     (signs[i] ?? []).forEach((sign, k) => {
@@ -222,15 +248,14 @@ function newDrawing(container: HTMLDivElement, width: number, height: number, zo
 }
 
 /** The fixed margin: short names, clefs and keys, a brace for the piano, the line on the left. */
-function drawMargin(container: HTMLDivElement, score: Score, tops: number[], height: number, zoom: number): number {
+function drawMargin(container: HTMLDivElement, score: Score, keys: number[], tops: number[], height: number, zoom: number): number {
   const staves = allStaves(score);
-  const key = KEY_NAMES[score.keySignature] ?? 'C';
   const nameWidth = 58;
-  const probe = new Stave(nameWidth, 0, 200).addClef('treble').addKeySignature(key);
+  const probe = new Stave(nameWidth, 0, 200).addClef('treble').addKeySignature(keyName(widestKey(keys)));
   const width = probe.getNoteStartX() + 6;
   const ctx = newDrawing(container, width, height, zoom);
   const drawn = staves.map((staff, i) => {
-    const stave = new Stave(nameWidth, tops[i] + STAVE_OFFSET, width - nameWidth, STAVE_OPTIONS).addClef(staff.clef).addKeySignature(key);
+    const stave = new Stave(nameWidth, tops[i] + STAVE_OFFSET, width - nameWidth, STAVE_OPTIONS).addClef(staff.clef).addKeySignature(keyName(keys[i]));
     stave.setEndBarType(BarlineType.NONE);
     stave.setContext(ctx).draw();
     return stave;
@@ -247,7 +272,7 @@ function drawMargin(container: HTMLDivElement, score: Score, tops: number[], hei
     // Grey: the instrument does not sound right now (mixer); solo in the accent colour.
     ctx.openGroup(`instrument-name${sounding[p] ? '' : ' muted'}${part.solo ? ' solo' : ''}`);
     ctx.setFont('sans-serif', 13);
-    ctx.fillText(names[p], 2, middle + 4);
+    drawName(ctx, names[p], middle);
     ctx.closeGroup();
     first += part.staves.length;
   });
@@ -255,7 +280,10 @@ function drawMargin(container: HTMLDivElement, score: Score, tops: number[], hei
 }
 
 /** Draws the full version's score on the screen and returns where things were drawn. */
-export function renderFullScore(container: HTMLElement, score: Score, options: FullRenderOptions): FullLayout {
+export function renderFullScore(container: HTMLElement, sounding: Score, options: FullRenderOptions): FullLayout {
+  // Transposed parts are drawn as written (CLAUDE.md, "Transponierende Instrumente").
+  const keys = staffKeys(sounding);
+  const score = writtenView(sounding);
   container.innerHTML = '';
   container.classList.add('full-score');
   const staves = allStaves(score);
@@ -265,14 +293,14 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
   const ts = score.timeSignature;
 
   // Prepare every measure of every staff, then give each measure the width its widest staff needs.
-  const signs = staves.map((staff) => accidentalsForStaff(staff, score.keySignature));
+  const signs = staves.map((staff, s) => accidentalsForStaff(staff, keys[s]));
   const count = staves[0].measures.length;
   const selectionIn = (s: number, m: number) =>
     options.selection && options.selection.staff === s && options.selection.measure === m
       ? { tick: options.selection.tick, tone: options.selectedTone }
       : null;
   const prepared = Array.from({ length: count }, (_, m) =>
-    staves.map((staff, s) => prepareStaff(staff.measures[m], staff, parts[s], ts, signs[s][m], selectionIn(s, m))),
+    staves.map((staff, s) => prepareStaff(staff.measures[m], staff, parts[s], score.keySignature, ts, signs[s][m], selectionIn(s, m))),
   );
   const formatters = prepared.map((column) => {
     const formatter = new Formatter();
@@ -305,7 +333,7 @@ export function renderFullScore(container: HTMLElement, score: Score, options: F
   body.append(scroller, margin); // the music first: the input reads the first SVG
   container.append(body, numbersRow);
 
-  const marginWidth = drawMargin(margin, score, tops, height, options.zoom);
+  const marginWidth = drawMargin(margin, score, keys, tops, height, options.zoom);
   numbersSpacer.style.width = `${Math.round(marginWidth * options.zoom)}px`;
   const numbersCtx = newDrawing(numbersDrawing, total, NUMBERS_HEIGHT, options.zoom);
   const ctx = newDrawing(drawing, total, height, options.zoom);
@@ -558,16 +586,19 @@ const PRINT_NUMBER_ROOM = 14;
  * selection or note names. Returns one canvas per line, `width` drawing units wide and
  * `scale` times larger.
  */
-export function renderFullSystemsToCanvases(score: Score, width: number, scale: number): HTMLCanvasElement[] {
+export function renderFullSystemsToCanvases(sounding: Score, width: number, scale: number): HTMLCanvasElement[] {
+  // Every instrument as it is set: transposed parts as written.
+  const keys = staffKeys(sounding);
+  const score = writtenView(sounding);
   const staves = allStaves(score);
   const parts = staves.map((_, i) => partOfStaff(score, i));
   const tops = staffTops(score).map((t) => t + PRINT_NUMBER_ROOM);
   const height = tops[tops.length - 1] + ROW;
   const ts = score.timeSignature;
-  const signs = staves.map((staff) => accidentalsForStaff(staff, score.keySignature));
+  const signs = staves.map((staff, s) => accidentalsForStaff(staff, keys[s]));
   const count = staves[0].measures.length;
   const prepared = Array.from({ length: count }, (_, m) =>
-    staves.map((staff, s) => prepareStaff(staff.measures[m], staff, parts[s], ts, signs[s][m], null)),
+    staves.map((staff, s) => prepareStaff(staff.measures[m], staff, parts[s], score.keySignature, ts, signs[s][m], null)),
   );
   const formatters = prepared.map((column) => {
     const formatter = new Formatter();
@@ -578,9 +609,8 @@ export function renderFullSystemsToCanvases(score: Score, width: number, scale: 
   const timeWidth = new Stave(0, 0, 200).addTimeSignature(timeSignature).getNoteStartX() - new Stave(0, 0, 200).getNoteStartX();
   const natural = naturalWidths(score, formatters);
 
-  const key = KEY_NAMES[score.keySignature] ?? 'C';
   const nameWidth = 58;
-  const marginWidth = new Stave(nameWidth, 0, 200).addClef('treble').addKeySignature(key).getNoteStartX() + 6;
+  const marginWidth = new Stave(nameWidth, 0, 200).addClef('treble').addKeySignature(keyName(widestKey(keys))).getNoteStartX() + 6;
   const available = width - marginWidth - 2; // a little room for the final bar line
   const systems = breakIntoSystems(natural, available, timeWidth);
   const systemOf: number[] = [];
@@ -601,7 +631,7 @@ export function renderFullSystemsToCanvases(score: Score, width: number, scale: 
 
     // Margin: short names, clefs, key, brace for the piano, the line on the left.
     const marginStaves = staves.map((staff, s) => {
-      const stave = new Stave(nameWidth, tops[s] + STAVE_OFFSET, marginWidth - nameWidth, STAVE_OPTIONS).addClef(staff.clef).addKeySignature(key);
+      const stave = new Stave(nameWidth, tops[s] + STAVE_OFFSET, marginWidth - nameWidth, STAVE_OPTIONS).addClef(staff.clef).addKeySignature(keyName(keys[s]));
       stave.setEndBarType(BarlineType.NONE);
       stave.setContext(ctx).draw();
       return stave;
@@ -615,7 +645,7 @@ export function renderFullSystemsToCanvases(score: Score, width: number, scale: 
       if (own.length > 1) new StaveConnector(own[0], own[own.length - 1]).setType('brace').setContext(ctx).draw();
       const middle = (own[0].getYForLine(2) + own[own.length - 1].getYForLine(2)) / 2;
       ctx.setFont('sans-serif', 13);
-      ctx.fillText(names[p], 2, middle + 4);
+      drawName(ctx, names[p], middle);
       first += part.staves.length;
     });
 

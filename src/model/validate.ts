@@ -4,6 +4,7 @@ import { toItems } from './items';
 import { isValidPickup, measureLengths } from './meter';
 import { entryRange, instrumentById } from './instruments';
 import { pitchToMidi } from './pitch';
+import { canTranspose } from './transpose';
 import type { Duration, Part, Pitch, Score, ScoreEvent } from './types';
 
 /**
@@ -37,6 +38,7 @@ export function parseScore(data: unknown, module: ModuleConfig): Score | null {
     }
     const instrument = instrumentById(part.instrument);
     if (module.overwrite && !instrument) return null;
+    if (part.transposed !== undefined && (part.transposed !== true || !canTranspose(part.instrument))) return null;
     const staves = part.staves;
     if (!Array.isArray(staves) || staves.length < 1 || staves.length > (instrument?.clefs.length ?? 1)) return null;
     const range = entryRange(module, part as unknown as Part);

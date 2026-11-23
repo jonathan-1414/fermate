@@ -68,15 +68,27 @@ export function isOutsideRange(part: Part | undefined, pitch: Pitch): boolean {
   return midi < pitchToMidi(parsePitch(instrument.range.low)) || midi > pitchToMidi(parsePitch(instrument.range.high));
 }
 
+/** How a transposing instrument is tuned (see transpose.ts), for its short name. */
+export const TRANSPOSITION_LABELS: Record<string, string> = {
+  clarinet: 'B',
+  trumpet: 'B',
+  saxophone: 'Es',
+  horn: 'F',
+  contrabass: 'Oktave',
+};
+
 /** Names as shown: "Violine 1", "Violine 2" when an instrument is there more than once. */
 export function partNames(score: Score, short = false): string[] {
   return score.parts.map((part, i) => {
     const instrument = instrumentById(part.instrument);
     const name = (short ? instrument?.short : instrument?.name) ?? part.instrument;
+    // A part shown transposed says so in its short name: "Klar. (B)".
+    const label = short && part.transposed ? TRANSPOSITION_LABELS[part.instrument] : undefined;
+    const tuning = label ? ` (${label})` : '';
     const same = score.parts.filter((p) => p.instrument === part.instrument);
-    if (same.length < 2) return name;
+    if (same.length < 2) return name + tuning;
     const number = score.parts.slice(0, i + 1).filter((p) => p.instrument === part.instrument).length;
-    return `${name} ${number}`;
+    return `${name} ${number}${tuning}`;
   });
 }
 
