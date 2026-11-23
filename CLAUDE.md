@@ -84,7 +84,9 @@ Teil des Bildschirms ein, alles andere tritt zurück.
   Sechzehntel), Kreuz, Be, Auflösung und Oktave höher/tiefer („8va“ mit Pfeil nach oben bzw.
   unten, seit 23.11.2026) zeigen nur ihr Zeichen aus der Notenschrift, groß
   gezeichnet, Tippfläche weiter mindestens 44 × 44 pt, Name als Tooltip und für
-  Screenreader. Die Zeichen sind hier selbst der Lerninhalt. Punkt, Triole, Haltebogen, Akkord
+  Screenreader. Die Zeichen sind hier selbst der Lerninhalt. „Kopieren“ und „Einfügen“ zeigen
+  nur ihre bekannten Symbole (zwei Blätter, Klemmbrett; seit 23.11.2026, spart Platz in der
+  Leiste). Punkt, Triole, Haltebogen, Akkord
   und Löschen behalten ihre Beschriftung, ebenso die obere Leiste. Modul 1 bleibt beschriftet.
 - Kein dunkler Modus in Modul 1.
 
@@ -479,7 +481,7 @@ Unten im Einstellungsmenü steht der Link „Info und Lizenzen“; eine Fußzeil
   Symbole). „+“ öffnet eine Auswahl: Neue Partitur, Datei öffnen (geändert 22.11.2026).
 - **Unten** (Schreiben, nah an der Hand): Ganze, Halbe, Viertel, Achtel, Sechzehntel, Punkt,
   Triole | Kreuz, Be, Auflösung | Oktave höher, Oktave tiefer | Haltebogen, Akkord (nur Klavier), Löschen. Notenwerte,
-  Vorzeichen und Oktave nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
+  Vorzeichen, Oktave, Kopieren und Einfügen nur als Zeichen (siehe Gestaltung). „Wiederholen“ bleibt (geprüft 22.11.2026: wer
   einmal zu oft „Rückgängig“ tippt, holt den Schritt zurück).
 - **„+ Takt“** am rechten Ende der Übersichtsleiste, **„Takt löschen“** in der oberen Leiste
   links neben „Rückgängig“ (geändert 22.11.2026).

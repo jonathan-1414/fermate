@@ -23,6 +23,10 @@ export const ICONS = {
   redo: svg('<path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>', 18),
   /** A tie between two notes (small, in front of the label). */
   tie: svg('<path d="M4 9c3 6 13 6 16 0"/>', 18),
+  /** Two overlapping sheets: copy (as known from other apps). */
+  copy: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
+  /** Clipboard: paste (as known from other apps). */
+  paste: svg('<path d="M9 4H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="9" y="2.5" width="6" height="3.5" rx="1"/><path d="M9 11h6M9 15h4"/>'),
   /** Cross: delete (small, in front of the label). */
   cross: svg('<path d="M6 6l12 12"/><path d="M18 6 6 18"/>', 18),
 };

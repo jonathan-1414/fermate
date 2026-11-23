@@ -183,8 +183,9 @@ export function createFullToolbar(top: HTMLElement, bottom: HTMLElement, actions
   const tieButton = button('Haltebogen', actions.toggleTie, { svg: ICONS.tie });
   // Akkord: while pressed, a tap adds a tone to the selected note instead of moving it.
   const chordButton = button('Akkord', actions.toggleChord);
-  const copyButton = button('Kopieren', actions.copy);
-  const pasteButton = button('Einfügen', actions.paste);
+  // Kopieren and Einfügen: only their well-known symbols (chosen 23.11.2026, saves room).
+  const copyButton = iconButton('Kopieren', ICONS.copy, actions.copy);
+  const pasteButton = iconButton('Einfügen', ICONS.paste, actions.paste);
   const deleteButton = button('Löschen', actions.deleteSelection, { svg: ICONS.cross });
 
   const bottomMain = document.createElement('div');
