@@ -1,4 +1,6 @@
 import { createWordmark } from './wordmark';
+import { showWelcome } from './welcome';
+import { markWelcomeSeen, welcomeSeen } from '../storage/welcome';
 import { inKey } from '../model/accidentals';
 import { octaveAt, octaveRange, stepAt, stepRange } from '../model/octave';
 import { setTransposed, shownTransposition, staffKeys, toSounding, toWritten } from '../model/transpose';
@@ -369,6 +371,9 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
           render();
         },
         showInfo,
+        showGuide() {
+          void showWelcome('Schließen');
+        },
         addInstrument(id) {
           if (commit(addPart(score, module, id))) render();
         },
@@ -1239,5 +1244,12 @@ export function startFullApp(root: HTMLElement, module: ModuleConfig): void {
   // A turned iPad (portrait / landscape) has another height for the music.
   window.addEventListener('resize', () => render());
   render();
-  if (!isMetaComplete(score.meta)) void runWizard();
+  void (async () => {
+    // At the very first start on this device: the welcome page, then the start wizard.
+    if (!welcomeSeen()) {
+      await showWelcome();
+      markWelcomeSeen();
+    }
+    if (!isMetaComplete(score.meta)) await runWizard();
+  })();
 }

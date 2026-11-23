@@ -227,6 +227,8 @@ export interface SettingsActions {
   setMeta(meta: Meta): void;
   /** "Info und Lizenzen" (only here, to save room on the screen). */
   showInfo(): void;
+  /** The welcome page again ("Kurzanleitung"). */
+  showGuide(): void;
   addInstrument(id: string): void;
   removeInstrument(index: number): Promise<void>;
   /** One place up (-1) or down (+1). */
@@ -248,12 +250,14 @@ export function showSettings(module: ModuleConfig, actions: SettingsActions): vo
   const done = textButton('Fertig', 'tool primary');
   const info = el('button', { type: 'button', className: 'link-button', textContent: 'Info und Lizenzen' });
   info.addEventListener('click', () => actions.showInfo());
+  const guide = el('button', { type: 'button', className: 'link-button', textContent: 'Kurzanleitung' });
+  guide.addEventListener('click', () => actions.showGuide());
   const details = detailsSection(actions.score().meta, actions);
   dialog.append(
     el('h2', { textContent: 'Einstellungen' }),
     ...details.elements,
     body,
-    el('div', { className: 'dialog-actions settings-actions' }, info, done),
+    el('div', { className: 'dialog-actions settings-actions' }, guide, info, done),
   );
 
   function draw(): void {

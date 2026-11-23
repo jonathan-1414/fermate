@@ -445,6 +445,18 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
   der zweite Finger dazu, verwirft die App, was der erste begonnen hat (keine Note, kein neuer
   Cursor). Modul 1 behält den Zoom des Browsers.
 
+**Begrüßungsseite (beschlossen 23.11.2026, für das Vorstellen im Kollegium):** nur in der
+Vollversion, beim allerersten Start auf einem Gerät vor dem Startassistenten (gemerkt im
+Browser, ohne `localStorage` jedes Mal), später über den Link „Kurzanleitung“ unten im
+Einstellungsmenü. Inhalt: große Wortmarke, Unterzeile „Notensatz für den Musikunterricht,
+schlicht, fürs iPad gemacht“, hell-orange hinterlegt „Testversion: Fermate wird gerade im
+Unterricht erprobt. Manches ändert sich noch, Rückmeldungen sind willkommen.“, vier
+Kernpunkte (Schreiben und hören, Bewusst reduziert, Ruhig gestaltet, Ohne Konto; Export als
+Audiodatei folgt), „So geht’s“ mit drei Sätzen und für das Markieren ein ruhendes Bild in drei
+Schritten (erste Note antippen, auf der letzten den Finger kurz liegen lassen, markiert) plus
+„Ganze Takte: auf die Taktnummer tippen“. Geschlossen mit „Los geht’s“ (aus dem Menü:
+„Schließen“). Modul 1 hat keine Begrüßungsseite.
+
 **Startassistent (beschlossen 21.11.2026):** drei kurze Seiten, nicht wegklickbar.
 1. *Angaben:* Name(n), Klasse, Titel wie in Modul 1 (Namen und Klasse Pflicht).
 2. *Instrumente:* Liste der 13 Instrumente mit „+“, **ohne Voreinstellung** (mindestens ein
