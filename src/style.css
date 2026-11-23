@@ -811,6 +811,22 @@ body {
 /* Welcome page of the full version (23.11.2026) */
 .dialog.welcome {
   width: min(38rem, calc(100vw - 32px));
+  overflow: hidden;
+}
+/* Only the text scrolls; the button below stays in view */
+.dialog.welcome[open] {
+  display: flex;
+  flex-direction: column;
+}
+.welcome-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.dialog.welcome .dialog-actions {
+  flex: none;
+  margin-top: 12px;
 }
 .welcome-head {
   text-align: center;

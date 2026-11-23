@@ -54,7 +54,10 @@ export function showWelcome(buttonLabel = 'Los geht’s'): Promise<void> {
     const mark = createWordmark();
     mark.classList.add('large');
     const item = (title: string, text: string) => el('li', {}, el('strong', { textContent: title }), ` ${text}`);
-    dialog.append(
+    // The text scrolls on its own, the button stays below it, always visible (Safari
+    // scrolled the whole dialog down to the button at the bottom, 23.11.2026).
+    const scroller = el('div', { className: 'welcome-body' });
+    scroller.append(
       el('div', { className: 'welcome-head' }, mark, el('p', { className: 'welcome-tagline', textContent: 'Notensatz für den Musikunterricht, schlicht, fürs iPad gemacht' })),
       el(
         'p',
@@ -79,11 +82,9 @@ export function showWelcome(buttonLabel = 'Los geht’s'): Promise<void> {
         el('li', {}, el('strong', { textContent: 'Markieren:' }), ' Ganze Takte: auf die Taktnummer tippen. Sonst so:'),
       ),
       markingPicture(),
-      el('div', { className: 'dialog-actions' }, go),
     );
-    // Start at the top: opening a dialog focuses its first button ("Los geht’s" at the
-    // bottom), and Safari then scrolls down to it. With `autofocus` on the dialog itself
-    // the dialog gets the focus instead (no marked button); once drawn, back to the top.
+    dialog.append(scroller, el('div', { className: 'dialog-actions' }, go));
+    // The dialog itself takes the focus, not the button (it would show as marked).
     dialog.autofocus = true;
     dialog.tabIndex = -1;
     const close = showDialog(dialog, null);
@@ -92,7 +93,7 @@ export function showWelcome(buttonLabel = 'Los geht’s'): Promise<void> {
       resolve();
     });
     dialog.focus({ preventScroll: true }); // not every browser honours `autofocus` here
-    const toTop = () => (dialog.scrollTop = 0);
+    const toTop = () => (scroller.scrollTop = 0);
     toTop();
     requestAnimationFrame(() => {
       toTop();

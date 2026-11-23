@@ -448,7 +448,8 @@ Er läuft unter `…/?modul=voll`, ohne Angabe im Link startet weiter Modul 1.
 **Begrüßungsseite (beschlossen 23.11.2026, für das Vorstellen im Kollegium):** nur in der
 Vollversion, bei jedem Aufruf der Seite (geändert 23.11.2026, wichtig während der
 Testphase), bei einer neuen Partitur vor dem Startassistenten; außerdem über den Link
-„Kurzanleitung“ unten im Einstellungsmenü. Sie beginnt immer oben. Inhalt: große Wortmarke, Unterzeile „Notensatz für den Musikunterricht,
+„Kurzanleitung“ unten im Einstellungsmenü. Sie beginnt immer oben: Nur der Text scrollt,
+der Button „Los geht’s“ steht fest darunter (Safari scrollte sonst bis zum Button). Inhalt: große Wortmarke, Unterzeile „Notensatz für den Musikunterricht,
 schlicht, fürs iPad gemacht“, hell-orange hinterlegt „Testversion: Fermate wird gerade erprobt.
 Manches ändert sich noch, Rückmeldungen sind willkommen.“, vier
 Kernpunkte (Schreiben und hören, Bewusst reduziert, Ruhig gestaltet, Ohne Konto; Export als
